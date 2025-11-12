@@ -52,19 +52,26 @@ const Main = styled('main', {
   shouldForwardProp: (prop) => prop !== 'open',
 })<{ open?: boolean }>(({ theme, open }) => ({
   flexGrow: 1,
-  padding: theme.spacing(3),
-  marginLeft: `-${drawerWidth}px`,
-  transition: theme.transitions.create(['margin', 'width'], {
+  minWidth: 0,
+  padding: theme.spacing(3, 2),
+  transition: theme.transitions.create(['margin', 'width', 'padding'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  ...(open && {
-    marginLeft: 0,
+  [theme.breakpoints.up('sm')]: {
+    padding: theme.spacing(4),
+  },
+  [theme.breakpoints.up('lg')]: {
+    marginLeft: open ? 0 : `-${drawerWidth}px`,
     transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
+      easing: open
+        ? theme.transitions.easing.easeOut
+        : theme.transitions.easing.sharp,
+      duration: open
+        ? theme.transitions.duration.enteringScreen
+        : theme.transitions.duration.leavingScreen,
     }),
-  }),
+  },
 }))
 
 const activeStyles = (theme: Theme) => ({
