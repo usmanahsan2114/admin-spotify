@@ -51,14 +51,18 @@ const getStatusColor = (status: OrderStatus) => {
   }
 }
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat(undefined, {
+const formatDate = (value?: string) => {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value))
+  }).format(parsed)
+}
 
 const filterByDate = (orders: Order[], filter: DateFilter) => {
   if (filter === 'all') return orders
@@ -69,7 +73,9 @@ const filterByDate = (orders: Order[], filter: DateFilter) => {
       : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
   return orders.filter((order) => {
+    if (!order.createdAt) return false
     const created = new Date(order.createdAt)
+    if (Number.isNaN(created.getTime())) return false
     return created >= start
   })
 }
@@ -238,7 +244,7 @@ const OrdersPage = () => {
   ]
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Card>
         <CardContent>
           <Stack
@@ -314,9 +320,9 @@ const OrdersPage = () => {
       )}
 
       <Card>
-        <CardContent sx={{ p: 0 }}>
+        <CardContent sx={{ p: 0, minWidth: 0 }}>
           <Divider />
-          <Box sx={{ width: '100%' }}>
+          <Box sx={{ width: '100%', minWidth: 0, overflowX: 'auto' }}>
             <DataGrid
               rows={filteredOrders}
               columns={columns}

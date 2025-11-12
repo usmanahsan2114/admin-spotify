@@ -16,6 +16,7 @@ type AuthState = {
   user: User | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
+  signup: (payload: SignupPayload) => Promise<void>
   logout: () => void
   loading: boolean
 }
@@ -25,6 +26,13 @@ const AuthContext = createContext<AuthState | undefined>(undefined)
 type LoginResponse = {
   token: string
   user: User
+}
+
+type SignupPayload = {
+  name: string
+  email: string
+  password: string
+  role?: User['role']
 }
 
 const STORAGE_KEY = 'dashboard.user'
@@ -66,6 +74,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(result.user)
   }, [])
 
+  const signup = useCallback(async (payload: SignupPayload) => {
+    const result = await apiFetch<LoginResponse>('/api/signup', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    })
+    setStoredToken(result.token)
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(result.user))
+    setToken(result.token)
+    setUser(result.user)
+  }, [])
+
   const logout = useCallback(() => {
     setStoredToken(null)
     if (typeof window !== 'undefined') {
@@ -81,10 +101,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user,
       token,
       login,
+      signup,
       logout,
       loading,
     }),
-    [token, user, login, logout, loading],
+    [token, user, login, signup, logout, loading],
   )
 
   return (

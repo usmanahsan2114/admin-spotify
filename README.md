@@ -1,21 +1,22 @@
-# Shopify Admin Dashboard
+# Shopify-Like Admin Dashboard
 
-This project delivers a full-featured admin dashboard that mirrors the core management flows of Shopify for a small ecommerce operation.  It provides order tracking, product inventory controls, user/role management, analytics widgets, and a polished Material UI experience with dark mode support.
+This repository delivers a full-stack ecommerce admin workspace modeled after Shopify. It allows a store team to ingest orders from a marketing site, manage inventory, administer users, and view daily operational analytics in a modern, responsive UI.
 
 ## Features
 
-- **Authentication & Roles** – JWT-based login with guarded routes, persistent sessions, and admin/staff roles.
-- **Orders Management** – List, search, filter, sort, update statuses, and review detailed order timelines.
-- **Products Management** – CRUD operations with validation, stock tracking, and optimistic updates.
-- **User Management** – Invite, edit, deactivate users, and protect the seeded super-admin account.
-- **Dashboard Analytics** – Real-time summary cards plus line/pie charts for recent activity.
-- **Dark Mode & Responsive UI** – Material UI theme toggle with local preference storage.
+- **Authentication & Roles**: JWT-based login with protected routes, admin/staff roles, persistent sessions, and logout from header/sidebar.
+- **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls.
+- **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions.
+- **Users**: Admin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion.
+- **Dashboard Analytics**: Summary tiles, 7-day order trend line, and status distribution pie chart using Recharts.
+- **Dark Mode**: Theme toggle with preference persistence via `ThemeModeProvider`.
+- **Dummy Order Form**: `/test-order` route for marketing-site integration testing.
 
 ## Tech Stack
 
-- **Frontend** – React 19, Vite, TypeScript, Material UI, Recharts, React Router, React Hook Form.
-- **Backend** – Express.js with in-memory data stores (ready to swap for a database).
-- **Auth** – JSON Web Tokens with persisted sessions and automatic logout on 401 responses.
+- **Frontend**: React 19 (TypeScript), Vite, Material UI, MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
+- **Backend**: Express 5, JWT auth, bcrypt for password hashing, in-memory data (ready for DB swap).
+- **Tooling**: npm-run-all for concurrent dev servers, nodemon for backend reloads, ESLint.
 
 ## Getting Started
 
@@ -27,7 +28,8 @@ This project delivers a full-featured admin dashboard that mirrors the core mana
 ### Installation
 
 ```bash
-# From the repository root
+git clone https://github.com/usmanahsan2114/admin-spotify.git
+cd admin-spotify
 npm install
 npm --prefix backend install
 npm --prefix frontend install
@@ -35,13 +37,12 @@ npm --prefix frontend install
 
 ### Environment Variables
 
-Create a `.env` (or `.env.local`) file in each package if you need to override defaults.
-
-| Location              | Variable              | Description                                      | Default                       |
-| --------------------- | --------------------- | ------------------------------------------------ | ----------------------------- |
-| `backend/.env`        | `PORT`                | Express server port                              | `5000`                        |
-| `backend/.env`        | `JWT_SECRET`          | Secret for signing tokens                        | `development-secret-please-change` |
-| `frontend/.env`       | `VITE_API_BASE_URL`   | Base URL for API requests                        | `http://localhost:5000`       |
+| Location            | Variable            | Default / Notes                                    |
+| ------------------- | ------------------- | -------------------------------------------------- |
+| `backend/.env`      | `PORT`              | `5000` (optional)                                  |
+| `backend/.env`      | `JWT_SECRET`        | `development-secret-please-change`                 |
+| `frontend/.env`     | `VITE_API_BASE_URL` | `http://localhost:5000`                            |
+| `frontend/.env`     | `VITE_DEV_ADMIN_EMAIL` | (Optional) override seeded admin email for guards |
 
 ### Development
 
@@ -49,68 +50,61 @@ Create a `.env` (or `.env.local`) file in each package if you need to override d
 npm run dev
 ```
 
-This launches both the Vite frontend and the Express backend.  Navigate to `http://localhost:5173` (port may shift if already in use).
+This launches Vite (`http://localhost:5173`) and Express (`http://localhost:5000`). Stop both (`Ctrl+C`) to restart.
 
-### Production Builds
+### Production Build
 
 ```bash
-# Frontend production bundle
 npm --prefix frontend run build
-
-# Backend (run the compiled server)
 npm --prefix backend run start
 ```
 
-Ensure `VITE_API_BASE_URL` points at your deployed backend when hosting the frontend separately.
+Ensure `VITE_API_BASE_URL` points to the deployed API when hosting frontend separately.
 
-## Default Credentials
+## Default Accounts
 
-- **Admin:** `admin@example.com / admin123`
-- **Staff:** `staff@example.com / staff123`
+- Admin: `admin@example.com` / `admin123`
+- Staff: `staff@example.com` / `staff123`
+- Sample signup defaults: `jordan.avery@example.com` / `signup123`
 
-All create/edit/delete actions require the admin role.  The seeded super admin cannot be deleted or demoted for safety.
+Admin users can invite additional staff via `/users` or consume the `/api/signup` endpoint.
 
-## Order Intake Testing
+## Testing Checklist
 
-A development-only form is available at `/test-order` to simulate submissions from the marketing site.  The live site should POST to:
-
-```
-POST /api/orders
-Content-Type: application/json
-```
-
-with the fields shown on the test form (productName, customerName, email, phone, quantity, notes).
+1. Visit `/login`, sign in as admin, ensure dashboard loads.
+2. Navigate Orders, Products, Users; confirm data tables render and actions succeed.
+3. Submit `/test-order` form—new order should appear in Orders table.
+4. Update an order status; verify timeline entry.
+5. Add/edit/delete a product.
+6. Invite a new user; confirm login works with returned credentials.
+7. Toggle dark mode; reload to confirm persistence.
+8. Sign up via `/signup`; ensure new account logs in automatically.
 
 ## Project Structure
 
 ```
-shopify-admin/
-├─ backend/                    Express API
-├─ frontend/                   React admin interface
-├─ completeworkflow.md         Detailed development log
-├─ comments.md                 Implementation notes & decisions
-├─ history.md                  Milestone history
-└─ README.md                   (this file)
+backend/      # Express server, in-memory data, JWT auth
+frontend/     # React app (Vite + TS + MUI)
+  src/
+    components/layout/
+    context/
+    pages/
+    providers/
+    services/
+    types/
+docs/
+  completeworkflow.md  # Step-by-step build log
+  comments.md          # Implementation notes
+  history.md           # Milestone history
 ```
 
-## Testing & Verification
+## Future Enhancements
 
-- `npm --prefix frontend run build` – Confirm the frontend compiles without warnings.
-- Manual smoke test:
-  1. Sign in as admin, browse orders/products/users.
-  2. Submit a dummy order via `/test-order`.
-  3. Verify analytics charts update and status changes persist.
-  4. Log out and ensure protected routes redirect to `/login`.
-
-## Next Steps
-
-- Swap the in-memory stores for a database (e.g., MongoDB, Postgres).
-- Hook the `/api/orders` endpoint to the live website form.
-- Expand analytics with additional time ranges and conversion metrics.
-- Add password reset / email flows and granular RBAC.
+- Replace in-memory stores with a persistence layer (SQL/NoSQL).
+- Add email-based invite/password reset flows.
+- Expand analytics (conversion metrics, revenue overlays).
+- Integrate real-time notifications for incoming orders.
 
 ---
 
-Built with ❤️ to showcase a Shopify-like admin workflow using modern React tooling.
-
-
+Built as a reference-quality Shopify-style admin dashboard with modern React tooling.

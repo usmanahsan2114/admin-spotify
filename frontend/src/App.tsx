@@ -12,6 +12,7 @@ import {
   UsersPage,
   LoginPage,
   NotFoundPage,
+  SignupPage,
 } from './pages'
 import { useAuth } from './context/AuthContext'
 
@@ -42,6 +43,7 @@ const App = () => (
   <Routes>
     <Route path="/test-order" element={<OrderTestForm />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/signup" element={<SignupPage />} />
     <Route element={<DashboardLayout />}>
       <Route
         index

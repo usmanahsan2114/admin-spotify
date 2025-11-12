@@ -222,6 +222,46 @@ app.post('/api/login', async (req, res) => {
   })
 })
 
+app.post('/api/signup', async (req, res) => {
+  const { email, password, name, role } = req.body
+
+  if (!email || !password || !name) {
+    return res
+      .status(400)
+      .json({ message: 'name, email, and password are required to sign up.' })
+  }
+
+  if (findUserByEmail(email)) {
+    return res.status(409).json({ message: 'An account with that email already exists.' })
+  }
+
+  const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
+  const passwordHash = await bcrypt.hash(password, 10)
+  const newUser = {
+    id: crypto.randomUUID(),
+    email: email.toLowerCase(),
+    name,
+    role: userRole,
+    passwordHash,
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  users.push(newUser)
+
+  const token = jwt.sign(
+    { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
+    JWT_SECRET,
+    { expiresIn: '2h' },
+  )
+
+  return res.status(201).json({
+    token,
+    user: sanitizeUser(newUser),
+  })
+})
+
 // Order routes
 app.get('/api/orders', (_req, res) => {
   res.json(orders)

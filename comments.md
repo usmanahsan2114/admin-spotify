@@ -1,14 +1,9 @@
-## Notes
-- Chose TypeScript template for stronger typing across the dashboard.
-- Added Material UI theme provider up front to simplify dark mode enablement in later steps.
-- Root npm scripts now use `npm-run-all`; run `npm run dev` at the repository root to start both servers.
-- Backend routes require a JWT for any mutating order/product/user action—default admin credentials are `admin@example.com` / `admin123`.
-- New orders submitted via `/test-order` do not require authentication, allowing the marketing site (and this dummy form) to post directly to the API.
-- Theme preference persists via `ThemeModeProvider`, and the navigation shell keeps `/test-order` accessible outside the main dashboard experience.
-- Orders, Products, and Users flows now consume the persisted JWT through `AuthContext`, logging users out gracefully whenever a 401 is detected.
-- Order details timeline entries are generated server-side whenever status/payment fields change; front-end surfaces them in reverse chronological order.
-- Products CRUD retains optimistic updates with confirmation prompts while honoring authenticated requests.
-- User management still protects the primary admin account from removal or demotion to prevent accidental lockouts.
-- AuthContext now owns the JWT lifecycle; API helpers raise 401s that trigger a logout prompt to keep sessions tidy.
-- Dashboard analytics aggregate live order/product data; charts fall back to friendly guidance when the dataset is empty.
-- README captures setup instructions, env variable usage, and testing notes for deployment handoff.
+## Implementation Notes
+
+- Built with Vite + TypeScript + Material UI to provide fast HMR and rich component availability.
+- `ThemeModeProvider` persists dark/light preference in `localStorage` for long-running admin sessions.
+- JWT token lifecycle is centralized in `AuthContext`; 401 responses trigger auto-logout for session hygiene.
+- Orders/products/users pages use MUI DataGrid with optimistic updates and snackbars for UX feedback.
+- `/test-order` route posts unauthenticated orders for marketing-site integration; real submissions can reuse the same payload.
+- Signup/login components ship with seeded demo values to streamline QA and stakeholder reviews.
+- Dashboard analytics rely on Recharts; `minWidth: 0` safeguards prevent negative-size warnings in responsive layouts.

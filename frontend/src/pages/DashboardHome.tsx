@@ -130,11 +130,12 @@ const DashboardHome = () => {
   }
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Box
         display="grid"
         gap={3}
         gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
+        sx={{ minWidth: 0 }}
       >
         {summary.map((card) => (
           <Card key={card.label}>
@@ -155,9 +156,10 @@ const DashboardHome = () => {
         gap={3}
         gridTemplateColumns={{ xs: '1fr', lg: '2fr 1fr' }}
         alignItems="stretch"
+        sx={{ minWidth: 0 }}
       >
-        <Card>
-          <CardContent sx={{ height: '100%' }}>
+        <Card sx={{ minWidth: 0 }}>
+          <CardContent sx={{ height: '100%', minWidth: 0 }}>
             <Typography variant="h6" fontWeight={600} mb={2}>
               Orders in the last 7 days
             </Typography>
@@ -166,7 +168,7 @@ const DashboardHome = () => {
                 No orders yet. Submit a test order to see trends appear here.
               </Typography>
             ) : (
-              <Box sx={{ height: 320 }}>
+              <Box sx={{ height: 320, minWidth: 0, width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={lastSevenDaysData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -190,8 +192,8 @@ const DashboardHome = () => {
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardContent sx={{ height: '100%' }}>
+        <Card sx={{ minWidth: 0 }}>
+          <CardContent sx={{ height: '100%', minWidth: 0 }}>
             <Typography variant="h6" fontWeight={600} mb={2}>
               Orders by status
             </Typography>
@@ -200,7 +202,7 @@ const DashboardHome = () => {
                 No order activity recorded yet.
               </Typography>
             ) : (
-              <Box sx={{ height: 320 }}>
+              <Box sx={{ height: 320, minWidth: 0, width: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie

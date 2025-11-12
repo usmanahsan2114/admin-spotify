@@ -22,7 +22,11 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import SearchIcon from '@mui/icons-material/Search'
-import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-data-grid'
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRenderCellParams,
+} from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -241,15 +245,20 @@ const ProductsPage = () => {
         headerName: 'Category',
         flex: 0.8,
         minWidth: 140,
-        valueFormatter: ({ value }) => value || '—',
+        valueFormatter: (params) => {
+          const value = (params as { value?: Product['category'] } | undefined)?.value
+          return value ? String(value) : '—'
+        },
       },
       {
         field: 'price',
         headerName: 'Price',
         flex: 0.6,
         minWidth: 120,
-        valueFormatter: ({ value }) =>
-          typeof value === 'number' ? formatCurrency(value) : value,
+        valueFormatter: (params) => {
+          const value = (params as { value?: Product['price'] } | undefined)?.value
+          return typeof value === 'number' ? formatCurrency(value) : '—'
+        },
       },
       {
         field: 'stock',
@@ -308,7 +317,7 @@ const ProductsPage = () => {
   )
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Card>
         <CardContent>
           <Stack
@@ -368,8 +377,8 @@ const ProductsPage = () => {
       )}
 
       <Card>
-        <CardContent sx={{ p: 0 }}>
-          <Box sx={{ width: '100%' }}>
+        <CardContent sx={{ p: 0, minWidth: 0 }}>
+          <Box sx={{ width: '100%', minWidth: 0, overflowX: 'auto' }}>
             <DataGrid
               autoHeight
               rows={filteredProducts}

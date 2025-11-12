@@ -332,7 +332,7 @@ const UsersPage = () => {
   }
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Card>
         <CardContent>
           <Stack
@@ -385,8 +385,8 @@ const UsersPage = () => {
       )}
 
       <Card>
-        <CardContent sx={{ p: 0 }}>
-          <Box sx={{ width: '100%' }}>
+        <CardContent sx={{ p: 0, minWidth: 0 }}>
+          <Box sx={{ width: '100%', minWidth: 0, overflowX: 'auto' }}>
             <DataGrid
               autoHeight
               rows={filteredUsers}

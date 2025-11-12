@@ -1,12 +1,7 @@
 ## 2025-11-12
-- Initialized repository structure with separate `frontend` and `backend` projects.
-- Recorded installation of core frontend libraries (MUI, React Router, Recharts) and Express backend middleware.
-- Introduced JWT-secured order, product, and user endpoints with seeded in-memory data for rapid iteration.
-- Added a development order intake form routed at `/test-order` and adjusted the API to accept public submissions.
-- Created the dashboard layout with responsive navigation, theming toggle, and placeholder routes for upcoming feature work.
-- Delivered a functional Orders table with filtering, sorting, pagination, and inline status updates backed by the Express API.
-- Implemented the order detail workspace with editable fulfillment controls, payment toggle, and timeline audit log.
-- Built the products management grid with search, CRUD dialogs, and category metadata seeded in the backend.
-- Implemented user administration with add/edit/delete flows, active-state toggles, and safety checks for the primary admin account.
-- Finalized authentication with a login screen, context-driven session management, protected routes, and graceful token expiration handling.
-- Completed analytics dashboards, documentation, and release-readiness tasks (README, charts, deployment guidance).
+- Initialized monorepo structure with Vite frontend & Express backend.
+- Implemented JWT-secured CRUD for orders/products/users with in-memory seeds.
+- Added `/test-order` submission form and documented workflows.
+- Built dashboard layout, Orders table, Order details, Products management, and Users admin.
+- Finalized authentication (login/signup, protected routes, logout).
+- Delivered analytics dashboard, documentation refresh, and production build verification.
