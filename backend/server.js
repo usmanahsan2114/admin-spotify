@@ -134,6 +134,9 @@ const users = [
     name: 'Store Admin',
     role: 'admin',
     passwordHash: bcrypt.hashSync('admin123', 10),
+    active: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: crypto.randomUUID(),
@@ -141,6 +144,9 @@ const users = [
     name: 'Staff Member',
     role: 'staff',
     passwordHash: bcrypt.hashSync('staff123', 10),
+    active: true,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
   },
 ]
 
@@ -385,7 +391,7 @@ app.post(
   authenticateToken,
   authorizeRole('admin'),
   async (req, res) => {
-    const { email, name, password, role } = req.body
+    const { email, name, password, role, active } = req.body
 
     if (!email || !name || !password || !role) {
       return res
@@ -404,12 +410,81 @@ app.post(
       name,
       role,
       passwordHash,
+      active: active !== undefined ? Boolean(active) : true,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }
 
     users.push(newUser)
 
     return res.status(201).json(sanitizeUser(newUser))
+  },
+)
+
+app.put(
+  '/api/users/:id',
+  authenticateToken,
+  authorizeRole('admin'),
+  async (req, res) => {
+    const targetUser = users.find((user) => user.id === req.params.id)
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found.' })
+    }
+
+    const { role, name, active, password } = req.body
+
+    if (req.user?.userId === targetUser.id) {
+      if (role && role !== 'admin') {
+        return res
+          .status(400)
+          .json({ message: 'You cannot change your own role.' })
+      }
+      if (active === false) {
+        return res
+          .status(400)
+          .json({ message: 'You cannot deactivate your own account.' })
+      }
+    }
+
+    if (role) {
+      targetUser.role = role
+    }
+    if (name) {
+      targetUser.name = name
+    }
+    if (active !== undefined) {
+      targetUser.active = Boolean(active)
+    }
+    if (password) {
+      targetUser.passwordHash = await bcrypt.hash(password, 10)
+    }
+
+    targetUser.updatedAt = new Date().toISOString()
+
+    return res.json(sanitizeUser(targetUser))
+  },
+)
+
+app.delete(
+  '/api/users/:id',
+  authenticateToken,
+  authorizeRole('admin'),
+  (req, res) => {
+    const index = users.findIndex((user) => user.id === req.params.id)
+
+    if (index === -1) {
+      return res.status(404).json({ message: 'User not found.' })
+    }
+
+    if (req.user?.userId === req.params.id) {
+      return res
+        .status(400)
+        .json({ message: 'You cannot delete your own account.' })
+    }
+
+    const [removed] = users.splice(index, 1)
+    return res.json(sanitizeUser(removed))
   },
 )
 

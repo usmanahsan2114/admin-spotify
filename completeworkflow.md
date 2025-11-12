@@ -42,3 +42,9 @@
 - Added add/edit dialogs powered by `react-hook-form` + Yup validation, along with optimistic list updates.
 - Enabled admin-only create/update/delete actions with confirmation flows and snackbars for user feedback.
 
+## Step 8 – User Management
+- Expanded backend user data to track activation and provide update/delete endpoints with self-protection rules.
+- Built a Users table with search, role badges, and activity status chips tied to the Express API.
+- Added create/edit dialogs that validate credentials, hash passwords via existing endpoints, and guard against deleting/demoting the primary admin.
+- Surface confirmations and snackbars for better admin feedback while keeping actions optimistic.
+
