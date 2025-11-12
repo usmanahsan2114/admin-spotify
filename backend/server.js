@@ -164,7 +164,7 @@ app.get('/api/orders/:id', (req, res) => {
   return res.json(order)
 })
 
-app.post('/api/orders', authenticateToken, (req, res) => {
+app.post('/api/orders', (req, res) => {
   const { productName, customerName, email, phone, quantity, notes } = req.body
 
   if (!productName || !customerName || !email || !quantity) {
@@ -172,6 +172,20 @@ app.post('/api/orders', authenticateToken, (req, res) => {
       message:
         'productName, customerName, email, and quantity are required fields.',
     })
+  }
+
+  let submittedBy = null
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.split(' ')[1]
+
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET)
+      submittedBy = payload.userId ?? null
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Invalid token supplied on order submission.')
+    }
   }
 
   const newOrder = {
@@ -185,6 +199,7 @@ app.post('/api/orders', authenticateToken, (req, res) => {
     isPaid: false,
     notes: notes || '',
     createdAt: new Date().toISOString(),
+    submittedBy,
   }
 
   orders.unshift(newOrder)

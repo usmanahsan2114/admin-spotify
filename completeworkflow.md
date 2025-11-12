@@ -12,3 +12,9 @@
 - Added CRUD endpoints for orders and products plus admin-only user management; logged new order intake for debugging.
 - Documented routes for future integration and validated responses via manual testing.
 
+## Step 3 – Dummy Order Intake Form
+- Wrapped the React app in React Router and added a development-only route at `/test-order`.
+- Built a Material UI form that validates required fields and posts orders to `http://localhost:5000/api/orders`.
+- Display success/error alerts after submission and reset the form upon successful order creation.
+- Updated backend to accept unauthenticated order submissions while still recording optional authenticated context.
+
