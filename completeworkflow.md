@@ -24,3 +24,9 @@
 - Added placeholder route components for Dashboard, Orders, Order details, Products, Users, and Settings while keeping `/test-order` outside the main shell.
 - Ensured the layout adapts across screen sizes and keeps future auth/logout hooks in the header.
 
+## Step 5 – Orders Table & Controls
+- Connected the Orders page to the backend API, fetching live data and surfacing search, status, and date filters.
+- Swapped in MUI DataGrid for sortable columns, pagination, and navigation to order detail views.
+- Implemented inline status updates with optimistic UI refresh, reusing the dev auth token workflow for protected requests.
+- Added helpful empty/errored states plus manual refresh to support QA as additional orders arrive.
+

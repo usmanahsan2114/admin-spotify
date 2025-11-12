@@ -5,3 +5,4 @@
 - Backend routes require a JWT for any mutating order/product/user action—default admin credentials are `admin@example.com` / `admin123`.
 - New orders submitted via `/test-order` do not require authentication, allowing the marketing site (and this dummy form) to post directly to the API.
 - Theme preference persists via `ThemeModeProvider`, and the navigation shell keeps `/test-order` accessible outside the main dashboard experience.
+- Orders page currently relies on the default admin credentials (via `ensureDevAuthToken`) to perform inline status updates until the dedicated auth flow ships.
