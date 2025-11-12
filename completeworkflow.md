@@ -18,3 +18,9 @@
 - Display success/error alerts after submission and reset the form upon successful order creation.
 - Updated backend to accept unauthenticated order submissions while still recording optional authenticated context.
 
+## Step 4 – Layout & Navigation Foundation
+- Introduced a responsive dashboard shell with an AppBar, collapsible sidebar navigation, and active link styling.
+- Implemented a dark mode toggle backed by a persistent `ThemeModeProvider` that stores preference in `localStorage`.
+- Added placeholder route components for Dashboard, Orders, Order details, Products, Users, and Settings while keeping `/test-order` outside the main shell.
+- Ensured the layout adapts across screen sizes and keeps future auth/logout hooks in the header.
+
