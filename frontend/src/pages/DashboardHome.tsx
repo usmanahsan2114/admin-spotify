@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography, useTheme } from '@mui/material'
+import { Alert, Box, Card, CardContent, CircularProgress, Stack, Typography, useMediaQuery, useTheme } from '@mui/material'
 import dayjs from 'dayjs'
 import {
   Line,
@@ -38,6 +38,8 @@ const DashboardHome = () => {
   const [error, setError] = useState<string | null>(null)
   const { logout } = useAuth()
   const theme = useTheme()
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
+  const chartHeight = isDesktop ? 360 : 400
 
   const resolveError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -231,8 +233,17 @@ const DashboardHome = () => {
           },
         }}
       >
-        <Card sx={{ minWidth: 0 }}>
-          <CardContent sx={{ height: '100%', minWidth: 0 }}>
+        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <CardContent
+            sx={{
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              gap: 2,
+              pb: 3,
+            }}
+          >
             <Typography variant="h6" fontWeight={600} mb={2}>
               Orders in the last 7 days
             </Typography>
@@ -241,8 +252,8 @@ const DashboardHome = () => {
                 No orders yet. Submit a test order to see trends appear here.
               </Typography>
             ) : (
-              <Box sx={{ height: 320, minWidth: 0, width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
+              <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+                <ResponsiveContainer width="100%" height={chartHeight}>
                   <LineChart data={lastSevenDaysData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                     <XAxis dataKey="dateLabel" />
@@ -265,8 +276,17 @@ const DashboardHome = () => {
             )}
           </CardContent>
         </Card>
-        <Card sx={{ minWidth: 0 }}>
-          <CardContent sx={{ height: '100%', minWidth: 0 }}>
+        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <CardContent
+            sx={{
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              gap: 2,
+              pb: 3,
+            }}
+          >
             <Typography variant="h6" fontWeight={600} mb={2}>
               Orders by status
             </Typography>
@@ -275,8 +295,8 @@ const DashboardHome = () => {
                 No order activity recorded yet.
               </Typography>
             ) : (
-              <Box sx={{ height: 320, minWidth: 0, width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
+              <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+                <ResponsiveContainer width="100%" height={chartHeight}>
                   <PieChart>
                     <Pie
                       data={statusDistribution}

@@ -8,3 +8,6 @@
 - Applied mobile responsiveness refinements across layout and tables to improve small-screen usability.
 - Introduced inventory alerts (model fields, backend endpoints, dashboard KPI, dedicated page) and documented threshold behaviour.
 - Enriched seed data for a fuller demo experience and added Apex IT Solutions / Apex Marketings branding across public-facing screens.
+- Delivered customer management (CRM) with backend endpoints, auto-linking orders to customers, and new customers list/detail experiences.
+- Patched backend init crash (hoisted `attachOrderToCustomer`) restoring `/api/customers` availability, addressed lingering Recharts (-1) sizing warnings with fixed container heights, and added proper autocomplete hints on auth forms.
+- Implemented returns & refund workflow (API endpoints, stock adjustments, navigation badge, returns list/detail UI, order-level context) and delivered CSV export/import tooling for orders, products, and customers with admin-gated product imports.

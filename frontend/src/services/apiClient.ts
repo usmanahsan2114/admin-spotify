@@ -57,3 +57,30 @@ export const apiFetch = async <TResponse>(
   return response.json()
 }
 
+export const apiDownload = async (
+  path: string,
+  options: FetchOptions = {},
+): Promise<Blob> => {
+  const { skipAuth, headers, ...rest } = options
+  const token = getStoredToken()
+  const headerInstance = new Headers(headers as HeadersInit | undefined)
+
+  if (!skipAuth && token && !headerInstance.has('Authorization')) {
+    headerInstance.set('Authorization', `Bearer ${token}`)
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...rest,
+    headers: headerInstance,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
+    const error = new Error(errorText || response.statusText || 'Download failed')
+    ;(error as Error & { status?: number }).status = response.status
+    throw error
+  }
+
+  return response.blob()
+}
+

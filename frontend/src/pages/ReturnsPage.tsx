@@ -1,0 +1,610 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
+  Snackbar,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+} from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import AddIcon from '@mui/icons-material/Add'
+import EditIcon from '@mui/icons-material/Edit'
+import SearchIcon from '@mui/icons-material/Search'
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRenderCellParams,
+} from '@mui/x-data-grid'
+import { useTheme } from '@mui/material/styles'
+import { Controller, useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { Link as RouterLink } from 'react-router-dom'
+import type { ReturnRequest, ReturnStatus } from '../types/return'
+import { createReturnRequest, fetchReturns, updateReturnRequest } from '../services/returnsService'
+import { fetchOrders } from '../services/ordersService'
+import type { Order } from '../types/order'
+
+const RETURN_STATUSES: ReturnStatus[] = ['Submitted', 'Approved', 'Rejected', 'Refunded']
+
+const statusChipColor: Record<ReturnStatus, 'primary' | 'success' | 'default' | 'warning' | 'info'> = {
+  Submitted: 'info',
+  Approved: 'success',
+  Rejected: 'default',
+  Refunded: 'warning',
+}
+
+const creationSchema = yup
+  .object({
+    orderId: yup.string().required('Select an order'),
+    reason: yup.string().required('Reason is required'),
+    returnedQuantity: yup
+      .number()
+      .typeError('Quantity must be a number')
+      .integer('Quantity must be a whole number')
+      .positive('Quantity must be greater than zero')
+      .required('Quantity is required'),
+  })
+  .required()
+
+type CreateFormValues = {
+  orderId: string
+  reason: string
+  returnedQuantity: number
+}
+
+type EditFormValues = {
+  status: ReturnStatus
+  note: string
+}
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return '—'
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed)
+}
+
+const ReturnsPage = () => {
+  const theme = useTheme()
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+  const [returns, setReturns] = useState<ReturnRequest[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'All'>('All')
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null)
+
+  const {
+    control: createControl,
+    handleSubmit: handleCreateSubmit,
+    reset: resetCreateForm,
+    formState: { errors: createErrors, isSubmitting: createSubmitting },
+  } = useForm<CreateFormValues>({
+    resolver: yupResolver(creationSchema),
+    defaultValues: { orderId: '', reason: '', returnedQuantity: 1 },
+  })
+
+  const {
+    control: editControl,
+    handleSubmit: handleEditSubmit,
+    reset: resetEditForm,
+    formState: { isSubmitting: editSubmitting },
+  } = useForm<EditFormValues>({
+    defaultValues: { status: 'Submitted', note: '' },
+  })
+
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const [returnsResponse, ordersResponse] = await Promise.all([
+        fetchReturns(),
+        fetchOrders(),
+      ])
+      setReturns(returnsResponse)
+      setOrders(ordersResponse)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load returns.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const filteredReturns = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return returns.filter((returnRequest) => {
+      const matchesStatus =
+        statusFilter === 'All' || returnRequest.status === statusFilter
+      const matchesQuery =
+        !query ||
+        returnRequest.id.toLowerCase().includes(query) ||
+        returnRequest.orderId.toLowerCase().includes(query) ||
+        (returnRequest.customer?.name ?? '').toLowerCase().includes(query)
+      return matchesStatus && matchesQuery
+    })
+  }, [returns, searchQuery, statusFilter])
+
+  const orderOptions = useMemo(() => orders.map((order) => ({
+    id: order.id,
+    label: `${order.id.slice(0, 8)} · ${order.customerName} · ${order.productName}`,
+    quantity: order.quantity,
+  })), [orders])
+
+  const handleOpenCreate = () => {
+    resetCreateForm({ orderId: '', reason: '', returnedQuantity: 1 })
+    setCreateOpen(true)
+  }
+
+  const handleOpenEdit = (returnRequest: ReturnRequest) => {
+    setSelectedReturn(returnRequest)
+    resetEditForm({
+      status: returnRequest.status,
+      note: '',
+    })
+    setEditOpen(true)
+  }
+
+  const handleCreate = async (values: CreateFormValues) => {
+    try {
+      const created = await createReturnRequest({
+        orderId: values.orderId,
+        reason: values.reason.trim(),
+        returnedQuantity: Number(values.returnedQuantity),
+      })
+      setReturns((prev) => [created, ...prev])
+      setSuccess('Return request submitted.')
+      setCreateOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to create return request.')
+    }
+  }
+
+  const handleEdit = async (values: EditFormValues) => {
+    if (!selectedReturn) return
+    try {
+      const updated = await updateReturnRequest(selectedReturn.id, {
+        status: values.status,
+        note: values.note.trim() ? values.note.trim() : undefined,
+      })
+      setReturns((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item)),
+      )
+      const showStockBadge =
+        (values.status === 'Approved' || values.status === 'Refunded') &&
+        selectedReturn.status !== values.status
+      setSuccess(
+        showStockBadge
+          ? `Return status updated to ${values.status}. Stock updated +${updated.returnedQuantity}.`
+          : `Return status updated to ${values.status}.`,
+      )
+      setEditOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to update return request.')
+    }
+  }
+
+  const columns: GridColDef<ReturnRequest>[] = [
+    {
+      field: 'id',
+      headerName: 'Return ID',
+      minWidth: 200,
+      flex: 1.2,
+    },
+    {
+      field: 'orderId',
+      headerName: 'Order',
+      minWidth: 140,
+      flex: 0.9,
+      renderCell: (params: GridRenderCellParams) => {
+        const row = params.row as ReturnRequest
+        return (
+          <Button
+            component={RouterLink}
+            to={`/orders/${row.orderId}`}
+            variant="text"
+            size="small"
+          >
+            {row.orderId.slice(0, 8)}
+          </Button>
+        )
+      },
+    },
+    {
+      field: 'customer',
+      headerName: 'Customer',
+      minWidth: 160,
+      flex: 1,
+      valueGetter: ({ row }) => (row as ReturnRequest).customer?.name ?? '—',
+    },
+    {
+      field: 'dateRequested',
+      headerName: 'Requested',
+      minWidth: 180,
+      flex: 1,
+      valueGetter: ({ row }) => (row as ReturnRequest).dateRequested,
+      valueFormatter: ({ value }) => formatDateTime(value as string),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      minWidth: 130,
+      flex: 0.8,
+      renderCell: (params: GridRenderCellParams) => {
+        const row = params.row as ReturnRequest
+        return (
+          <Chip
+            size="small"
+            color={statusChipColor[row.status]}
+            label={row.status}
+          />
+        )
+      },
+    },
+    {
+      field: 'returnedQuantity',
+      headerName: 'Qty',
+      minWidth: 80,
+      flex: 0.4,
+      align: 'center',
+      headerAlign: 'center',
+    },
+    {
+      field: 'reason',
+      headerName: 'Reason',
+      minWidth: 220,
+      flex: 1.6,
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      sortable: false,
+      filterable: false,
+      width: 120,
+      renderCell: (params: GridRenderCellParams) => {
+        const row = params.row as ReturnRequest
+        return (
+          <Tooltip title="View & update">
+            <IconButton
+              size="small"
+              onClick={(event) => {
+                event.stopPropagation()
+                handleOpenEdit(row)
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )
+      },
+    },
+  ]
+
+  return (
+    <Stack spacing={3} sx={{ minWidth: 0 }}>
+      <Card>
+        <CardContent>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+          >
+            <Box>
+              <Typography variant="h5" fontWeight={600}>
+                Returns & Refunds
+              </Typography>
+              <Typography color="text.secondary">
+                Track submitted return requests, update their status, and monitor stock impact.
+              </Typography>
+            </Box>
+
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                width: { xs: '100%', md: 'auto' },
+              }}
+            >
+              <Tooltip title="Reload returns">
+                <IconButton onClick={loadData} color="primary">
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCreate}
+                fullWidth={isSmall}
+              >
+                New return
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            mt={3}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+          >
+            <TextField
+              placeholder="Search by return ID, order ID, or customer"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
+              }}
+              fullWidth
+            />
+            <TextField
+              select
+              label="Filter by status"
+              value={statusFilter}
+              onChange={(event) =>
+                setStatusFilter(event.target.value as ReturnStatus | 'All')
+              }
+              size="small"
+              fullWidth={isSmall}
+              sx={{ minWidth: isSmall ? undefined : 200 }}
+            >
+              <MenuItem value="All">All statuses</MenuItem>
+              {RETURN_STATUSES.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {error && (
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      <Card>
+        <CardContent sx={{ p: 0, minWidth: 0 }}>
+          <Box sx={{ width: '100%', minWidth: 0, overflowX: 'auto' }}>
+            <DataGrid
+              rows={filteredReturns}
+              columns={columns}
+              autoHeight={isSmall}
+              loading={loading}
+              getRowId={(row) => row.id}
+              disableRowSelectionOnClick
+              density={isSmall ? 'compact' : 'standard'}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+                sorting: { sortModel: [{ field: 'dateRequested', sort: 'desc' }] },
+              }}
+              pageSizeOptions={[10, 25, 50]}
+              columnVisibilityModel={
+                isSmall
+                  ? {
+                      reason: false,
+                    }
+                  : undefined
+              }
+              sx={{
+                border: 'none',
+                '& .MuiDataGrid-columnHeaders': {
+                  backgroundColor: 'background.paper',
+                },
+                '& .MuiDataGrid-row:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
+              slots={{
+                noRowsOverlay: () => (
+                  <Stack height="100%" alignItems="center" justifyContent="center" p={3}>
+                    <Typography color="text.secondary" textAlign="center">
+                      {loading
+                        ? 'Loading return requests...'
+                        : searchQuery || statusFilter !== 'All'
+                          ? 'No returns match the current filters.'
+                          : 'No return requests yet.'}
+                    </Typography>
+                  </Stack>
+                ),
+              }}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Submit return request</DialogTitle>
+        <DialogContent>
+          <Stack
+            component="form"
+            gap={2.5}
+            mt={1}
+            onSubmit={handleCreateSubmit(handleCreate)}
+          >
+            <Controller
+              name="orderId"
+              control={createControl}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  select
+                  label="Order"
+                  required
+                  error={Boolean(createErrors.orderId)}
+                  helperText={createErrors.orderId?.message}
+                >
+                  {orderOptions.map((option) => (
+                    <MenuItem key={option.id} value={option.id}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            <Controller
+              name="returnedQuantity"
+              control={createControl}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Returned quantity"
+                  type="number"
+                  required
+                  error={Boolean(createErrors.returnedQuantity)}
+                  helperText={createErrors.returnedQuantity?.message}
+                  inputProps={{ min: 1, step: 1 }}
+                />
+              )}
+            />
+            <Controller
+              name="reason"
+              control={createControl}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Reason"
+                  required
+                  multiline
+                  minRows={3}
+                  error={Boolean(createErrors.reason)}
+                  helperText={createErrors.reason?.message}
+                  placeholder="Describe why the customer is requesting a return."
+                />
+              )}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setCreateOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateSubmit(handleCreate)}
+            variant="contained"
+            disabled={createSubmitting}
+          >
+            {createSubmitting ? 'Submitting…' : 'Submit request'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Update return</DialogTitle>
+        <DialogContent>
+          {selectedReturn && (
+            <Stack spacing={2.5} mt={1}>
+              <Typography variant="body2" color="text.secondary">
+                Order {selectedReturn.orderId.slice(0, 8)} · {selectedReturn.customer?.name ?? 'Unknown customer'}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Reason:</strong> {selectedReturn.reason}
+              </Typography>
+              <Typography variant="body1">
+                <strong>Quantity:</strong> {selectedReturn.returnedQuantity}
+              </Typography>
+            </Stack>
+          )}
+          <Stack
+            component="form"
+            gap={2.5}
+            mt={3}
+            onSubmit={handleEditSubmit(handleEdit)}
+          >
+            <Controller
+              name="status"
+              control={editControl}
+              render={({ field }) => (
+                <TextField {...field} select label="Status">
+                  {RETURN_STATUSES.map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {status}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            <Controller
+              name="note"
+              control={editControl}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Internal note"
+                  multiline
+                  minRows={3}
+                  placeholder="Optional note about this status update."
+                />
+              )}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setEditOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleEditSubmit(handleEdit)}
+            variant="contained"
+            disabled={editSubmitting}
+          >
+            {editSubmitting ? 'Saving…' : 'Save changes'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={Boolean(success)}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        message={success}
+      />
+    </Stack>
+  )
+}
+
+export default ReturnsPage
+
+

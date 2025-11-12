@@ -1,4 +1,4 @@
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import {
@@ -13,6 +13,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Chip,
   Toolbar,
   Tooltip,
   Typography,
@@ -23,6 +24,8 @@ import DashboardIcon from '@mui/icons-material/Dashboard'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import AssignmentReturnIcon from '@mui/icons-material/AssignmentReturn'
+import GroupsIcon from '@mui/icons-material/Groups'
 import PeopleIcon from '@mui/icons-material/People'
 import SettingsIcon from '@mui/icons-material/Settings'
 import MenuIcon from '@mui/icons-material/Menu'
@@ -33,6 +36,7 @@ import type { Theme } from '@mui/material/styles'
 import { ThemeModeContext } from '../../providers/ThemeModeProvider'
 import { useAuth } from '../../context/AuthContext'
 import SiteAttribution from '../common/SiteAttribution'
+import { fetchReturns } from '../../services/returnsService'
 
 const drawerWidth = 264
 
@@ -40,13 +44,16 @@ type NavItem = {
   label: string
   to: string
   icon: ReactElement
+  badge?: number
 }
 
-const navItems: NavItem[] = [
+const baseNavItems: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
   { label: 'Orders', to: '/orders', icon: <ShoppingCartIcon /> },
+  { label: 'Customers', to: '/customers', icon: <GroupsIcon /> },
   { label: 'Products', to: '/products', icon: <Inventory2Icon /> },
   { label: 'Inventory Alerts', to: '/inventory-alerts', icon: <WarningAmberIcon /> },
+  { label: 'Returns', to: '/returns', icon: <AssignmentReturnIcon /> },
   { label: 'Users', to: '/users', icon: <PeopleIcon /> },
   { label: 'Settings', to: '/settings', icon: <SettingsIcon /> },
 ]
@@ -61,6 +68,8 @@ const Main = styled('main', {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
+  backgroundColor: theme.palette.background.default,
+  minHeight: '100vh',
   [theme.breakpoints.up('sm')]: {
     padding: theme.spacing(4),
   },
@@ -92,6 +101,37 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const theme = useTheme()
 
   const { logout, user } = useAuth()
+  const [pendingReturns, setPendingReturns] = useState<number>(0)
+
+  useEffect(() => {
+    let isMounted = true
+    fetchReturns()
+      .then((items) => {
+        if (!isMounted) return
+        const submitted = items.filter((entry) => entry.status === 'Submitted').length
+        setPendingReturns(submitted)
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setPendingReturns(0)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const navItems = useMemo(
+    () =>
+      baseNavItems.map((item) =>
+        item.label === 'Returns'
+          ? {
+              ...item,
+              badge: pendingReturns,
+            }
+          : item,
+      ),
+    [pendingReturns],
+  )
 
   return (
     <Box role="presentation" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -122,7 +162,21 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
               }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
+              <ListItemText
+                primary={
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <span>{item.label}</span>
+                    {item.badge ? (
+                      <Chip
+                        size="small"
+                        label={item.badge}
+                        color="error"
+                        sx={{ fontWeight: 600, height: 20 }}
+                      />
+                    ) : null}
+                  </Box>
+                }
+              />
             </ListItemButton>
           </ListItem>
         ))}
@@ -245,6 +299,7 @@ const DashboardLayout = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: 3,
+            py: { xs: 2, sm: 3, md: 4 },
           }}
         >
           <Outlet />

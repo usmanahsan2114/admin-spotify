@@ -7,7 +7,11 @@ import {
   OrderDetailsPage,
   OrderTestForm,
   OrdersPage,
+  CustomersPage,
+  CustomerDetailPage,
   InventoryAlertsPage,
+  ReturnsPage,
+  ReturnDetailPage,
   ProductsPage,
   SettingsPage,
   UsersPage,
@@ -21,7 +25,7 @@ const PrivateRoute = ({ children }: { children: ReactElement }) => {
   const { isAuthenticated, loading } = useAuth()
 
   if (loading) {
-    return (
+  return (
       <Box
         display="flex"
         alignItems="center"
@@ -79,10 +83,42 @@ const App = () => (
         }
       />
       <Route
+        path="customers"
+        element={
+          <PrivateRoute>
+            <CustomersPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="customers/:customerId"
+        element={
+          <PrivateRoute>
+            <CustomerDetailPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
         path="inventory-alerts"
         element={
           <PrivateRoute>
             <InventoryAlertsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="returns"
+        element={
+          <PrivateRoute>
+            <ReturnsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="returns/:returnId"
+        element={
+          <PrivateRoute>
+            <ReturnDetailPage />
           </PrivateRoute>
         }
       />
@@ -105,6 +141,6 @@ const App = () => (
     </Route>
     <Route path="*" element={<NotFoundPage />} />
   </Routes>
-)
+  )
 
 export default App

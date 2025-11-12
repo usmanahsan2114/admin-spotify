@@ -1,4 +1,4 @@
-import { apiFetch } from './apiClient'
+import { apiDownload, apiFetch } from './apiClient'
 import type { Order, OrderUpdatePayload } from '../types/order'
 
 export const fetchOrders = () => apiFetch<Order[]>('/api/orders')
@@ -12,6 +12,8 @@ export const updateOrder = async (orderId: string, payload: OrderUpdatePayload) 
 
 export const fetchOrderById = (orderId: string) =>
   apiFetch<Order>(`/api/orders/${orderId}`)
+
+export const downloadOrdersExport = () => apiDownload('/api/export/orders')
 
 
 

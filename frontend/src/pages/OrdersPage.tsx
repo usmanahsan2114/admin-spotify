@@ -10,6 +10,7 @@ import {
   IconButton,
   MenuItem,
   Select,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -19,10 +20,12 @@ import {
 import { useTheme } from '@mui/material/styles'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import FilterListIcon from '@mui/icons-material/FilterList'
+import DownloadIcon from '@mui/icons-material/Download'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchOrders, updateOrder } from '../services/ordersService'
+import { saveAs } from 'file-saver'
+import { downloadOrdersExport, fetchOrders, updateOrder } from '../services/ordersService'
 import type { Order, OrderStatus } from '../types/order'
 import { useAuth } from '../context/AuthContext'
 
@@ -86,6 +89,8 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
@@ -125,6 +130,21 @@ const OrdersPage = () => {
   useEffect(() => {
     loadOrders()
   }, [])
+
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      setError(null)
+      const blob = await downloadOrdersExport()
+      const filename = `orders_export_${new Date().toISOString().slice(0, 10)}.csv`
+      saveAs(blob, filename)
+      setSuccess(`Export successful: ${orders.length} orders downloaded.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to export orders.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const filteredOrders = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -270,12 +290,31 @@ const OrdersPage = () => {
                 Monitor incoming orders, update their status, and jump into detailed views.
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                width: { xs: '100%', md: 'auto' },
+              }}
+            >
               <Tooltip title="Reload orders">
                 <IconButton onClick={loadOrders} color="primary">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
+              <Button
+                variant="outlined"
+                startIcon={
+                  exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />
+                }
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                {exporting ? 'Exporting…' : 'Export orders'}
+              </Button>
               <Button variant="outlined" startIcon={<FilterListIcon />} disabled>
                 Advanced filters
               </Button>
@@ -330,16 +369,38 @@ const OrdersPage = () => {
         </Alert>
       )}
 
-      <Card>
-        <CardContent sx={{ p: 0, minWidth: 0 }}>
+      <Card
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: { lg: 520 },
+        }}
+      >
+        <CardContent
+          sx={{
+            p: 0,
+            minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            flexGrow: 1,
+          }}
+        >
           <Divider />
-          <Box sx={{ width: '100%', minWidth: 0, overflowX: 'auto' }}>
+          <Box
+            sx={{
+              width: '100%',
+              minWidth: 0,
+              overflowX: 'auto',
+              flexGrow: 1,
+              display: 'flex',
+            }}
+          >
             <DataGrid
               rows={filteredOrders}
               columns={columns}
               loading={loading}
               disableRowSelectionOnClick
-              autoHeight
+              autoHeight={isSmall}
               initialState={{
                 pagination: { paginationModel: { pageSize: 10 } },
                 sorting: { sortModel: [{ field: 'createdAt', sort: 'desc' }] },
@@ -381,6 +442,13 @@ const OrdersPage = () => {
           </Box>
         </CardContent>
       </Card>
+
+      <Snackbar
+        open={Boolean(success)}
+        autoHideDuration={3000}
+        onClose={() => setSuccess(null)}
+        message={success}
+      />
     </Stack>
   )
 }

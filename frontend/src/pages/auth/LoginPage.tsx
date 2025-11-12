@@ -90,6 +90,7 @@ const LoginPage = () => {
               required
               fullWidth
               autoFocus
+              autoComplete="username"
             />
             <TextField
               id="login-password"

@@ -6,6 +6,8 @@ export type OrderStatus =
   | 'Refunded'
   | 'Completed'
 
+import type { ReturnRequest } from './return'
+
 export type Order = {
   id: string
   productName: string
@@ -26,6 +28,7 @@ export type Order = {
     timestamp: string
     actor?: string
   }>
+  returns?: ReturnRequest[]
 }
 
 export type OrderUpdatePayload = Partial<

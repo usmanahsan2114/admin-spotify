@@ -89,6 +89,7 @@ const SignupPage = () => {
               onChange={(event) => setName(event.target.value)}
               required
               fullWidth
+              autoComplete="name"
             />
             <TextField
               id="signup-email"
@@ -98,6 +99,7 @@ const SignupPage = () => {
               onChange={(event) => setEmail(event.target.value)}
               required
               fullWidth
+              autoComplete="email"
             />
             <TextField
               id="signup-password"
@@ -107,6 +109,7 @@ const SignupPage = () => {
               onChange={(event) => setPassword(event.target.value)}
               required
               fullWidth
+              autoComplete="new-password"
             />
 
             <Button

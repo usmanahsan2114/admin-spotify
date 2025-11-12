@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -26,21 +27,27 @@ import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import SearchIcon from '@mui/icons-material/Search'
+import DownloadIcon from '@mui/icons-material/Download'
+import UploadIcon from '@mui/icons-material/UploadFile'
 import {
   DataGrid,
   type GridColDef,
   type GridRenderCellParams,
 } from '@mui/x-data-grid'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import type { Product, ProductPayload, ProductStatus } from '../types/product'
+import Papa from 'papaparse'
+import { saveAs } from 'file-saver'
 import {
   createProduct,
   deleteProduct,
   fetchProducts,
   updateProduct,
+  downloadProductsExport,
+  importProducts,
 } from '../services/productsService'
 import { useAuth } from '../context/AuthContext'
 
@@ -104,6 +111,15 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importSummary, setImportSummary] = useState<{
+    created: number
+    updated: number
+    failed: number
+  } | null>(null)
+  const [importErrors, setImportErrors] = useState<Array<{ index: number; message: string }>>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
@@ -160,6 +176,87 @@ const ProductsPage = () => {
   useEffect(() => {
     loadProducts()
   }, [])
+
+  const handleExport = async () => {
+    try {
+      setExporting(true)
+      setError(null)
+      const blob = await downloadProductsExport()
+      const filename = `products_export_${new Date().toISOString().slice(0, 10)}.csv`
+      saveAs(blob, filename)
+      setSuccess(`Export successful: ${products.length} products downloaded.`)
+    } catch (err) {
+      setError(resolveError(err, 'Unable to export products.'))
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleImportFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const inputElement = event.target
+    setImporting(true)
+    setImportSummary(null)
+    setImportErrors([])
+    setError(null)
+
+    Papa.parse<Record<string, unknown>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        inputElement.value = ''
+        if (results.errors && results.errors.length > 0) {
+          setError(`Import parsing error: ${results.errors[0].message}`)
+          setImporting(false)
+          return
+        }
+
+        const rows = results.data.filter(
+          (row) => row && Object.keys(row).length > 0,
+        )
+
+        if (rows.length === 0) {
+          setError('No rows found in the import file.')
+          setImporting(false)
+          return
+        }
+
+        try {
+          const response = await importProducts(rows)
+          setImportSummary(response)
+          if (response.errors && response.errors.length > 0) {
+            setImportErrors(
+              response.errors.map((entry) => ({
+                index: entry.index,
+                message: entry.message,
+              })),
+            )
+          }
+          setSuccess(
+            `Import completed: ${response.created} created, ${response.updated} updated.`,
+          )
+          await loadProducts()
+        } catch (err) {
+          setError(resolveError(err, 'Unable to import products.'))
+        } finally {
+          setImporting(false)
+        }
+      },
+      error: (parseError) => {
+        inputElement.value = ''
+        setError(parseError.message)
+        setImporting(false)
+      },
+    })
+  }
+
+  const handleOpenImportDialog = () => {
+    setImportSummary(null)
+    setImportErrors([])
+    setImportDialogOpen(true)
+  }
 
   useEffect(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -392,6 +489,26 @@ const ProductsPage = () => {
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
+              <Button
+                variant="outlined"
+                startIcon={
+                  exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />
+                }
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                {exporting ? 'Exporting…' : 'Export products'}
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={
+                  importing ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />
+                }
+                onClick={handleOpenImportDialog}
+                disabled={importing}
+              >
+                {importing ? 'Uploading…' : 'Import products'}
+              </Button>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -626,6 +743,74 @@ const ProductsPage = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Saving…' : selectedProduct ? 'Save changes' : 'Create product'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => {
+          if (!importing) setImportDialogOpen(false)
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Import products</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2.5} mt={1}>
+            <Typography variant="body2" color="text.secondary">
+              Upload a CSV file with headers such as <strong>name, price, stockQuantity, reorderThreshold, status</strong>.
+              Missing optional columns will be ignored. Prices must be non-negative numbers; stock values must be whole numbers.
+            </Typography>
+            <Button
+              component="label"
+              variant="contained"
+              startIcon={
+                importing ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />
+              }
+              disabled={importing}
+            >
+              {importing ? 'Uploading…' : 'Select CSV file'}
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                hidden
+                onChange={handleImportFile}
+              />
+            </Button>
+            {importSummary && (
+              <Alert severity={importSummary.failed ? 'warning' : 'success'}>
+                {`Created: ${importSummary.created}, Updated: ${importSummary.updated}, Failed: ${importSummary.failed}`}
+              </Alert>
+            )}
+            {importErrors.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Rows with validation issues
+                </Typography>
+                <Stack spacing={1}>
+                  {importErrors.slice(0, 5).map((entry) => (
+                    <Typography key={entry.index} variant="body2" color="error">
+                      Row {entry.index + 1}: {entry.message}
+                    </Typography>
+                  ))}
+                  {importErrors.length > 5 && (
+                    <Typography variant="caption" color="text.secondary">
+                      {importErrors.length - 5} additional issues not shown.
+                    </Typography>
+                  )}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => setImportDialogOpen(false)}
+            color="inherit"
+            disabled={importing}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

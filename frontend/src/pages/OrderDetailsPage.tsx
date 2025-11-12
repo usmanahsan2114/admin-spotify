@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import {
@@ -26,6 +26,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { fetchOrderById, updateOrder } from '../services/ordersService'
 import type { Order, OrderStatus } from '../types/order'
+import type { ReturnStatus } from '../types/return'
 import { useAuth } from '../context/AuthContext'
 
 dayjs.extend(relativeTime)
@@ -38,6 +39,16 @@ const statusOptions: OrderStatus[] = [
   'Refunded',
   'Completed',
 ]
+
+const returnStatusColor: Record<
+  ReturnStatus,
+  'primary' | 'success' | 'default' | 'warning' | 'info'
+> = {
+  Submitted: 'info',
+  Approved: 'success',
+  Rejected: 'default',
+  Refunded: 'warning',
+}
 
 const getStatusColor = (status: OrderStatus) => {
   switch (status) {
@@ -406,6 +417,79 @@ const OrderDetailsPage = () => {
                   <strong>Total:</strong> {formatCurrency(order.total)}
                 </Typography>
               </Stack>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={600}>
+                Return Requests
+              </Typography>
+              <Divider sx={{ my: 2 }} />
+              {order.returns && order.returns.length > 0 ? (
+                <Stack spacing={2}>
+                  {order.returns.map((returnRequest) => (
+                    <Box
+                      key={returnRequest.id}
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 2,
+                        backgroundColor: 'action.hover',
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        flexWrap="wrap"
+                        gap={1}
+                      >
+                        <Typography fontWeight={600}>
+                          Return #{returnRequest.id.slice(0, 8)}
+                        </Typography>
+                        <Chip
+                          label={returnRequest.status}
+                          size="small"
+                          color={returnStatusColor[returnRequest.status]}
+                        />
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary" mt={0.5}>
+                        Requested {dayjs(returnRequest.dateRequested).format('MMM D, YYYY h:mm A')}
+                      </Typography>
+                      <Typography variant="body2" mt={1}>
+                        <strong>Quantity:</strong> {returnRequest.returnedQuantity}
+                      </Typography>
+                      <Typography variant="body2" mt={0.5}>
+                        <strong>Reason:</strong> {returnRequest.reason}
+                      </Typography>
+                      <Box mt={1.5}>
+                        <Button
+                          component={RouterLink}
+                          to={`/returns/${returnRequest.id}`}
+                          size="small"
+                          variant="text"
+                        >
+                          View details
+                        </Button>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              ) : (
+                <Stack spacing={1.5}>
+                  <Typography color="text.secondary">
+                    No return requests for this order yet.
+                  </Typography>
+                  <Button
+                    component={RouterLink}
+                    to="/returns"
+                    variant="outlined"
+                    size="small"
+                  >
+                    Manage returns
+                  </Button>
+                </Stack>
+              )}
             </CardContent>
           </Card>
 

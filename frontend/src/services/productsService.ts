@@ -1,4 +1,4 @@
-import { apiFetch } from './apiClient'
+import { apiDownload, apiFetch } from './apiClient'
 import type { Product, ProductPayload } from '../types/product'
 
 export const fetchProducts = () => apiFetch<Product[]>('/api/products')
@@ -32,5 +32,20 @@ export const markProductReordered = async (productId: string) => {
     method: 'PUT',
   })
 }
+
+export const downloadProductsExport = () => apiDownload('/api/export/products')
+
+export const importProducts = async (rows: Array<Record<string, unknown>>) => {
+  return apiFetch<{
+    created: number
+    updated: number
+    failed: number
+    errors: Array<{ index: number; message: string }>
+  }>('/api/import/products', {
+    method: 'POST',
+    body: JSON.stringify(rows),
+  })
+}
+
 
 
