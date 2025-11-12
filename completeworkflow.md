@@ -54,3 +54,9 @@
 - Updated API error handling to detect `401`s, auto-expire sessions, and prompt users to sign back in without data loss.
 - Ensured all privileged data fetches rely on the stored token instead of dev shortcuts, completing the full auth loop.
 
+## Step 10 – Final Analytics & Launch Prep
+- Enhanced the dashboard landing page with live summary metrics plus line/pie charts for weekly activity and status distribution.
+- Authenticated data fetches now drive the analytics; 401 responses trigger a friendly logout to maintain session hygiene.
+- Authored a top-level `README.md` detailing setup, environment variables, and smoke-test instructions for handoff.
+- Verified production builds, tidied documentation, and confirmed core requirements (orders, products, users, dark mode, search/filter, analytics) are met.
+

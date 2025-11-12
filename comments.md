@@ -10,3 +10,5 @@
 - Products CRUD retains optimistic updates with confirmation prompts while honoring authenticated requests.
 - User management still protects the primary admin account from removal or demotion to prevent accidental lockouts.
 - AuthContext now owns the JWT lifecycle; API helpers raise 401s that trigger a logout prompt to keep sessions tidy.
+- Dashboard analytics aggregate live order/product data; charts fall back to friendly guidance when the dataset is empty.
+- README captures setup instructions, env variable usage, and testing notes for deployment handoff.
