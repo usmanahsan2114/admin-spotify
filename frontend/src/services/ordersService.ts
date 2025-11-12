@@ -12,4 +12,8 @@ export const updateOrder = async (orderId: string, payload: OrderUpdatePayload) 
   })
 }
 
+export const fetchOrderById = (orderId: string) =>
+  apiFetch<Order>(`/api/orders/${orderId}`)
+
+
 

@@ -19,6 +19,13 @@ export type Order = {
   createdAt: string
   updatedAt?: string
   submittedBy?: string | null
+  total?: number
+  timeline?: Array<{
+    id: string
+    description: string
+    timestamp: string
+    actor?: string
+  }>
 }
 
 export type OrderUpdatePayload = Partial<

@@ -30,3 +30,9 @@
 - Implemented inline status updates with optimistic UI refresh, reusing the dev auth token workflow for protected requests.
 - Added helpful empty/errored states plus manual refresh to support QA as additional orders arrive.
 
+## Step 6 – Order Detail Editing
+- Enriched the backend seed data with totals and activity timeline events to power the detail view.
+- Built a full order detail screen with grouped summaries, editable fulfillment fields, and payment toggle.
+- Persisted inline updates against the API with success/error messaging and preserved notes/quantity edits.
+- Surfaced historical activity and a reload action so staff can audit changes without leaving the page.
+

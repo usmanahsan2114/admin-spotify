@@ -26,6 +26,15 @@ const orders = [
     isPaid: false,
     notes: 'Include gift wrap.',
     createdAt: new Date().toISOString(),
+    total: 96,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date().toISOString(),
+        actor: 'System',
+      },
+    ],
   },
   {
     id: crypto.randomUUID(),
@@ -38,6 +47,27 @@ const orders = [
     isPaid: true,
     notes: '',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+    total: 72.5,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+        actor: 'System',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3 + 1000 * 60 * 30).toISOString(),
+        actor: 'Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Marked as shipped',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+        actor: 'Admin',
+      },
+    ],
   },
 ]
 
@@ -224,6 +254,16 @@ app.put('/api/orders/:id', authenticateToken, (req, res) => {
   })
 
   order.updatedAt = new Date().toISOString()
+  order.timeline =
+    order.timeline ?? []
+  order.timeline.push({
+    id: crypto.randomUUID(),
+    description: `Order updated (${Object.keys(req.body)
+      .filter((key) => allowedFields.includes(key))
+      .join(', ')})`,
+    timestamp: order.updatedAt,
+    actor: req.user?.name ?? 'Admin',
+  })
 
   return res.json(order)
 })
