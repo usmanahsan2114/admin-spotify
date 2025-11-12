@@ -5,3 +5,4 @@
 - Built dashboard layout, Orders table, Order details, Products management, and Users admin.
 - Finalized authentication (login/signup, protected routes, logout).
 - Delivered analytics dashboard, documentation refresh, and production build verification.
+- Applied mobile responsiveness refinements across layout and tables to improve small-screen usability.

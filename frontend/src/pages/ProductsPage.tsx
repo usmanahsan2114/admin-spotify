@@ -16,7 +16,9 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -99,6 +101,8 @@ const ProductsPage = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const { logout } = useAuth()
+  const theme = useTheme()
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     control,
@@ -233,18 +237,18 @@ const ProductsPage = () => {
 
   const columns = useMemo<GridColDef<Product>[]>(
     () => [
-      { field: 'id', headerName: 'ID', flex: 1.2, minWidth: 200 },
+      { field: 'id', headerName: 'ID', flex: 1.1, minWidth: 150 },
       {
         field: 'name',
         headerName: 'Name',
         flex: 1,
-        minWidth: 160,
+        minWidth: 150,
       },
       {
         field: 'category',
         headerName: 'Category',
         flex: 0.8,
-        minWidth: 140,
+        minWidth: 130,
         valueFormatter: (params) => {
           const value = (params as { value?: Product['category'] } | undefined)?.value
           return value ? String(value) : '—'
@@ -254,7 +258,7 @@ const ProductsPage = () => {
         field: 'price',
         headerName: 'Price',
         flex: 0.6,
-        minWidth: 120,
+        minWidth: 110,
         valueFormatter: (params) => {
           const value = (params as { value?: Product['price'] } | undefined)?.value
           return typeof value === 'number' ? formatCurrency(value) : '—'
@@ -264,13 +268,13 @@ const ProductsPage = () => {
         field: 'stock',
         headerName: 'Stock',
         flex: 0.5,
-        minWidth: 100,
+        minWidth: 90,
       },
       {
         field: 'status',
         headerName: 'Status',
         flex: 0.6,
-        minWidth: 140,
+        minWidth: 120,
         renderCell: (params: GridRenderCellParams<Product>) => {
           const statusValue = (params.row.status ?? 'inactive') as ProductStatus
           return (
@@ -335,7 +339,16 @@ const ProductsPage = () => {
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                width: { xs: '100%', md: 'auto' },
+              }}
+            >
               <Tooltip title="Reload products">
                 <IconButton onClick={loadProducts} color="primary">
                   <RefreshIcon />
@@ -345,6 +358,7 @@ const ProductsPage = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => handleOpenDialog()}
+                fullWidth={isSmall}
               >
                 Add Product
               </Button>
@@ -356,6 +370,7 @@ const ProductsPage = () => {
             spacing={2}
             mt={3}
             alignItems={{ xs: 'stretch', md: 'center' }}
+            sx={{ width: '100%' }}
           >
             <TextField
               placeholder="Search by name or category"
@@ -390,6 +405,15 @@ const ProductsPage = () => {
                 sorting: { sortModel: [{ field: 'name', sort: 'asc' }] },
               }}
               pageSizeOptions={[10, 25, 50]}
+              density={isSmall ? 'compact' : 'standard'}
+              columnVisibilityModel={
+                isSmall
+                  ? {
+                      id: false,
+                      stock: false,
+                    }
+                  : undefined
+              }
               sx={{
                 border: 'none',
                 '& .MuiDataGrid-columnHeaders': {

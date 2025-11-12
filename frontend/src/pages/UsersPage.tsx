@@ -19,7 +19,9 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -88,6 +90,8 @@ const UsersPage = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const { user, logout } = useAuth()
   const isAdmin = user?.role === 'admin'
+  const theme = useTheme()
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
 
   const {
     control,
@@ -240,25 +244,25 @@ const UsersPage = () => {
 
   const columns = useMemo<GridColDef<User>[]>(
     () => [
-      { field: 'name', headerName: 'Name', flex: 1, minWidth: 180 },
+      { field: 'name', headerName: 'Name', flex: 1, minWidth: 150 },
       {
         field: 'email',
         headerName: 'Email',
-        flex: 1.2,
-        minWidth: 200,
+        flex: 1.1,
+        minWidth: 180,
       },
       {
         field: 'role',
         headerName: 'Role',
         flex: 0.6,
-        minWidth: 130,
+        minWidth: 120,
         valueFormatter: ({ value }) => roleLabels[value as UserRole] ?? value,
       },
       {
         field: 'active',
         headerName: 'Status',
         flex: 0.6,
-        minWidth: 140,
+        minWidth: 120,
         renderCell: (params: GridRenderCellParams<User>) => (
           <Chip
             label={params.row.active === false ? 'Inactive' : 'Active'}
@@ -271,7 +275,7 @@ const UsersPage = () => {
         field: 'createdAt',
         headerName: 'Added',
         flex: 0.8,
-        minWidth: 160,
+        minWidth: 150,
         valueFormatter: ({ value }) =>
           value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value as string)) : '—',
       },
@@ -349,7 +353,16 @@ const UsersPage = () => {
                 Invite new teammates, assign permissions, and keep your roster up to date.
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                flexWrap: 'wrap',
+                gap: 1,
+                justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                width: { xs: '100%', md: 'auto' },
+              }}
+            >
               <Tooltip title="Reload users">
                 <IconButton onClick={loadUsers} color="primary">
                   <RefreshIcon />
@@ -359,6 +372,7 @@ const UsersPage = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => openDialog()}
+                fullWidth={isSmall}
               >
                 Add user
               </Button>
@@ -399,6 +413,15 @@ const UsersPage = () => {
                 sorting: { sortModel: [{ field: 'name', sort: 'asc' }] },
               }}
               pageSizeOptions={[10, 25, 50]}
+              density={isSmall ? 'compact' : 'standard'}
+              columnVisibilityModel={
+                isSmall
+                  ? {
+                      email: false,
+                      createdAt: false,
+                    }
+                  : undefined
+              }
               sx={{
                 border: 'none',
                 '& .MuiDataGrid-columnHeaders': {

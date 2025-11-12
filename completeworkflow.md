@@ -43,3 +43,4 @@
 - Implemented dashboard summary cards, 7-day order trend, status pie chart (Recharts).
 - Hardened chart containers for responsive rendering.
 - Authored README, comments, workflow, history docs; verified `npm --prefix frontend run build`.
+- Tuned mobile experience by adjusting drawer spacing, compacting DataGrids, and hiding non-essential columns on small screens.

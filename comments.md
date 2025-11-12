@@ -7,3 +7,4 @@
 - `/test-order` route posts unauthenticated orders for marketing-site integration; real submissions can reuse the same payload.
 - Signup/login components ship with seeded demo values to streamline QA and stakeholder reviews.
 - Dashboard analytics rely on Recharts; `minWidth: 0` safeguards prevent negative-size warnings in responsive layouts.
+- Mobile-first refinements hide non-critical columns, compact DataGrids, and wrap action toolbars for small breakpoints.

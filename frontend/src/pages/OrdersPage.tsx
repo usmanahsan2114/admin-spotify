@@ -14,7 +14,9 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
@@ -91,6 +93,8 @@ const OrdersPage = () => {
 
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const theme = useTheme()
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
 
   const handleApiError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -165,13 +169,13 @@ const OrdersPage = () => {
       field: 'id',
       headerName: 'Order ID',
       flex: 1.4,
-      minWidth: 200,
+      minWidth: 160,
     },
     {
       field: 'productName',
       headerName: 'Product',
       flex: 1.2,
-      minWidth: 160,
+      minWidth: 140,
     },
     {
       field: 'customerName',
@@ -183,13 +187,13 @@ const OrdersPage = () => {
       field: 'email',
       headerName: 'Email',
       flex: 1.2,
-      minWidth: 200,
+      minWidth: 180,
     },
     {
       field: 'createdAt',
       headerName: 'Date',
       flex: 1,
-      minWidth: 180,
+      minWidth: 160,
       valueFormatter: ({ value }) => formatDate(value as string),
       sortComparator: (v1, v2) =>
         new Date(v1 as string).getTime() - new Date(v2 as string).getTime(),
@@ -290,7 +294,8 @@ const OrdersPage = () => {
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
               size="small"
-              sx={{ minWidth: 180 }}
+              fullWidth={isSmall}
+              sx={{ minWidth: isSmall ? undefined : 160 }}
             >
               <MenuItem value="All">All statuses</MenuItem>
               {statusOptions.map((option) => (
@@ -303,7 +308,8 @@ const OrdersPage = () => {
               value={dateFilter}
               onChange={(event) => setDateFilter(event.target.value as DateFilter)}
               size="small"
-              sx={{ minWidth: 180 }}
+              fullWidth={isSmall}
+              sx={{ minWidth: isSmall ? undefined : 160 }}
             >
               <MenuItem value="all">Any date</MenuItem>
               <MenuItem value="today">Today</MenuItem>
@@ -335,6 +341,15 @@ const OrdersPage = () => {
               }}
               pageSizeOptions={[10, 25, 50]}
               onRowClick={(params) => navigate(`/orders/${params.id}`)}
+              density={isSmall ? 'compact' : 'standard'}
+              columnVisibilityModel={
+                isSmall
+                  ? {
+                      email: false,
+                      quantity: false,
+                    }
+                  : undefined
+              }
               sx={{
                 border: 'none',
                 '& .MuiDataGrid-columnHeaders': {
