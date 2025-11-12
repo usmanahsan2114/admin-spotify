@@ -9,16 +9,18 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Snackbar,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
   useMediaQuery,
 } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { useTheme, alpha } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -45,7 +47,8 @@ import { useAuth } from '../context/AuthContext'
 type FormValues = {
   name: string
   price: number
-  stock: number
+  stockQuantity: number
+  reorderThreshold: number
   description: string
   category: string
   status: ProductStatus
@@ -60,12 +63,18 @@ const productSchema = yup
       .typeError('Enter a valid number')
       .min(0, 'Price cannot be negative')
       .required('Price is required'),
-    stock: yup
+    stockQuantity: yup
       .number()
       .typeError('Enter a valid number')
       .integer('Stock must be an integer')
       .min(0, 'Stock cannot be negative')
       .required('Stock is required'),
+    reorderThreshold: yup
+      .number()
+      .typeError('Enter a valid number')
+      .integer('Reorder threshold must be an integer')
+      .min(0, 'Threshold cannot be negative')
+      .required('Reorder threshold is required'),
     description: yup.string().default(''),
     category: yup.string().default(''),
     status: yup.mixed<ProductStatus>().oneOf(['active', 'inactive']).required(),
@@ -100,9 +109,12 @@ const ProductsPage = () => {
   const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false)
   const { logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+  const lowStockRowBg = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.18 : 0.12)
+  const lowStockRowHover = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.26 : 0.18)
 
   const {
     control,
@@ -114,7 +126,8 @@ const ProductsPage = () => {
     defaultValues: {
       name: '',
       price: 0,
-      stock: 0,
+      stockQuantity: 0,
+      reorderThreshold: 10,
       description: '',
       category: '',
       status: 'active',
@@ -150,19 +163,22 @@ const ProductsPage = () => {
 
   useEffect(() => {
     const query = searchQuery.trim().toLowerCase()
-    if (!query) {
-      setFilteredProducts(products)
-      return
-    }
+    let result = products
 
-    setFilteredProducts(
-      products.filter(
+    if (query) {
+      result = result.filter(
         (product) =>
           product.name.toLowerCase().includes(query) ||
           (product.category ?? '').toLowerCase().includes(query),
-      ),
-    )
-  }, [searchQuery, products])
+      )
+    }
+
+    if (showLowStockOnly) {
+      result = result.filter((product) => product.lowStock)
+    }
+
+    setFilteredProducts(result)
+  }, [searchQuery, showLowStockOnly, products])
 
   const handleOpenDialog = (product?: Product) => {
     if (product) {
@@ -170,7 +186,8 @@ const ProductsPage = () => {
       reset({
         name: product.name,
         price: product.price,
-        stock: product.stock,
+        stockQuantity: product.stockQuantity,
+        reorderThreshold: product.reorderThreshold,
         description: product.description,
         category: product.category ?? '',
         status: product.status,
@@ -181,7 +198,8 @@ const ProductsPage = () => {
       reset({
         name: '',
         price: 0,
-        stock: 0,
+        stockQuantity: 0,
+        reorderThreshold: 10,
         description: '',
         category: '',
         status: 'active',
@@ -199,6 +217,9 @@ const ProductsPage = () => {
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
     const payload: ProductPayload = {
       ...values,
+      price: Number(values.price),
+      stockQuantity: Number(values.stockQuantity),
+      reorderThreshold: Number(values.reorderThreshold),
       imageUrl: values.imageUrl ? values.imageUrl : undefined,
       category: values.category || undefined,
     }
@@ -235,90 +256,107 @@ const ProductsPage = () => {
     }
   }
 
-  const columns = useMemo<GridColDef<Product>[]>(
-    () => [
-      { field: 'id', headerName: 'ID', flex: 1.1, minWidth: 150 },
-      {
-        field: 'name',
-        headerName: 'Name',
-        flex: 1,
-        minWidth: 150,
+  const columns = useMemo<GridColDef<Product>[]>(() => [
+    { field: 'id', headerName: 'ID', flex: 1.1, minWidth: 150 },
+    {
+      field: 'name',
+      headerName: 'Name',
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: 'category',
+      headerName: 'Category',
+      flex: 0.8,
+      minWidth: 130,
+      valueFormatter: (params) => {
+        const value = (params as { value?: Product['category'] } | undefined)?.value
+        return value ? String(value) : '—'
       },
-      {
-        field: 'category',
-        headerName: 'Category',
-        flex: 0.8,
-        minWidth: 130,
-        valueFormatter: (params) => {
-          const value = (params as { value?: Product['category'] } | undefined)?.value
-          return value ? String(value) : '—'
-        },
+    },
+    {
+      field: 'price',
+      headerName: 'Price',
+      flex: 0.6,
+      minWidth: 110,
+      valueFormatter: (params) => {
+        const value = (params as { value?: Product['price'] } | undefined)?.value
+        return typeof value === 'number' ? formatCurrency(value) : '—'
       },
-      {
-        field: 'price',
-        headerName: 'Price',
-        flex: 0.6,
-        minWidth: 110,
-        valueFormatter: (params) => {
-          const value = (params as { value?: Product['price'] } | undefined)?.value
-          return typeof value === 'number' ? formatCurrency(value) : '—'
-        },
+    },
+    {
+      field: 'stockQuantity',
+      headerName: 'Stock Qty',
+      flex: 0.5,
+      minWidth: 100,
+    },
+    {
+      field: 'reorderThreshold',
+      headerName: 'Threshold',
+      flex: 0.5,
+      minWidth: 110,
+    },
+    {
+      field: 'lowStock',
+      headerName: 'Alert',
+      flex: 0.6,
+      minWidth: 130,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<Product>) => {
+        if (params.row.lowStock) {
+          return <Chip label="Low stock" color="error" size="small" />
+        }
+        return <Chip label="OK" color="success" size="small" variant="outlined" />
       },
-      {
-        field: 'stock',
-        headerName: 'Stock',
-        flex: 0.5,
-        minWidth: 90,
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      flex: 0.6,
+      minWidth: 120,
+      renderCell: (params: GridRenderCellParams<Product>) => {
+        const statusValue = (params.row.status ?? 'inactive') as ProductStatus
+        return (
+          <Chip
+            label={statusValue === 'active' ? 'Active' : 'Inactive'}
+            color={statusChips[statusValue]}
+            size="small"
+          />
+        )
       },
-      {
-        field: 'status',
-        headerName: 'Status',
-        flex: 0.6,
-        minWidth: 120,
-        renderCell: (params: GridRenderCellParams<Product>) => {
-          const statusValue = (params.row.status ?? 'inactive') as ProductStatus
-          return (
-            <Chip
-              label={statusValue === 'active' ? 'Active' : 'Inactive'}
-              color={statusChips[statusValue]}
-              size="small"
-            />
-          )
-        },
-      },
-      {
-        field: 'actions',
-        headerName: 'Actions',
-        sortable: false,
-        filterable: false,
-        width: 130,
-        renderCell: (params: GridRenderCellParams<Product>) => (
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Edit product">
-              <IconButton
-                color="primary"
-                onClick={() => handleOpenDialog(params.row)}
-              >
-                <EditIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete product">
-              <IconButton
-                color="error"
-                onClick={() => {
-                  setProductToDelete(params.row)
-                  setDeleteConfirmOpen(true)
-                }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ),
-      },
-    ],
-    [],
-  )
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      sortable: false,
+      filterable: false,
+      width: 130,
+      renderCell: (params: GridRenderCellParams<Product>) => (
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Edit product">
+            <IconButton
+              color="primary"
+              onClick={() => handleOpenDialog(params.row)}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete product">
+            <IconButton
+              color="error"
+              onClick={() => {
+                setProductToDelete(params.row)
+                setDeleteConfirmOpen(true)
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      ),
+    },
+  ], [])
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>
@@ -381,6 +419,16 @@ const ProductsPage = () => {
               }}
               fullWidth
             />
+            <FormControlLabel
+              control={
+                <Switch
+                  color="error"
+                  checked={showLowStockOnly}
+                  onChange={(_, checked) => setShowLowStockOnly(checked)}
+                />
+              }
+              label="Low stock only"
+            />
           </Stack>
         </CardContent>
       </Card>
@@ -410,10 +458,11 @@ const ProductsPage = () => {
                 isSmall
                   ? {
                       id: false,
-                      stock: false,
+                      reorderThreshold: false,
                     }
                   : undefined
               }
+              getRowClassName={(params) => (params.row.lowStock ? 'low-stock' : '')}
               sx={{
                 border: 'none',
                 '& .MuiDataGrid-columnHeaders': {
@@ -421,6 +470,12 @@ const ProductsPage = () => {
                 },
                 '& .MuiDataGrid-row:hover': {
                   backgroundColor: 'action.hover',
+                },
+                '& .MuiDataGrid-row.low-stock': {
+                  backgroundColor: lowStockRowBg,
+                  '&:hover': {
+                    backgroundColor: lowStockRowHover,
+                  },
                 },
               }}
               slots={{
@@ -500,15 +555,30 @@ const ProductsPage = () => {
               )}
             />
             <Controller
-              name="stock"
+              name="stockQuantity"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
                   label="Stock quantity"
                   type="number"
-                  error={Boolean(errors.stock)}
-                  helperText={errors.stock?.message}
+                  error={Boolean(errors.stockQuantity)}
+                  helperText={errors.stockQuantity?.message}
+                  inputProps={{ min: 0, step: 1 }}
+                  required
+                />
+              )}
+            />
+            <Controller
+              name="reorderThreshold"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Reorder threshold"
+                  type="number"
+                  error={Boolean(errors.reorderThreshold)}
+                  helperText={errors.reorderThreshold?.message}
                   inputProps={{ min: 0, step: 1 }}
                   required
                 />

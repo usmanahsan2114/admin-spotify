@@ -44,3 +44,9 @@
 - Hardened chart containers for responsive rendering.
 - Authored README, comments, workflow, history docs; verified `npm --prefix frontend run build`.
 - Tuned mobile experience by adjusting drawer spacing, compacting DataGrids, and hiding non-essential columns on small screens.
+
+## Step 11 – Inventory Alerts Foundation
+- Extended product model with `stockQuantity`, `reorderThreshold`, and derived `lowStock` flag; backfilled seed data.
+- Added `/api/products/low-stock` plus guarded mutations that recalculate flags, and an acknowledgement endpoint (`PUT /api/products/:id/mark-reordered`).
+- Exposed low-stock awareness across the UI: Dashboard KPI card linking to the new Inventory Alerts page, filtered view on Products table, and dedicated `/inventory-alerts` screen with reorder action.
+- Documented thresholds/alerts behaviour in comments & history; prepped Phase 2 inventory workflows.

@@ -3,6 +3,9 @@ import type { Product, ProductPayload } from '../types/product'
 
 export const fetchProducts = () => apiFetch<Product[]>('/api/products')
 
+export const fetchLowStockProducts = () =>
+  apiFetch<Product[]>('/api/products/low-stock')
+
 export const createProduct = async (payload: ProductPayload) => {
   return apiFetch<Product>('/api/products', {
     method: 'POST',
@@ -22,6 +25,12 @@ export const deleteProduct = async (productId: string) => {
     method: 'DELETE',
   })
   return productId
+}
+
+export const markProductReordered = async (productId: string) => {
+  return apiFetch<Product>(`/api/products/${productId}/mark-reordered`, {
+    method: 'PUT',
+  })
 }
 
 

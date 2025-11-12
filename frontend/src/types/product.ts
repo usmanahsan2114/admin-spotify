@@ -5,7 +5,9 @@ export type Product = {
   name: string
   description: string
   price: number
-  stock: number
+  stockQuantity: number
+  reorderThreshold: number
+  lowStock: boolean
   status: ProductStatus
   category?: string
   imageUrl?: string
@@ -14,7 +16,16 @@ export type Product = {
 }
 
 export type ProductPayload = Partial<
-  Pick<Product, 'name' | 'description' | 'price' | 'stock' | 'status' | 'category' | 'imageUrl'>
+  Pick<
+    Product,
+    | 'name'
+    | 'description'
+    | 'price'
+    | 'stockQuantity'
+    | 'reorderThreshold'
+    | 'status'
+    | 'category'
+    | 'imageUrl'
+  >
 >
-
 

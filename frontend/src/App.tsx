@@ -7,6 +7,7 @@ import {
   OrderDetailsPage,
   OrderTestForm,
   OrdersPage,
+  InventoryAlertsPage,
   ProductsPage,
   SettingsPage,
   UsersPage,
@@ -74,6 +75,14 @@ const App = () => (
         element={
           <PrivateRoute>
             <ProductsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="inventory-alerts"
+        element={
+          <PrivateRoute>
+            <InventoryAlertsPage />
           </PrivateRoute>
         }
       />

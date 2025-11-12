@@ -77,7 +77,9 @@ const products = [
     name: 'Canvas Tote Bag',
     description: 'Durable everyday tote, available in three colorways.',
     price: 48.0,
-    stock: 35,
+    stockQuantity: 35,
+    reorderThreshold: 15,
+    lowStock: false,
     status: 'active',
     category: 'Accessories',
     imageUrl:
@@ -90,7 +92,9 @@ const products = [
     name: 'Heritage Leather Wallet',
     description: 'Hand-stitched wallet with RFID protection.',
     price: 72.5,
-    stock: 18,
+    stockQuantity: 8,
+    reorderThreshold: 15,
+    lowStock: true,
     status: 'active',
     category: 'Accessories',
     imageUrl:
@@ -103,7 +107,9 @@ const products = [
     name: 'Signature Hoodie',
     description: 'Brushed fleece hoodie with embroidered logo and oversized fit.',
     price: 88,
-    stock: 57,
+    stockQuantity: 57,
+    reorderThreshold: 20,
+    lowStock: false,
     status: 'active',
     category: 'Apparel',
     imageUrl:
@@ -117,7 +123,9 @@ const products = [
     description:
       'Adjustable aluminum lamp with warm LED and wireless charging base.',
     price: 129,
-    stock: 12,
+    stockQuantity: 5,
+    reorderThreshold: 8,
+    lowStock: true,
     status: 'inactive',
     category: 'Home Office',
     imageUrl:
@@ -158,6 +166,12 @@ const findProductById = (id) => products.find((product) => product.id === id)
 const findUserByEmail = (email) =>
   users.find((user) => user.email.toLowerCase() === email.toLowerCase())
 
+const ensureLowStockFlag = (product) => {
+  product.lowStock = product.stockQuantity <= product.reorderThreshold
+  return product
+}
+
+products.forEach((product) => ensureLowStockFlag(product))
 // Authentication helpers
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization || ''
@@ -354,8 +368,22 @@ app.get('/api/products', (_req, res) => {
   res.json(products)
 })
 
+app.get('/api/products/low-stock', (_req, res) => {
+  res.json(products.filter((product) => product.lowStock))
+})
+
 app.post('/api/products', authenticateToken, (req, res) => {
-  const { name, description, price, stock, status } = req.body
+  const {
+    name,
+    description = '',
+    price,
+    stockQuantity,
+    stock,
+    reorderThreshold,
+    status = 'active',
+    category,
+    imageUrl,
+  } = req.body
 
   if (!name || price === undefined) {
     return res
@@ -367,17 +395,36 @@ app.post('/api/products', authenticateToken, (req, res) => {
     return res.status(400).json({ message: 'price must be a number.' })
   }
 
+  const quantityValue =
+    stockQuantity !== undefined ? Number(stockQuantity) : Number(stock ?? 0)
+  if (Number.isNaN(quantityValue) || quantityValue < 0) {
+    return res.status(400).json({ message: 'stockQuantity must be a positive number.' })
+  }
+
+  const thresholdValue =
+    reorderThreshold !== undefined ? Number(reorderThreshold) : Math.max(0, Math.floor(quantityValue / 2))
+  if (Number.isNaN(thresholdValue) || thresholdValue < 0) {
+    return res
+      .status(400)
+      .json({ message: 'reorderThreshold must be a positive number.' })
+  }
+
   const newProduct = {
     id: crypto.randomUUID(),
     name,
-    description: description || '',
+    description,
     price: Number(price),
-    stock: stock !== undefined ? Number(stock) : 0,
-    status: status || 'active',
+    stockQuantity: quantityValue,
+    reorderThreshold: thresholdValue,
+    lowStock: false,
+    status,
+    category: category || undefined,
+    imageUrl: imageUrl || undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }
 
+  ensureLowStockFlag(newProduct)
   products.push(newProduct)
   return res.status(201).json(newProduct)
 })
@@ -389,18 +436,45 @@ app.put('/api/products/:id', authenticateToken, (req, res) => {
     return res.status(404).json({ message: 'Product not found.' })
   }
 
-  const allowedFields = ['name', 'description', 'price', 'stock', 'status']
+  const allowedFields = [
+    'name',
+    'description',
+    'price',
+    'stockQuantity',
+    'reorderThreshold',
+    'status',
+    'category',
+    'imageUrl',
+  ]
 
   Object.entries(req.body).forEach(([key, value]) => {
     if (!allowedFields.includes(key) || value === undefined) return
-    if (key === 'price' || key === 'stock') {
-      product[key] = Number(value)
+    if (['price', 'stockQuantity', 'reorderThreshold'].includes(key)) {
+      const numeric = Number(value)
+      if (!Number.isNaN(numeric)) {
+        product[key] = numeric
+      }
     } else {
       product[key] = value
     }
   })
 
+  ensureLowStockFlag(product)
   product.updatedAt = new Date().toISOString()
+
+  return res.json(product)
+})
+
+app.put('/api/products/:id/mark-reordered', authenticateToken, (req, res) => {
+  const product = findProductById(req.params.id)
+
+  if (!product) {
+    return res.status(404).json({ message: 'Product not found.' })
+  }
+
+  product.lowStock = false
+  product.updatedAt = new Date().toISOString()
+  product.lastReorderedAt = new Date().toISOString()
 
   return res.json(product)
 })

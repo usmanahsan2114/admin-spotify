@@ -16,14 +16,24 @@ import {
 import type { Order } from '../types/order'
 import type { Product } from '../types/product'
 import { fetchOrders } from '../services/ordersService'
-import { fetchProducts } from '../services/productsService'
+import { fetchProducts, fetchLowStockProducts } from '../services/productsService'
 import { useAuth } from '../context/AuthContext'
+import { Link as RouterLink } from 'react-router-dom'
+import { alpha } from '@mui/material/styles'
 
 const PIE_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#607D8B']
+
+type SummaryCard = {
+  label: string
+  value: string
+  to?: string
+  intent?: 'alert'
+}
 
 const DashboardHome = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { logout } = useAuth()
@@ -42,12 +52,14 @@ const DashboardHome = () => {
       try {
         setLoading(true)
         setError(null)
-        const [ordersResponse, productsResponse] = await Promise.all([
+        const [ordersResponse, productsResponse, lowStockResponse] = await Promise.all([
           fetchOrders(),
           fetchProducts(),
+          fetchLowStockProducts(),
         ])
         setOrders(ordersResponse)
         setProducts(productsResponse)
+        setLowStockProducts(lowStockResponse)
       } catch (err) {
         setError(resolveError(err, 'Unable to load dashboard data.'))
       } finally {
@@ -67,19 +79,28 @@ const DashboardHome = () => {
     [],
   )
 
-  const summary = useMemo(() => {
+  const summary = useMemo<SummaryCard[]>(() => {
     const totalOrders = orders.length
     const pendingOrders = orders.filter((order) => order.status === 'Pending').length
     const totalRevenue = orders.reduce((acc, order) => acc + (order.total ?? 0), 0)
     const totalProducts = products.length
+    const lowStockCount = lowStockProducts.length
 
-    return [
+    const cards: SummaryCard[] = [
       { label: 'Total Orders', value: totalOrders.toString() },
       { label: 'Pending Orders', value: pendingOrders.toString() },
       { label: 'Total Revenue', value: currency.format(totalRevenue) },
       { label: 'Total Products', value: totalProducts.toString() },
+      {
+        label: 'Low Stock Products',
+        value: lowStockCount.toString(),
+        to: '/inventory-alerts',
+        intent: 'alert' as const,
+      },
     ]
-  }, [orders, products, currency])
+
+    return cards
+  }, [orders, products, currency, lowStockProducts])
 
   const lastSevenDaysData = useMemo(() => {
     const today = dayjs().startOf('day')
@@ -137,24 +158,65 @@ const DashboardHome = () => {
         sx={{
           minWidth: 0,
           gridTemplateColumns: {
-            xs: 'repeat(auto-fit, minmax(240px, 1fr))',
-            md: 'repeat(auto-fit, minmax(260px, 1fr))',
-            lg: 'repeat(4, minmax(240px, 1fr))',
+            xs: 'repeat(auto-fit, minmax(220px, 1fr))',
+            md: 'repeat(auto-fit, minmax(240px, 1fr))',
+            xl: 'repeat(auto-fit, minmax(260px, 1fr))',
           },
         }}
       >
-        {summary.map((card) => (
-          <Card key={card.label}>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                {card.label}
-              </Typography>
-              <Typography variant="h4" mt={1}>
-                {card.value}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))}
+        {summary.map((card) => {
+          const isAlert = card.intent === 'alert'
+          const hasAlert = isAlert && card.value !== '0'
+          const cardProps = card.to
+            ? {
+                component: RouterLink,
+                to: card.to,
+              }
+            : {}
+
+          return (
+            <Card
+              key={card.label}
+              {...cardProps}
+              sx={{
+                textDecoration: 'none',
+                cursor: card.to ? 'pointer' : 'default',
+                border: hasAlert ? `1px solid ${theme.palette.error.main}` : undefined,
+                backgroundColor: hasAlert
+                  ? alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.15 : 0.08)
+                  : undefined,
+                transition: 'transform 150ms ease, box-shadow 150ms ease',
+                '&:hover': card.to
+                  ? {
+                      transform: 'translateY(-4px)',
+                      boxShadow: theme.shadows[4],
+                    }
+                  : undefined,
+              }}
+            >
+              <CardContent>
+                <Typography
+                  variant="subtitle2"
+                  color={hasAlert ? 'error.main' : 'text.secondary'}
+                >
+                  {card.label}
+                </Typography>
+                <Typography variant="h4" mt={1}>
+                  {card.value}
+                </Typography>
+                {isAlert && (
+                  <Typography
+                    variant="body2"
+                    color={hasAlert ? 'error.dark' : 'text.secondary'}
+                    mt={0.75}
+                  >
+                    {hasAlert ? 'Tap to review inventory alerts.' : 'All stock levels look healthy.'}
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })}
       </Box>
 
       <Box

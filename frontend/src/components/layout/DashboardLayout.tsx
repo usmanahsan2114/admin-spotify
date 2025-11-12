@@ -22,6 +22,7 @@ import { styled, useTheme } from '@mui/material/styles'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
+import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import PeopleIcon from '@mui/icons-material/People'
 import SettingsIcon from '@mui/icons-material/Settings'
 import MenuIcon from '@mui/icons-material/Menu'
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
   { label: 'Orders', to: '/orders', icon: <ShoppingCartIcon /> },
   { label: 'Products', to: '/products', icon: <Inventory2Icon /> },
+  { label: 'Inventory Alerts', to: '/inventory-alerts', icon: <WarningAmberIcon /> },
   { label: 'Users', to: '/users', icon: <PeopleIcon /> },
   { label: 'Settings', to: '/settings', icon: <SettingsIcon /> },
 ]
