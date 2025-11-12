@@ -1,0 +1,18 @@
+{
+  "name": "shopify-admin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo configuration for Shopify-like admin dashboard",
+  "scripts": {
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
