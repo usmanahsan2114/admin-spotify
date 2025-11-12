@@ -181,19 +181,19 @@ const OrdersPage = () => {
       field: 'customerName',
       headerName: 'Customer',
       flex: 1,
-      minWidth: 160,
+      minWidth: 140,
     },
     {
       field: 'email',
       headerName: 'Email',
-      flex: 1.2,
-      minWidth: 180,
+      flex: 1.1,
+      minWidth: 170,
     },
     {
       field: 'createdAt',
       headerName: 'Date',
       flex: 1,
-      minWidth: 160,
+      minWidth: 150,
       valueFormatter: ({ value }) => formatDate(value as string),
       sortComparator: (v1, v2) =>
         new Date(v1 as string).getTime() - new Date(v2 as string).getTime(),
@@ -202,13 +202,18 @@ const OrdersPage = () => {
       field: 'status',
       headerName: 'Status',
       flex: 0.8,
-      minWidth: 150,
+      minWidth: 140,
       renderCell: ({ row }) => {
         const isLoading = updatingOrderId === row.id
         return (
           <Box
             onClick={(event) => event.stopPropagation()}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: isSmall ? 0.5 : 1,
+              flexWrap: isSmall ? 'wrap' : 'nowrap',
+            }}
           >
             <Chip
               label={row.status}
@@ -224,7 +229,7 @@ const OrdersPage = () => {
               }
               disabled={isLoading}
               variant="outlined"
-              sx={{ minWidth: 120 }}
+              sx={{ minWidth: isSmall ? 100 : 120 }}
             >
               {statusOptions.map((option) => (
                 <MenuItem value={option} key={option}>

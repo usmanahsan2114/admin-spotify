@@ -134,8 +134,14 @@ const DashboardHome = () => {
       <Box
         display="grid"
         gap={3}
-        gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
-        sx={{ minWidth: 0 }}
+        sx={{
+          minWidth: 0,
+          gridTemplateColumns: {
+            xs: 'repeat(auto-fit, minmax(240px, 1fr))',
+            md: 'repeat(auto-fit, minmax(260px, 1fr))',
+            lg: 'repeat(4, minmax(240px, 1fr))',
+          },
+        }}
       >
         {summary.map((card) => (
           <Card key={card.label}>
@@ -154,9 +160,14 @@ const DashboardHome = () => {
       <Box
         display="grid"
         gap={3}
-        gridTemplateColumns={{ xs: '1fr', lg: '2fr 1fr' }}
         alignItems="stretch"
-        sx={{ minWidth: 0 }}
+        sx={{
+          minWidth: 0,
+          gridTemplateColumns: {
+            xs: 'repeat(auto-fit, minmax(260px, 1fr))',
+            lg: '2fr 1fr',
+          },
+        }}
       >
         <Card sx={{ minWidth: 0 }}>
           <CardContent sx={{ height: '100%', minWidth: 0 }}>
