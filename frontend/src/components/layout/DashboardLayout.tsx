@@ -32,6 +32,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode'
 import type { Theme } from '@mui/material/styles'
 import { ThemeModeContext } from '../../providers/ThemeModeProvider'
 import { useAuth } from '../../context/AuthContext'
+import SiteAttribution from '../common/SiteAttribution'
 
 const drawerWidth = 264
 
@@ -247,6 +248,7 @@ const DashboardLayout = () => {
           }}
         >
           <Outlet />
+          <SiteAttribution sx={{ mt: 4, pb: 4 }} />
         </Box>
       </Main>
     </Box>

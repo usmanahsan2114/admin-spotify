@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import SiteAttribution from '../../components/common/SiteAttribution'
 
 const LoginPage = () => {
   const { login, isAuthenticated, loading } = useAuth()
@@ -53,11 +54,14 @@ const LoginPage = () => {
     <Box
       component="main"
       display="flex"
+      flexDirection="column"
       alignItems="center"
       justifyContent="center"
       minHeight="100vh"
       bgcolor="background.default"
       px={2}
+      py={6}
+      gap={4}
     >
       <Card sx={{ maxWidth: 420, width: '100%', boxShadow: 6 }}>
         <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
@@ -134,6 +138,7 @@ const LoginPage = () => {
           </Stack>
         </CardContent>
       </Card>
+      <SiteAttribution variant="caption" />
     </Box>
   )
 }

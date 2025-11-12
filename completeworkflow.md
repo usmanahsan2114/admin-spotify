@@ -50,3 +50,4 @@
 - Added `/api/products/low-stock` plus guarded mutations that recalculate flags, and an acknowledgement endpoint (`PUT /api/products/:id/mark-reordered`).
 - Exposed low-stock awareness across the UI: Dashboard KPI card linking to the new Inventory Alerts page, filtered view on Products table, and dedicated `/inventory-alerts` screen with reorder action.
 - Documented thresholds/alerts behaviour in comments & history; prepped Phase 2 inventory workflows.
+- Enhanced demo realism by expanding in-memory orders/products/users with complete metadata and branding each page with Apex IT Solutions & Apex Marketings attribution.

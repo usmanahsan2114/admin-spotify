@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import SiteAttribution from '../../components/common/SiteAttribution'
 
 const DEFAULT_FORM = {
   name: 'Jordan Avery',
@@ -53,11 +54,14 @@ const SignupPage = () => {
     <Box
       component="main"
       display="flex"
+      flexDirection="column"
       alignItems="center"
       justifyContent="center"
       minHeight="100vh"
       bgcolor="background.default"
       px={2}
+      py={6}
+      gap={4}
     >
       <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6 }}>
         <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
@@ -128,6 +132,7 @@ const SignupPage = () => {
           </Stack>
         </CardContent>
       </Card>
+      <SiteAttribution variant="caption" />
     </Box>
   )
 }

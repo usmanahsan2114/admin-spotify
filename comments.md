@@ -9,3 +9,5 @@
 - Signup/login components ship with seeded demo values to streamline QA and stakeholder reviews.
 - Dashboard analytics rely on Recharts; `minWidth: 0` safeguards prevent negative-size warnings in responsive layouts.
 - Mobile-first refinements hide non-critical columns, compact DataGrids, and wrap action toolbars for small breakpoints.
+- Sample data across orders, products, and team members now includes rich metadata (totals, categories, histories) so every page has realistic content out-of-the-box.
+- Global footer credits “Design & Developed by” Apex IT Solutions and Apex Marketings with links for brand visibility.

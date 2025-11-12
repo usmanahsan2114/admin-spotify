@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import SiteAttribution from '../components/common/SiteAttribution'
 
 type OrderFormData = {
   productName: string
@@ -231,7 +232,10 @@ const ContainerLayout = ({ children }: { children: ReactNode }) => (
     py={{ xs: 6, md: 8 }}
     px={{ xs: 2, md: 0 }}
   >
-    <Stack spacing={3}>{children}</Stack>
+    <Stack spacing={3}>
+      {children}
+      <SiteAttribution variant="caption" align="left" sx={{ mt: 4 }} />
+    </Stack>
   </Box>
 )
 

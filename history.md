@@ -7,3 +7,4 @@
 - Delivered analytics dashboard, documentation refresh, and production build verification.
 - Applied mobile responsiveness refinements across layout and tables to improve small-screen usability.
 - Introduced inventory alerts (model fields, backend endpoints, dashboard KPI, dedicated page) and documented threshold behaviour.
+- Enriched seed data for a fuller demo experience and added Apex IT Solutions / Apex Marketings branding across public-facing screens.

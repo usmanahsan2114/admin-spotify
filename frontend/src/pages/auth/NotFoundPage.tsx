@@ -1,5 +1,6 @@
 import { Box, Button, Stack, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
+import SiteAttribution from '../../components/common/SiteAttribution'
 
 const NotFoundPage = () => {
   const navigate = useNavigate()
@@ -8,11 +9,14 @@ const NotFoundPage = () => {
     <Box
       component="main"
       display="flex"
+      flexDirection="column"
       minHeight="100vh"
       alignItems="center"
       justifyContent="center"
       bgcolor="background.default"
       px={3}
+      py={6}
+      gap={4}
     >
       <Stack spacing={3} alignItems="center" textAlign="center">
         <Typography variant="h2" fontWeight={700}>
@@ -29,6 +33,7 @@ const NotFoundPage = () => {
           Back to dashboard
         </Button>
       </Stack>
+      <SiteAttribution variant="caption" />
     </Box>
   )
 }
