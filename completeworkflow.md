@@ -36,3 +36,9 @@
 - Persisted inline updates against the API with success/error messaging and preserved notes/quantity edits.
 - Surfaced historical activity and a reload action so staff can audit changes without leaving the page.
 
+## Step 7 – Products Catalog Management
+- Seeded additional catalog metadata (category, images, timestamps) to improve visual context during testing.
+- Replaced the products placeholder with a searchable, sortable MUI DataGrid listing all catalog items.
+- Added add/edit dialogs powered by `react-hook-form` + Yup validation, along with optimistic list updates.
+- Enabled admin-only create/update/delete actions with confirmation flows and snackbars for user feedback.
+

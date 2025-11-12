@@ -79,7 +79,11 @@ const products = [
     price: 48.0,
     stock: 35,
     status: 'active',
+    category: 'Accessories',
+    imageUrl:
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=60',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: crypto.randomUUID(),
@@ -88,7 +92,38 @@ const products = [
     price: 72.5,
     stock: 18,
     status: 'active',
+    category: 'Accessories',
+    imageUrl:
+      'https://images.unsplash.com/photo-1612810806695-c0f8682642c9?auto=format&fit=crop&w=800&q=60',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Signature Hoodie',
+    description: 'Brushed fleece hoodie with embroidered logo and oversized fit.',
+    price: 88,
+    stock: 57,
+    status: 'active',
+    category: 'Apparel',
+    imageUrl:
+      'https://images.unsplash.com/photo-1600180758890-6d9e79545f99?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Minimal Desk Lamp',
+    description:
+      'Adjustable aluminum lamp with warm LED and wireless charging base.',
+    price: 129,
+    stock: 12,
+    status: 'inactive',
+    category: 'Home Office',
+    imageUrl:
+      'https://images.unsplash.com/photo-1512498283077-4e189ddaf4fd?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 28).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
   },
 ]
 
@@ -294,6 +329,7 @@ app.post('/api/products', authenticateToken, (req, res) => {
     stock: stock !== undefined ? Number(stock) : 0,
     status: status || 'active',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 
   products.push(newProduct)

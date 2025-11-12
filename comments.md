@@ -7,3 +7,4 @@
 - Theme preference persists via `ThemeModeProvider`, and the navigation shell keeps `/test-order` accessible outside the main dashboard experience.
 - Orders page currently relies on the default admin credentials (via `ensureDevAuthToken`) to perform inline status updates until the dedicated auth flow ships.
 - Order details timeline entries are generated server-side whenever status/payment fields change; front-end surfaces them in reverse chronological order.
+- Products CRUD uses the same dev token helper and performs optimistic updates; delete operations prompt for confirmation before hitting the API.
