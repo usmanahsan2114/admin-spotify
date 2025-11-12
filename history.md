@@ -8,3 +8,4 @@
 - Implemented the order detail workspace with editable fulfillment controls, payment toggle, and timeline audit log.
 - Built the products management grid with search, CRUD dialogs, and category metadata seeded in the backend.
 - Implemented user administration with add/edit/delete flows, active-state toggles, and safety checks for the primary admin account.
+- Finalized authentication with a login screen, context-driven session management, protected routes, and graceful token expiration handling.

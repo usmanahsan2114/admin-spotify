@@ -48,7 +48,10 @@ export const apiFetch = async <TResponse>(
       typeof errorBody.message === 'string'
         ? errorBody.message
         : response.statusText
-    throw new Error(errorMessage || 'API request failed')
+    const error = new Error(errorMessage || 'API request failed')
+    // Attach status for consumers (auth can act on 401)
+    ;(error as Error & { status?: number }).status = response.status
+    throw error
   }
 
   return response.json()

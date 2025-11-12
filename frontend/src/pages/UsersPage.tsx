@@ -36,6 +36,7 @@ import {
   fetchUsers,
   updateUser,
 } from '../services/usersService'
+import { useAuth } from '../context/AuthContext'
 
 type FormValues = {
   name: string
@@ -85,6 +86,8 @@ const UsersPage = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const { user, logout } = useAuth()
+  const isAdmin = user?.role === 'admin'
 
   const {
     control,
@@ -104,6 +107,14 @@ const UsersPage = () => {
     },
   })
 
+  const resolveError = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
+      logout()
+      return 'Your session has expired. Please sign in again.'
+    }
+    return err instanceof Error ? err.message : fallback
+  }
+
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return users
@@ -122,15 +133,17 @@ const UsersPage = () => {
       const data = await fetchUsers()
       setUsers(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users.')
+      setError(resolveError(err, 'Failed to load users.'))
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadUsers()
-  }, [])
+    if (isAdmin) {
+      loadUsers()
+    }
+  }, [isAdmin])
 
   const openDialog = (user?: User) => {
     if (user) {
@@ -201,7 +214,7 @@ const UsersPage = () => {
       }
       closeDialog()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to save user.')
+      setError(resolveError(err, 'Unable to save user.'))
     }
   }
 
@@ -218,7 +231,7 @@ const UsersPage = () => {
       setUsers((prev) => prev.filter((user) => user.id !== userToDelete.id))
       setSuccess('User removed.')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete user.')
+      setError(resolveError(err, 'Unable to delete user.'))
     } finally {
       setIsDeleteOpen(false)
       setUserToDelete(null)
@@ -309,6 +322,14 @@ const UsersPage = () => {
   )
 
   const requirePassword = watch('requirePassword')
+
+  if (!isAdmin) {
+    return (
+      <Alert severity="warning">
+        You do not have permission to manage users. Please contact an administrator.
+      </Alert>
+    )
+  }
 
   return (
     <Stack spacing={3}>

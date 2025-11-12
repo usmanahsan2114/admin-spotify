@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -26,6 +26,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { fetchOrderById, updateOrder } from '../services/ordersService'
 import type { Order, OrderStatus } from '../types/order'
+import { useAuth } from '../context/AuthContext'
 
 dayjs.extend(relativeTime)
 
@@ -64,6 +65,7 @@ const formatCurrency = (value?: number) =>
 const OrderDetailsPage = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
+  const { logout } = useAuth()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
@@ -76,6 +78,22 @@ const OrderDetailsPage = () => {
   const [isPaid, setIsPaid] = useState(false)
   const [quantity, setQuantity] = useState<number>(1)
   const [phone, setPhone] = useState('')
+
+  const resolveError = useCallback(
+    (err: unknown, fallback: string) => {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'status' in err &&
+        (err as { status?: number }).status === 401
+      ) {
+        logout()
+        return 'Your session has expired. Please sign in again.'
+      }
+      return err instanceof Error ? err.message : fallback
+    },
+    [logout],
+  )
 
   const loadOrder = async () => {
     if (!orderId) return
@@ -90,9 +108,7 @@ const OrderDetailsPage = () => {
       setQuantity(data.quantity)
       setPhone(data.phone ?? '')
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Unable to load order details.',
-      )
+      setError(resolveError(err, 'Unable to load order details.'))
     } finally {
       setLoading(false)
     }
@@ -145,9 +161,7 @@ const OrderDetailsPage = () => {
       setPhone(updated.phone ?? '')
       setSuccessMessage('Order updated successfully.')
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Unable to update order.',
-      )
+      setError(resolveError(err, 'Unable to update order.'))
     } finally {
       setSaving(false)
     }

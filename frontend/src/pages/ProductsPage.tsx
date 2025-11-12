@@ -34,6 +34,7 @@ import {
   fetchProducts,
   updateProduct,
 } from '../services/productsService'
+import { useAuth } from '../context/AuthContext'
 
 type FormValues = {
   name: string
@@ -93,6 +94,7 @@ const ProductsPage = () => {
   const [isDeleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const { logout } = useAuth()
 
   const {
     control,
@@ -112,6 +114,14 @@ const ProductsPage = () => {
     },
   })
 
+  const resolveError = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
+      logout()
+      return 'Your session has expired. Please sign in again.'
+    }
+    return err instanceof Error ? err.message : fallback
+  }
+
   const loadProducts = async () => {
     try {
       setLoading(true)
@@ -120,7 +130,7 @@ const ProductsPage = () => {
       setProducts(data)
       setFilteredProducts(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products.')
+      setError(resolveError(err, 'Failed to load products.'))
     } finally {
       setLoading(false)
     }
@@ -200,7 +210,7 @@ const ProductsPage = () => {
       setIsDialogOpen(false)
       setSelectedProduct(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to save product.')
+      setError(resolveError(err, 'Unable to save product.'))
     }
   }
 
@@ -213,7 +223,7 @@ const ProductsPage = () => {
       setProductToDelete(null)
       setDeleteConfirmOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to delete product.')
+      setError(resolveError(err, 'Unable to delete product.'))
     }
   }
 

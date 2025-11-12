@@ -5,5 +5,7 @@ export { default as ProductsPage } from './ProductsPage'
 export { default as UsersPage } from './UsersPage'
 export { default as SettingsPage } from './SettingsPage'
 export { default as OrderTestForm } from './OrderTestForm'
+export { default as LoginPage } from './auth/LoginPage'
+export { default as NotFoundPage } from './auth/NotFoundPage'
 
 

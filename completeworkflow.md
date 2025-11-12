@@ -48,3 +48,9 @@
 - Added create/edit dialogs that validate credentials, hash passwords via existing endpoints, and guard against deleting/demoting the primary admin.
 - Surface confirmations and snackbars for better admin feedback while keeping actions optimistic.
 
+## Step 9 – Authentication & Route Protection
+- Introduced an `AuthContext` that persists JWT/session data, wraps API helpers, and exposes login/logout lifecycle hooks.
+- Added a polished `/login` experience, protected dashboard routes with a `PrivateRoute` guard, and wired logout controls in both the sidebar and header.
+- Updated API error handling to detect `401`s, auto-expire sessions, and prompt users to sign back in without data loss.
+- Ensured all privileged data fetches rely on the stored token instead of dev shortcuts, completing the full auth loop.
+

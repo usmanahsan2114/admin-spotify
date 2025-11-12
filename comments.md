@@ -5,7 +5,8 @@
 - Backend routes require a JWT for any mutating order/product/user action—default admin credentials are `admin@example.com` / `admin123`.
 - New orders submitted via `/test-order` do not require authentication, allowing the marketing site (and this dummy form) to post directly to the API.
 - Theme preference persists via `ThemeModeProvider`, and the navigation shell keeps `/test-order` accessible outside the main dashboard experience.
-- Orders page currently relies on the default admin credentials (via `ensureDevAuthToken`) to perform inline status updates until the dedicated auth flow ships.
+- Orders, Products, and Users flows now consume the persisted JWT through `AuthContext`, logging users out gracefully whenever a 401 is detected.
 - Order details timeline entries are generated server-side whenever status/payment fields change; front-end surfaces them in reverse chronological order.
-- Products CRUD uses the same dev token helper and performs optimistic updates; delete operations prompt for confirmation before hitting the API.
-- User management disables destructive actions for the seeded super admin and shares the dev token helper for authenticated CRUD calls.
+- Products CRUD retains optimistic updates with confirmation prompts while honoring authenticated requests.
+- User management still protects the primary admin account from removal or demotion to prevent accidental lockouts.
+- AuthContext now owns the JWT lifecycle; API helpers raise 401s that trigger a logout prompt to keep sessions tidy.

@@ -22,6 +22,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchOrders, updateOrder } from '../services/ordersService'
 import type { Order, OrderStatus } from '../types/order'
+import { useAuth } from '../context/AuthContext'
 
 type StatusFilter = 'All' | OrderStatus
 type DateFilter = 'all' | 'today' | 'last7'
@@ -83,6 +84,15 @@ const OrdersPage = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
   const navigate = useNavigate()
+  const { logout } = useAuth()
+
+  const handleApiError = (err: unknown, fallback: string) => {
+    if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
+      logout()
+      return 'Your session has expired. Please sign in again.'
+    }
+    return err instanceof Error ? err.message : fallback
+  }
 
   const loadOrders = async () => {
     try {
@@ -96,7 +106,7 @@ const OrdersPage = () => {
         })),
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load orders.')
+      setError(handleApiError(err, 'Failed to load orders.'))
     } finally {
       setLoading(false)
     }
@@ -138,7 +148,7 @@ const OrdersPage = () => {
         prev.map((order) => (order.id === orderId ? { ...order, ...updated } : order)),
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update order.')
+      setError(handleApiError(err, 'Unable to update order.'))
     } finally {
       setUpdatingOrderId(null)
     }

@@ -30,6 +30,7 @@ import LightModeIcon from '@mui/icons-material/LightMode'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import type { Theme } from '@mui/material/styles'
 import { ThemeModeContext } from '../../providers/ThemeModeProvider'
+import { useAuth } from '../../context/AuthContext'
 
 const drawerWidth = 264
 
@@ -77,12 +78,10 @@ const activeStyles = (theme: Theme) => ({
   },
 })
 
-const DrawerContent = ({
-  onNavigate,
-}: {
-  onNavigate?: () => void
-}) => {
+const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const theme = useTheme()
+
+  const { logout, user } = useAuth()
 
   return (
     <Box role="presentation" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -119,8 +118,9 @@ const DrawerContent = ({
         ))}
       </List>
       <Box px={2} pb={3}>
-        <Tooltip title="Log out (coming soon)">
+        <Tooltip title="Log out">
           <ListItemButton
+            onClick={logout}
             sx={{
               borderRadius: 2,
               color: 'text.secondary',
@@ -130,7 +130,11 @@ const DrawerContent = ({
             <ListItemIcon>
               <LogoutIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText primary="Log out" />
+            <ListItemText
+              primary="Log out"
+              secondary={user?.email ?? undefined}
+              secondaryTypographyProps={{ variant: 'caption' }}
+            />
           </ListItemButton>
         </Tooltip>
       </Box>
@@ -143,6 +147,7 @@ const DashboardLayout = () => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
   const [mobileOpen, setMobileOpen] = useState(false)
   const { mode, toggleMode } = useContext(ThemeModeContext)
+  const { user, logout } = useAuth()
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen((prev) => !prev)
@@ -188,8 +193,13 @@ const DashboardLayout = () => {
               </IconButton>
             </Tooltip>
             <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
-              UA
+              {user?.name?.charAt(0).toUpperCase() ?? 'U'}
             </Avatar>
+            <Tooltip title="Log out">
+              <IconButton color="inherit" onClick={logout}>
+                <LogoutIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Toolbar>
       </AppBar>
