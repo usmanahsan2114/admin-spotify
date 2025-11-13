@@ -3471,6 +3471,170 @@ app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), (re
   return res.json(businessSettings)
 })
 
+// Growth & Progress Reporting endpoints
+app.get('/api/reports/growth', authenticateToken, (req, res) => {
+  const period = req.query.period || 'month' // 'week', 'month', 'quarter'
+  const compareToPrevious = req.query.compareToPrevious !== 'false'
+
+  const now = new Date()
+  let currentStart, currentEnd, previousStart, previousEnd
+
+  if (period === 'week') {
+    // Current week (last 7 days)
+    currentEnd = new Date(now)
+    currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    // Previous week
+    previousEnd = new Date(currentStart)
+    previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+  } else if (period === 'quarter') {
+    // Current quarter
+    const currentQuarter = Math.floor(now.getMonth() / 3)
+    currentStart = new Date(now.getFullYear(), currentQuarter * 3, 1)
+    currentEnd = new Date(now)
+    // Previous quarter
+    const prevQuarter = currentQuarter === 0 ? 3 : currentQuarter - 1
+    const prevYear = currentQuarter === 0 ? now.getFullYear() - 1 : now.getFullYear()
+    previousStart = new Date(prevYear, prevQuarter * 3, 1)
+    previousEnd = new Date(prevYear, (prevQuarter + 1) * 3, 0, 23, 59, 59, 999)
+  } else {
+    // Current month (default)
+    currentStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    currentEnd = new Date(now)
+    // Previous month
+    previousEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+    previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  }
+
+  const filterOrders = (start, end) => {
+    return orders.filter((order) => {
+      if (!order.createdAt) return false
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= start && orderDate <= end
+    })
+  }
+
+  const filterReturns = (start, end) => {
+    return returns.filter((returnRequest) => {
+      if (!returnRequest.dateRequested) return false
+      const returnDate = new Date(returnRequest.dateRequested)
+      return returnDate >= start && returnDate <= end
+    })
+  }
+
+  const filterCustomers = (start, end) => {
+    return customers.filter((customer) => {
+      if (!customer.createdAt) return false
+      const customerDate = new Date(customer.createdAt)
+      return customerDate >= start && customerDate <= end
+    })
+  }
+
+  const currentOrders = filterOrders(currentStart, currentEnd)
+  const previousOrders = compareToPrevious ? filterOrders(previousStart, previousEnd) : []
+
+  const currentReturns = filterReturns(currentStart, currentEnd)
+  const currentCustomers = filterCustomers(currentStart, currentEnd)
+
+  const totalSales = currentOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+  const totalOrders = currentOrders.length
+  const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0
+
+  const previousSales = previousOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+  const previousOrdersCount = previousOrders.length
+  const previousAverageOrderValue = previousOrdersCount > 0 ? previousSales / previousOrdersCount : 0
+
+  const growthSalesPct = compareToPrevious && previousSales > 0
+    ? ((totalSales - previousSales) / previousSales * 100)
+    : 0
+  const growthOrdersPct = compareToPrevious && previousOrdersCount > 0
+    ? ((totalOrders - previousOrdersCount) / previousOrdersCount * 100)
+    : 0
+
+  const returnRatePct = totalOrders > 0 ? (currentReturns.length / totalOrders * 100) : 0
+  const previousReturnRatePct = compareToPrevious && previousOrdersCount > 0
+    ? (filterReturns(previousStart, previousEnd).length / previousOrdersCount * 100)
+    : 0
+
+  const newCustomersCount = currentCustomers.length
+
+  res.json({
+    totalSales,
+    totalOrders,
+    averageOrderValue,
+    growthSalesPct: parseFloat(growthSalesPct.toFixed(1)),
+    growthOrdersPct: parseFloat(growthOrdersPct.toFixed(1)),
+    returnRatePct: parseFloat(returnRatePct.toFixed(1)),
+    returnRateChangePct: compareToPrevious
+      ? parseFloat((returnRatePct - previousReturnRatePct).toFixed(1))
+      : 0,
+    newCustomersCount,
+    period: period === 'week' ? 'Last 7 days' : period === 'quarter' ? 'This quarter' : 'This month',
+    startDate: currentStart.toISOString(),
+    endDate: currentEnd.toISOString(),
+  })
+})
+
+app.get('/api/reports/trends', authenticateToken, (req, res) => {
+  const metric = req.query.metric || 'sales' // 'sales', 'orders', 'customers'
+  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
+
+  // Group data by day
+  const dailyData = {}
+  const currentDate = new Date(startDate)
+
+  while (currentDate <= endDate) {
+    const dateKey = currentDate.toISOString().split('T')[0]
+    dailyData[dateKey] = { date: dateKey, sales: 0, orders: 0, customers: 0 }
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+
+  if (metric === 'sales' || metric === 'orders') {
+    orders.forEach((order) => {
+      if (!order.createdAt) return
+      const orderDate = new Date(order.createdAt)
+      if (orderDate < startDate || orderDate > endDate) return
+
+      const dateKey = orderDate.toISOString().split('T')[0]
+      if (dailyData[dateKey]) {
+        dailyData[dateKey].orders += 1
+        dailyData[dateKey].sales += order.total ?? 0
+      }
+    })
+  }
+
+  if (metric === 'customers') {
+    customers.forEach((customer) => {
+      if (!customer.createdAt) return
+      const customerDate = new Date(customer.createdAt)
+      if (customerDate < startDate || customerDate > endDate) return
+
+      const dateKey = customerDate.toISOString().split('T')[0]
+      if (dailyData[dateKey]) {
+        dailyData[dateKey].customers += 1
+      }
+    })
+  }
+
+  const dataPoints = Object.values(dailyData)
+    .map((data) => ({
+      date: data.date,
+      dateLabel: new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      value: metric === 'sales' ? data.sales : metric === 'orders' ? data.orders : data.customers,
+      sales: data.sales,
+      orders: data.orders,
+      customers: data.customers,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  res.json({
+    metric,
+    data: dataPoints,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+  })
+})
+
 app.get('/api/export/orders', authenticateToken, (_req, res) => {
   const headers = [
     'Order ID',

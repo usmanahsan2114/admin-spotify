@@ -76,3 +76,48 @@ export const fetchGrowthComparison = (period: 'week' | 'month' = 'month') => {
   return apiFetch<GrowthComparisonResponse>(`/api/metrics/growth-comparison?period=${period}`)
 }
 
+export type GrowthReportResponse = {
+  totalSales: number
+  totalOrders: number
+  averageOrderValue: number
+  growthSalesPct: number
+  growthOrdersPct: number
+  returnRatePct: number
+  returnRateChangePct: number
+  newCustomersCount: number
+  period: string
+  startDate: string
+  endDate: string
+}
+
+export type TrendDataPoint = {
+  date: string
+  dateLabel: string
+  value: number
+  sales: number
+  orders: number
+  customers: number
+}
+
+export type TrendReportResponse = {
+  metric: 'sales' | 'orders' | 'customers'
+  data: TrendDataPoint[]
+  startDate: string
+  endDate: string
+}
+
+export const fetchGrowthReport = (period: 'week' | 'month' | 'quarter' = 'month', compareToPrevious: boolean = true) => {
+  const params = new URLSearchParams()
+  params.append('period', period)
+  if (!compareToPrevious) params.append('compareToPrevious', 'false')
+  return apiFetch<GrowthReportResponse>(`/api/reports/growth?${params.toString()}`)
+}
+
+export const fetchTrendReport = (metric: 'sales' | 'orders' | 'customers' = 'sales', startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  params.append('metric', metric)
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  return apiFetch<TrendReportResponse>(`/api/reports/trends?${params.toString()}`)
+}
+
