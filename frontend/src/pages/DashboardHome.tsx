@@ -20,10 +20,19 @@ import type { Order } from '../types/order'
 import type { Product } from '../types/product'
 import { fetchOrders } from '../services/ordersService'
 import { fetchProducts, fetchLowStockProducts } from '../services/productsService'
-import { fetchMetricsOverview, fetchLowStockTrend, type LowStockTrendData } from '../services/metricsService'
+import {
+  fetchMetricsOverview,
+  fetchLowStockTrend,
+  fetchSalesOverTime,
+  fetchGrowthComparison,
+  type LowStockTrendData,
+  type SalesOverTimeResponse,
+  type GrowthComparisonResponse,
+} from '../services/metricsService'
 import { useAuth } from '../context/AuthContext'
 import { Link as RouterLink } from 'react-router-dom'
 import { alpha } from '@mui/material/styles'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 const PIE_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#607D8B']
 
@@ -48,6 +57,9 @@ const DashboardHome = () => {
     totalRevenue: number
   } | null>(null)
   const [lowStockTrend, setLowStockTrend] = useState<LowStockTrendData[]>([])
+  const [salesOverTime, setSalesOverTime] = useState<SalesOverTimeResponse | null>(null)
+  const [growthComparison, setGrowthComparison] = useState<GrowthComparisonResponse | null>(null)
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { logout } = useAuth()
@@ -68,18 +80,30 @@ const DashboardHome = () => {
       try {
         setLoading(true)
         setError(null)
-        const [ordersResponse, productsResponse, lowStockResponse, metricsResponse, trendResponse] = await Promise.all([
-          fetchOrders(),
+        const [
+          ordersResponse,
+          productsResponse,
+          lowStockResponse,
+          metricsResponse,
+          trendResponse,
+          salesResponse,
+          growthResponse,
+        ] = await Promise.all([
+          fetchOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
           fetchProducts(),
           fetchLowStockProducts(),
           fetchMetricsOverview(),
-          fetchLowStockTrend(),
+          fetchLowStockTrend(dateRange.startDate || undefined, dateRange.endDate || undefined),
+          fetchSalesOverTime(dateRange.startDate || undefined, dateRange.endDate || undefined),
+          fetchGrowthComparison('month'),
         ])
         setOrders(ordersResponse)
         setProducts(productsResponse)
         setLowStockProducts(lowStockResponse)
         setMetrics(metricsResponse)
         setLowStockTrend(trendResponse)
+        setSalesOverTime(salesResponse)
+        setGrowthComparison(growthResponse)
       } catch (err) {
         setError(resolveError(err, 'Unable to load dashboard data.'))
       } finally {
@@ -88,7 +112,7 @@ const DashboardHome = () => {
     }
 
     load()
-  }, [logout])
+  }, [logout, dateRange.startDate, dateRange.endDate])
 
   const currency = useMemo(
     () =>
@@ -130,24 +154,6 @@ const DashboardHome = () => {
     return cards
   }, [metrics, currency])
 
-  const lastSevenDaysData = useMemo(() => {
-    const today = dayjs().startOf('day')
-
-    return Array.from({ length: 7 }).map((_, index) => {
-      const date = today.subtract(6 - index, 'day')
-      const dateKey = date.format('YYYY-MM-DD')
-      const dailyOrders = orders.filter((order) =>
-        dayjs(order.createdAt).format('YYYY-MM-DD') === dateKey,
-      )
-      const revenue = dailyOrders.reduce((acc, order) => acc + (order.total ?? 0), 0)
-      return {
-        dateLabel: date.format('MMM D'),
-        orders: dailyOrders.length,
-        revenue,
-      }
-    })
-  }, [orders])
-
   const statusDistribution = useMemo(() => {
     if (orders.length === 0) return []
     const counts = orders.reduce<Record<string, number>>((acc, order) => {
@@ -161,6 +167,22 @@ const DashboardHome = () => {
       value,
     }))
   }, [orders])
+
+  const growthChartData = useMemo(() => {
+    if (!growthComparison) return []
+    return [
+      {
+        period: growthComparison.current.period,
+        orders: growthComparison.current.orders,
+        revenue: growthComparison.current.revenue,
+      },
+      {
+        period: growthComparison.previous.period,
+        orders: growthComparison.previous.orders,
+        revenue: growthComparison.previous.revenue,
+      },
+    ]
+  }, [growthComparison])
 
   if (loading) {
     return (
@@ -180,6 +202,40 @@ const DashboardHome = () => {
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>
+      <Card>
+        <CardContent>
+          <DateFilter value={dateRange} onChange={setDateRange} />
+        </CardContent>
+      </Card>
+
+      {salesOverTime && salesOverTime.summary.totalOrders > 0 && growthComparison && (
+        <Card>
+          <CardContent>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+              You processed <strong>{salesOverTime.summary.totalOrders}</strong> orders
+              {dateRange.startDate && dateRange.endDate
+                ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
+                : ' in the selected period'}
+              {growthComparison.change.ordersPercent !== 0 && (
+                <>
+                  {' '}
+                  {growthComparison.change.ordersPercent > 0 ? (
+                    <Typography component="span" color="success.main" fontWeight={600}>
+                      up {Math.abs(growthComparison.change.ordersPercent)}%
+                    </Typography>
+                  ) : (
+                    <Typography component="span" color="error.main" fontWeight={600}>
+                      down {Math.abs(growthComparison.change.ordersPercent)}%
+                    </Typography>
+                  )}{' '}
+                  vs {growthComparison.previous.period.toLowerCase()}.
+                </>
+              )}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
       <Box
         display="grid"
         gap={3}
@@ -266,6 +322,97 @@ const DashboardHome = () => {
         })}
       </Box>
 
+      {salesOverTime && salesOverTime.data.length > 0 && (
+        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <CardContent
+            sx={{
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              gap: 2,
+              pb: 3,
+            }}
+          >
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Sales Over Time
+            </Typography>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
+                <LineChart data={salesOverTime.data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                  <XAxis dataKey="dateLabel" />
+                  <YAxis yAxisId="left" allowDecimals={false} />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      if (name === 'revenue') return currency.format(value as number)
+                      return value
+                    }}
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="orders"
+                    stroke={theme.palette.primary.main}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="Orders"
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke={theme.palette.success.main}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="Revenue"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {growthComparison && growthChartData.length > 0 && (
+        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <CardContent
+            sx={{
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              gap: 2,
+              pb: 3,
+            }}
+          >
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Period Comparison
+            </Typography>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
+                <BarChart data={growthChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                  <XAxis dataKey="period" />
+                  <YAxis yAxisId="left" allowDecimals={false} />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      if (name === 'revenue') return currency.format(value as number)
+                      return value
+                    }}
+                  />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="orders" fill={theme.palette.primary.main} name="Orders" />
+                  <Bar yAxisId="right" dataKey="revenue" fill={theme.palette.success.main} name="Revenue" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
       <Box
         display="grid"
         gap={3}
@@ -278,120 +425,79 @@ const DashboardHome = () => {
           },
         }}
       >
-        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <CardContent
-            sx={{
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              flexGrow: 1,
-              gap: 2,
-              pb: 3,
-            }}
-          >
-            <Typography variant="h6" fontWeight={600} mb={2}>
-              Orders in the last 7 days
-            </Typography>
-            {orders.length === 0 ? (
-              <Typography color="text.secondary">
-                No orders yet. Submit a test order to see trends appear here.
+        {salesOverTime && salesOverTime.data.length > 0 ? (
+          <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <CardContent
+              sx={{
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                flexGrow: 1,
+                gap: 2,
+                pb: 3,
+              }}
+            >
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Orders by Status
               </Typography>
-            ) : (
+              {statusDistribution.length === 0 ? (
+                <Typography color="text.secondary">
+                  No order activity recorded yet.
+                </Typography>
+              ) : (
+                <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+                  <ResponsiveContainer width="100%" height={chartHeight}>
+                    <PieChart>
+                      <Pie
+                        data={statusDistribution}
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {statusDistribution.map((entry, index) => (
+                          <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {lowStockTrend.length > 0 && (
+          <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            <CardContent
+              sx={{
+                minWidth: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                flexGrow: 1,
+                gap: 2,
+                pb: 3,
+              }}
+            >
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Low Stock Products Over Time
+              </Typography>
               <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
                 <ResponsiveContainer width="100%" height={chartHeight}>
-                  <LineChart data={lastSevenDaysData}>
+                  <BarChart data={lowStockTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                     <XAxis dataKey="dateLabel" />
                     <YAxis allowDecimals={false} />
-                    <Tooltip
-                      formatter={(value, name) =>
-                        name === 'revenue' ? currency.format(value as number) : value
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="orders"
-                      stroke={theme.palette.primary.main}
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
-        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <CardContent
-            sx={{
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              flexGrow: 1,
-              gap: 2,
-              pb: 3,
-            }}
-          >
-            <Typography variant="h6" fontWeight={600} mb={2}>
-              Orders by status
-            </Typography>
-            {statusDistribution.length === 0 ? (
-              <Typography color="text.secondary">
-                No order activity recorded yet.
-              </Typography>
-            ) : (
-              <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
-                <ResponsiveContainer width="100%" height={chartHeight}>
-                  <PieChart>
-                    <Pie
-                      data={statusDistribution}
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {statusDistribution.map((entry, index) => (
-                        <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
                     <Tooltip />
-                  </PieChart>
+                    <Bar dataKey="lowStockCount" fill={theme.palette.error.main} />
+                  </BarChart>
                 </ResponsiveContainer>
               </Box>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </Box>
-
-      {lowStockTrend.length > 0 && (
-        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-          <CardContent
-            sx={{
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              flexGrow: 1,
-              gap: 2,
-              pb: 3,
-            }}
-          >
-            <Typography variant="h6" fontWeight={600} mb={2}>
-              Low Stock Products Over Time (Last 7 Days)
-            </Typography>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
-              <ResponsiveContainer width="100%" height={chartHeight}>
-                <BarChart data={lowStockTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                  <XAxis dataKey="dateLabel" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="lowStockCount" fill={theme.palette.error.main} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Box>
-          </CardContent>
-        </Card>
-      )}
     </Stack>
   )
 }

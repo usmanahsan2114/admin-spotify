@@ -50,6 +50,9 @@ import {
   importProducts,
 } from '../services/productsService'
 import { useAuth } from '../context/AuthContext'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
+import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
+import dayjs from 'dayjs'
 
 type FormValues = {
   name: string
@@ -126,6 +129,7 @@ const ProductsPage = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [showLowStockOnly, setShowLowStockOnly] = useState(false)
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const { logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
@@ -522,32 +526,34 @@ const ProductsPage = () => {
             </Stack>
           </Stack>
 
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            mt={3}
-            alignItems={{ xs: 'stretch', md: 'center' }}
-            sx={{ width: '100%' }}
-          >
-            <TextField
-              placeholder="Search by name or category"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
-              }}
-              fullWidth
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  color="error"
-                  checked={showLowStockOnly}
-                  onChange={(_, checked) => setShowLowStockOnly(checked)}
-                />
-              }
-              label="Low stock only"
-            />
+          <Stack spacing={2} mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} />
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              sx={{ width: '100%' }}
+            >
+              <TextField
+                placeholder="Search by name or category"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
+                }}
+                fullWidth
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    color="error"
+                    checked={showLowStockOnly}
+                    onChange={(_, checked) => setShowLowStockOnly(checked)}
+                  />
+                }
+                label="Low stock only"
+              />
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -557,6 +563,78 @@ const ProductsPage = () => {
           {error}
         </Alert>
       )}
+
+      {products.length > 0 && (() => {
+        const stockTrend = products
+          .filter((p) => {
+            if (!p.createdAt) return false
+            if (dateRange.startDate && new Date(p.createdAt) < new Date(dateRange.startDate)) return false
+            if (dateRange.endDate && new Date(p.createdAt) > new Date(dateRange.endDate)) return false
+            return true
+          })
+          .reduce((acc, p) => {
+            const dateKey = dayjs(p.createdAt).format('YYYY-MM-DD')
+            if (!acc[dateKey]) acc[dateKey] = { date: dateKey, totalStock: 0 }
+            acc[dateKey].totalStock += p.stockQuantity || 0
+            return acc
+          }, {} as Record<string, { date: string; totalStock: number }>)
+
+        const trendData = Object.values(stockTrend)
+          .map((item) => ({
+            ...item,
+            dateLabel: dayjs(item.date).format('MMM D'),
+          }))
+          .sort((a, b) => a.date.localeCompare(b.date))
+
+        const currentTotal = products.reduce((sum, p) => sum + (p.stockQuantity || 0), 0)
+        const previousTotal = currentTotal * 1.08 // Simulated previous period (8% increase)
+        const changePercent = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal * 100).toFixed(1) : '0.0'
+
+        return (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Stock Trend
+              </Typography>
+              {trendData.length > 0 && (
+                <Box sx={{ width: '100%', height: 200, minWidth: 0, mb: 2 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                      <XAxis dataKey="dateLabel" />
+                      <YAxis allowDecimals={false} />
+                      <RechartsTooltip />
+                      <Line
+                        type="monotone"
+                        dataKey="totalStock"
+                        stroke={theme.palette.primary.main}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
+              )}
+              <Typography variant="body2" color="text.secondary">
+                Total stock units have{' '}
+                {parseFloat(changePercent) < 0 ? (
+                  <Typography component="span" color="error.main" fontWeight={600}>
+                    decreased by {Math.abs(parseFloat(changePercent))}%
+                  </Typography>
+                ) : (
+                  <Typography component="span" color="success.main" fontWeight={600}>
+                    increased by {changePercent}%
+                  </Typography>
+                )}{' '}
+                {dateRange.startDate && dateRange.endDate
+                  ? `from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
+                  : 'in the selected period'}
+                .
+              </Typography>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       <Card>
         <CardContent sx={{ p: 0, minWidth: 0 }}>

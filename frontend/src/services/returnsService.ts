@@ -5,7 +5,13 @@ import type {
   ReturnUpdatePayload,
 } from '../types/return'
 
-export const fetchReturns = () => apiFetch<ReturnRequest[]>('/api/returns')
+export const fetchReturns = (startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  const query = params.toString()
+  return apiFetch<ReturnRequest[]>(`/api/returns${query ? `?${query}` : ''}`)
+}
 
 export const fetchReturnById = (returnId: string) =>
   apiFetch<ReturnRequest>(`/api/returns/${returnId}`)

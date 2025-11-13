@@ -25,12 +25,15 @@ import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveAs } from 'file-saver'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
+import dayjs from 'dayjs'
 import { downloadOrdersExport, fetchOrders, updateOrder } from '../services/ordersService'
+import { fetchGrowthComparison, type GrowthComparisonResponse } from '../services/metricsService'
 import type { Order, OrderStatus } from '../types/order'
 import { useAuth } from '../context/AuthContext'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 type StatusFilter = 'All' | OrderStatus
-type DateFilter = 'all' | 'today' | 'last7'
 
 const statusOptions: OrderStatus[] = [
   'Pending',
@@ -73,21 +76,6 @@ const formatDate = (value?: string | null) => {
   }
 }
 
-const filterByDate = (orders: Order[], filter: DateFilter) => {
-  if (filter === 'all') return orders
-  const now = new Date()
-  const start =
-    filter === 'today'
-      ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      : new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-
-  return orders.filter((order) => {
-    if (!order.createdAt) return false
-    const created = new Date(order.createdAt)
-    if (Number.isNaN(created.getTime())) return false
-    return created >= start
-  })
-}
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
@@ -97,8 +85,9 @@ const OrdersPage = () => {
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [growthComparison, setGrowthComparison] = useState<GrowthComparisonResponse | null>(null)
 
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -117,13 +106,17 @@ const OrdersPage = () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchOrders()
+      const [data, growthData] = await Promise.all([
+        fetchOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
+        fetchGrowthComparison('month'),
+      ])
       setOrders(
         data.map((order) => ({
           ...order,
           status: order.status ?? 'Pending',
         })),
       )
+      setGrowthComparison(growthData)
     } catch (err) {
       setError(handleApiError(err, 'Failed to load orders.'))
     } finally {
@@ -133,7 +126,7 @@ const OrdersPage = () => {
 
   useEffect(() => {
     loadOrders()
-  }, [])
+  }, [dateRange.startDate, dateRange.endDate])
 
   const handleExport = async () => {
     try {
@@ -149,6 +142,22 @@ const OrdersPage = () => {
       setExporting(false)
     }
   }
+
+  const ordersByDay = useMemo(() => {
+    const dailyData: Record<string, number> = {}
+    orders.forEach((order) => {
+      if (!order.createdAt) return
+      const dateKey = dayjs(order.createdAt).format('YYYY-MM-DD')
+      dailyData[dateKey] = (dailyData[dateKey] || 0) + 1
+    })
+    return Object.entries(dailyData)
+      .map(([date, count]) => ({
+        date,
+        dateLabel: dayjs(date).format('MMM D'),
+        orders: count,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }, [orders])
 
   const filteredOrders = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -169,10 +178,8 @@ const OrdersPage = () => {
       result = result.filter((order) => order.status === statusFilter)
     }
 
-    result = filterByDate(result, dateFilter)
-
     return result
-  }, [orders, searchQuery, statusFilter, dateFilter])
+  }, [orders, searchQuery, statusFilter])
 
   const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
     setUpdatingOrderId(orderId)
@@ -329,44 +336,35 @@ const OrdersPage = () => {
             </Stack>
           </Stack>
 
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            mt={3}
-            alignItems={{ xs: 'stretch', md: 'center' }}
-          >
-            <TextField
-              label="Search orders"
-              placeholder="Search by customer, product, or email"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              fullWidth
-            />
-            <Select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-              size="small"
-              fullWidth={isSmall}
-              sx={{ minWidth: isSmall ? undefined : 160 }}
+          <Stack spacing={2} mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} />
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'center' }}
             >
-              <MenuItem value="All">All statuses</MenuItem>
-              {statusOptions.map((option) => (
-                <MenuItem value={option} key={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-            <Select
-              value={dateFilter}
-              onChange={(event) => setDateFilter(event.target.value as DateFilter)}
-              size="small"
-              fullWidth={isSmall}
-              sx={{ minWidth: isSmall ? undefined : 160 }}
-            >
-              <MenuItem value="all">Any date</MenuItem>
-              <MenuItem value="today">Today</MenuItem>
-              <MenuItem value="last7">Last 7 days</MenuItem>
-            </Select>
+              <TextField
+                label="Search orders"
+                placeholder="Search by customer, product, or email"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                fullWidth
+              />
+              <Select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                size="small"
+                fullWidth={isSmall}
+                sx={{ minWidth: isSmall ? undefined : 160 }}
+              >
+                <MenuItem value="All">All statuses</MenuItem>
+                {statusOptions.map((option) => (
+                  <MenuItem value={option} key={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -375,6 +373,56 @@ const OrdersPage = () => {
         <Alert severity="error" onClose={() => setError(null)}>
           {error}
         </Alert>
+      )}
+
+      {ordersByDay.length > 0 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Orders by Day
+            </Typography>
+            <Box sx={{ width: '100%', height: 200, minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={ordersByDay}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                  <XAxis dataKey="dateLabel" />
+                  <YAxis allowDecimals={false} />
+                  <RechartsTooltip />
+                  <Area
+                    type="monotone"
+                    dataKey="orders"
+                    stroke={theme.palette.primary.main}
+                    fill={theme.palette.primary.main}
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Box>
+            {growthComparison && (
+              <Typography variant="body2" color="text.secondary" mt={2}>
+                You processed <strong>{orders.length}</strong> orders
+                {dateRange.startDate && dateRange.endDate
+                  ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
+                  : ' in the selected period'}
+                {growthComparison.change.ordersPercent !== 0 && (
+                  <>
+                    {' '}
+                    {growthComparison.change.ordersPercent > 0 ? (
+                      <Typography component="span" color="success.main" fontWeight={600}>
+                        up {Math.abs(growthComparison.change.ordersPercent)}%
+                      </Typography>
+                    ) : (
+                      <Typography component="span" color="error.main" fontWeight={600}>
+                        down {Math.abs(growthComparison.change.ordersPercent)}%
+                      </Typography>
+                    )}{' '}
+                    vs {growthComparison.previous.period.toLowerCase()}.
+                  </>
+                )}
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       <Card
@@ -439,7 +487,7 @@ const OrdersPage = () => {
                     <Typography color="text.secondary" textAlign="center">
                       {loading
                         ? 'Loading orders...'
-                        : searchQuery || statusFilter !== 'All' || dateFilter !== 'all'
+                        : searchQuery || statusFilter !== 'All' || dateRange.startDate || dateRange.endDate
                           ? 'No orders match the current filters.'
                           : 'No orders yet. Submit a test order to get started.'}
                     </Typography>

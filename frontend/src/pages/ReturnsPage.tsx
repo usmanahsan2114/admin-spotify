@@ -37,6 +37,9 @@ import type { ReturnRequest, ReturnStatus } from '../types/return'
 import { createReturnRequest, fetchReturns, updateReturnRequest } from '../services/returnsService'
 import { fetchOrders } from '../services/ordersService'
 import type { Order } from '../types/order'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
+import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'
+import dayjs from 'dayjs'
 
 const RETURN_STATUSES: ReturnStatus[] = ['Submitted', 'Approved', 'Rejected', 'Refunded']
 
@@ -98,6 +101,7 @@ const ReturnsPage = () => {
   const [success, setSuccess] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'All'>('All')
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null)
@@ -126,7 +130,7 @@ const ReturnsPage = () => {
       setLoading(true)
       setError(null)
       const [returnsResponse, ordersResponse] = await Promise.all([
-        fetchReturns(),
+        fetchReturns(dateRange.startDate || undefined, dateRange.endDate || undefined),
         fetchOrders(),
       ])
       setReturns(returnsResponse)
@@ -140,7 +144,7 @@ const ReturnsPage = () => {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [dateRange.startDate, dateRange.endDate])
 
   const filteredReturns = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -368,39 +372,41 @@ const ReturnsPage = () => {
             </Stack>
           </Stack>
 
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={2}
-            mt={3}
-            alignItems={{ xs: 'stretch', md: 'center' }}
-          >
-            <TextField
-              placeholder="Search by return ID, order ID, or customer"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
-              }}
-              fullWidth
-            />
-            <TextField
-              select
-              label="Filter by status"
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as ReturnStatus | 'All')
-              }
-              size="small"
-              fullWidth={isSmall}
-              sx={{ minWidth: isSmall ? undefined : 200 }}
+          <Stack spacing={2} mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} />
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'center' }}
             >
-              <MenuItem value="All">All statuses</MenuItem>
-              {RETURN_STATUSES.map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status}
-                </MenuItem>
-              ))}
-            </TextField>
+              <TextField
+                placeholder="Search by return ID, order ID, or customer"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
+                }}
+                fullWidth
+              />
+              <TextField
+                select
+                label="Filter by status"
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as ReturnStatus | 'All')
+                }
+                size="small"
+                fullWidth={isSmall}
+                sx={{ minWidth: isSmall ? undefined : 200 }}
+              >
+                <MenuItem value="All">All statuses</MenuItem>
+                {RETURN_STATUSES.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
@@ -410,6 +416,68 @@ const ReturnsPage = () => {
           {error}
         </Alert>
       )}
+
+      {returns.length > 0 && (() => {
+        const statusCounts = returns.reduce((acc, r) => {
+          const status = r.status || 'Submitted'
+          acc[status] = (acc[status] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+
+        const chartData = Object.entries(statusCounts).map(([name, value]) => ({
+          name,
+          value,
+        }))
+
+        const pendingCount = statusCounts['Submitted'] || 0
+        const totalCount = returns.length
+        const pendingPercent = totalCount > 0 ? ((pendingCount / totalCount) * 100).toFixed(0) : '0'
+
+        const PIE_COLORS_MAP: Record<string, string> = {
+          Submitted: theme.palette.info.main,
+          Approved: theme.palette.success.main,
+          Rejected: theme.palette.grey[500],
+          Refunded: theme.palette.warning.main,
+        }
+
+        return (
+          <Card>
+            <CardContent>
+              <Typography variant="h6" fontWeight={600} mb={2}>
+                Returns by Status
+              </Typography>
+              {chartData.length > 0 && (
+                <Box sx={{ width: '100%', height: 300, minWidth: 0, mb: 2 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={entry.name} fill={PIE_COLORS_MAP[entry.name] || theme.palette.primary.main} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              )}
+              <Typography variant="body2" color="text.secondary">
+                You received <strong>{totalCount}</strong> return request{totalCount !== 1 ? 's' : ''}
+                {dateRange.startDate && dateRange.endDate
+                  ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
+                  : ' in the selected period'}
+                , of which <strong>{pendingCount}</strong> ({pendingPercent}%) {pendingCount === 1 ? 'is' : 'are'} still pending.
+              </Typography>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       <Card>
         <CardContent sx={{ p: 0, minWidth: 0 }}>
