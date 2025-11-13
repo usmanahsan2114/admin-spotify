@@ -85,6 +85,7 @@
 - ✅ **valueFormatter errors**: Fixed null destructuring errors in CustomersPage and OrdersPage by adding proper null checks
 - ✅ **Chart responsiveness**: Improved chart container sizing with explicit heights and minHeight properties
 - ✅ **Settings page 404 error**: Enhanced error handling in SettingsPage to check for authenticated user before API calls. Improved `/api/users/me` endpoint validation to check `req.user` and `req.user.userId` before user lookup. **Root cause fix**: Changed default users to use fixed UUIDs instead of random UUIDs to ensure consistency across server restarts.
+- ✅ **OrdersPage Recharts warning**: Fixed remaining chart container issue by changing ResponsiveContainer from `height="100%"` to explicit `height={200}` and adding `minHeight: 200` to parent Box.
 
 **Impact**: Eliminated console warnings and errors, improved chart rendering reliability, fixed Settings page authentication issues.
 

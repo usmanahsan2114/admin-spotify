@@ -381,8 +381,8 @@ const OrdersPage = () => {
             <Typography variant="h6" fontWeight={600} mb={2}>
               Orders by Day
             </Typography>
-            <Box sx={{ width: '100%', height: 200, minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <Box sx={{ width: '100%', height: 200, minWidth: 0, minHeight: 200 }}>
+              <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={ordersByDay}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                   <XAxis dataKey="dateLabel" />
