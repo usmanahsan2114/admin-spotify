@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Box, Card, CardContent, Stack, Typography, useTheme } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
@@ -11,7 +12,7 @@ type GrowthKPIProps = {
   size?: 'small' | 'medium' | 'large'
 }
 
-const GrowthKPI = ({ label, value, growthPct, formatValue, size = 'medium' }: GrowthKPIProps) => {
+const GrowthKPI = memo(({ label, value, growthPct, formatValue, size = 'medium' }: GrowthKPIProps) => {
   const theme = useTheme()
   const isPositive = growthPct !== undefined && growthPct > 0
   const isNegative = growthPct !== undefined && growthPct < 0
@@ -55,7 +56,9 @@ const GrowthKPI = ({ label, value, growthPct, formatValue, size = 'medium' }: Gr
       </CardContent>
     </Card>
   )
-}
+})
+
+GrowthKPI.displayName = 'GrowthKPI'
 
 export default GrowthKPI
 

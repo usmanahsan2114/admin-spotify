@@ -3,7 +3,46 @@ const API_BASE_URL =
 
 const TOKEN_STORAGE_KEY = 'dashboard.authToken'
 
-type FetchOptions = RequestInit & { skipAuth?: boolean }
+type FetchOptions = RequestInit & { skipAuth?: boolean; retries?: number }
+
+// Retry configuration
+const DEFAULT_RETRIES = 3
+const RETRY_DELAY = 1000 // 1 second
+const RETRYABLE_STATUS_CODES = [500, 502, 503, 504] // Server errors that might be transient
+
+/**
+ * Retry logic for failed API requests
+ * Only retries on server errors (5xx) and network errors
+ */
+const retryFetch = async <TResponse>(
+  fetchFn: () => Promise<Response>,
+  retries: number = DEFAULT_RETRIES,
+  delay: number = RETRY_DELAY,
+): Promise<Response> => {
+  try {
+    const response = await fetchFn()
+    
+    // If response is ok or not retryable, return immediately
+    if (response.ok || !RETRYABLE_STATUS_CODES.includes(response.status)) {
+      return response
+    }
+    
+    // If we have retries left and it's a retryable error, retry
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return retryFetch(fetchFn, retries - 1, delay * 2) // Exponential backoff
+    }
+    
+    return response
+  } catch (error) {
+    // Network errors are retryable
+    if (retries > 0 && error instanceof TypeError) {
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return retryFetch(fetchFn, retries - 1, delay * 2)
+    }
+    throw error
+  }
+}
 
 export const getApiBaseUrl = () => API_BASE_URL
 
@@ -25,7 +64,7 @@ export const apiFetch = async <TResponse>(
   path: string,
   options: FetchOptions = {},
 ): Promise<TResponse> => {
-  const { skipAuth, headers, ...rest } = options
+  const { skipAuth, headers, retries = DEFAULT_RETRIES, ...rest } = options
   const token = getStoredToken()
   const headerInstance = new Headers(headers as HeadersInit | undefined)
 
@@ -37,10 +76,13 @@ export const apiFetch = async <TResponse>(
     headerInstance.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    headers: headerInstance,
-  })
+  const fetchFn = () =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers: headerInstance,
+    })
+
+  const response = await retryFetch(fetchFn, retries)
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}))
@@ -93,7 +135,7 @@ export const apiDownload = async (
   path: string,
   options: FetchOptions = {},
 ): Promise<Blob> => {
-  const { skipAuth, headers, ...rest } = options
+  const { skipAuth, headers, retries = DEFAULT_RETRIES, ...rest } = options
   const token = getStoredToken()
   const headerInstance = new Headers(headers as HeadersInit | undefined)
 
@@ -101,10 +143,13 @@ export const apiDownload = async (
     headerInstance.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    headers: headerInstance,
-  })
+  const fetchFn = () =>
+    fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers: headerInstance,
+    })
+
+  const response = await retryFetch(fetchFn, retries)
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '')

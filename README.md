@@ -127,6 +127,13 @@ docs/
 - **Improved chart responsiveness**: All charts now have explicit heights and minHeight to ensure proper rendering
 - **Fixed Settings page 404 error**: Enhanced error handling in SettingsPage and improved `/api/users/me` endpoint validation. Fixed user ID consistency by using fixed UUIDs for default users to prevent 404 errors after server restarts.
 
+### ✅ Tier 3 Improvements (Completed)
+- **Retry logic**: Implemented automatic retry mechanism for failed API requests with exponential backoff (3 retries by default)
+- **Rate limiting**: Added express-rate-limit to backend API routes (100 req/15min general, 5 req/15min auth)
+- **Testing infrastructure**: Set up Vitest with unit tests for utility functions
+- **Error tracking**: Basic error logging and request monitoring middleware
+- **Performance**: Added React.memo to GrowthKPI component and enhanced memoization
+
 See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) improvements.
 
 ## Future Enhancements

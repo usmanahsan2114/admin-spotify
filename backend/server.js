@@ -4,6 +4,7 @@ const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const rateLimit = require('express-rate-limit')
 const {
   validateLogin,
   validateSignup,
@@ -25,6 +26,62 @@ const app = express()
 
 app.use(cors())
 app.use(bodyParser.json())
+
+// Rate limiting configuration
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login/signup attempts per windowMs
+  message: 'Too many authentication attempts, please try again later.',
+  skipSuccessfulRequests: true, // Don't count successful requests
+})
+
+// Apply rate limiting to all API routes
+app.use('/api/', generalLimiter)
+
+// Apply stricter rate limiting to auth routes
+app.use('/api/login', authLimiter)
+app.use('/api/signup', authLimiter)
+
+// Error tracking middleware (basic implementation)
+const errorLogger = (err, req, res, next) => {
+  // eslint-disable-next-line no-console
+  console.error('[ERROR]', {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    path: req.path,
+    status: res.statusCode,
+    message: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  })
+  next(err)
+}
+
+// Request logging middleware (basic monitoring)
+const requestLogger = (req, res, next) => {
+  const start = Date.now()
+  res.on('finish', () => {
+    const duration = Date.now() - start
+    // eslint-disable-next-line no-console
+    console.log('[REQUEST]', {
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString(),
+    })
+  })
+  next()
+}
+
+app.use(requestLogger)
 
 // In-memory data stores (temporary for development/testing)
 const orders = [
@@ -3822,10 +3879,9 @@ app.post(
 )
 
 // Global error handler fallback
+app.use(errorLogger)
 // eslint-disable-next-line no-unused-vars
 app.use((error, _req, res, _next) => {
-  // eslint-disable-next-line no-console
-  console.error(error)
   res.status(500).json({ message: 'Unexpected server error.' })
 })
 
