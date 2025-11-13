@@ -331,6 +331,674 @@ const orders = [
       },
     ],
   },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Canvas Tote Bag',
+    customerName: 'Emma Watson',
+    email: 'emma.watson@example.com',
+    phone: '+1-555-0501',
+    quantity: 3,
+    status: 'Shipped',
+    isPaid: true,
+    notes: 'Gift order for team members.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 144,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+        actor: 'Emma Watson',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8 + 1000 * 60 * 30).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Package dispatched',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+        actor: 'Logistics Bot',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Heritage Leather Wallet',
+    customerName: 'James Wilson',
+    email: 'james.wilson@example.com',
+    phone: '+1-555-0502',
+    quantity: 1,
+    status: 'Completed',
+    isPaid: true,
+    notes: 'Repeat customer, VIP status.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 72.5,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+        actor: 'James Wilson',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10 + 1000 * 60 * 20).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order shipped',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+        actor: 'Logistics Bot',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Delivered',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+        actor: 'Delivery Partner',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Signature Hoodie',
+    customerName: 'Olivia Martinez',
+    email: 'olivia.martinez@example.com',
+    phone: '+1-555-0503',
+    quantity: 2,
+    status: 'Paid',
+    isPaid: true,
+    notes: 'Requested express shipping.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 176,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+        actor: 'Olivia Martinez',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment confirmed',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9 + 1000 * 60 * 25).toISOString(),
+        actor: 'Store Admin',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Wireless Earbuds',
+    customerName: 'Michael Brown',
+    email: 'michael.brown@example.com',
+    phone: '+1-555-0504',
+    quantity: 1,
+    status: 'Accepted',
+    isPaid: true,
+    notes: 'Customer requested warranty information.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 189,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11).toISOString(),
+        actor: 'Michael Brown',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11 + 1000 * 60 * 15).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order accepted and queued for fulfilment',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+        actor: 'Store Admin',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Eco Water Bottle',
+    customerName: 'Sophia Rodriguez',
+    email: 'sophia.rodriguez@example.com',
+    phone: '+1-555-0505',
+    quantity: 5,
+    status: 'Shipped',
+    isPaid: true,
+    notes: 'Bulk order for corporate event.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 170,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+        actor: 'Sophia Rodriguez',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12 + 1000 * 60 * 50).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Package dispatched',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11).toISOString(),
+        actor: 'Logistics Bot',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Limited Edition Sneakers',
+    customerName: 'David Kim',
+    email: 'david.kim@example.com',
+    phone: '+1-555-0506',
+    quantity: 1,
+    status: 'Pending',
+    isPaid: false,
+    notes: 'Awaiting payment confirmation.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 135,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(),
+        actor: 'David Kim',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Awaiting payment',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13 + 1000 * 60 * 10).toISOString(),
+        actor: 'Billing Bot',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Travel Duffel Bag',
+    customerName: 'Isabella Taylor',
+    email: 'isabella.taylor@example.com',
+    phone: '+1-555-0507',
+    quantity: 1,
+    status: 'Completed',
+    isPaid: true,
+    notes: 'Gift wrap requested.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 158.5,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+        actor: 'Isabella Taylor',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14 + 1000 * 60 * 35).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order shipped',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(),
+        actor: 'Logistics Bot',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Delivered',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+        actor: 'Delivery Partner',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Artisan Coffee Mug',
+    customerName: 'William Anderson',
+    email: 'william.anderson@example.com',
+    phone: '+1-555-0508',
+    quantity: 6,
+    status: 'Paid',
+    isPaid: true,
+    notes: 'Corporate gift set.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 144,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+        actor: 'William Anderson',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment confirmed',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15 + 1000 * 60 * 40).toISOString(),
+        actor: 'Store Admin',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Desktop Organizer Set',
+    customerName: 'Charlotte White',
+    email: 'charlotte.white@example.com',
+    phone: '+1-555-0509',
+    quantity: 2,
+    status: 'Shipped',
+    isPaid: true,
+    notes: 'Office setup order.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 16).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 108,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 16).toISOString(),
+        actor: 'Charlotte White',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 16 + 1000 * 60 * 20).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Package dispatched',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+        actor: 'Logistics Bot',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Minimal Desk Lamp',
+    customerName: 'Benjamin Harris',
+    email: 'benjamin.harris@example.com',
+    phone: '+1-555-0510',
+    quantity: 1,
+    status: 'Accepted',
+    isPaid: true,
+    notes: 'Home office setup.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 17).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 129,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 17).toISOString(),
+        actor: 'Benjamin Harris',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 17 + 1000 * 60 * 30).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order accepted, preparing fulfillment',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 16).toISOString(),
+        actor: 'Warehouse Team',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Canvas Tote Bag',
+    customerName: 'Amelia Clark',
+    email: 'amelia.clark@example.com',
+    phone: '+1-555-0511',
+    quantity: 4,
+    status: 'Completed',
+    isPaid: true,
+    notes: 'Team building event order.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 192,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+        actor: 'Amelia Clark',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18 + 1000 * 60 * 45).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order shipped',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 17).toISOString(),
+        actor: 'Logistics Bot',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Delivered',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 16).toISOString(),
+        actor: 'Delivery Partner',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Compact Travel Adapter',
+    customerName: 'Lucas Lewis',
+    email: 'lucas.lewis@example.com',
+    phone: '+1-555-0512',
+    quantity: 2,
+    status: 'Pending',
+    isPaid: false,
+    notes: 'International travel order.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 19).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 84,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 19).toISOString(),
+        actor: 'Lucas Lewis',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment pending',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 19 + 1000 * 60 * 15).toISOString(),
+        actor: 'System',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Heritage Leather Wallet',
+    customerName: 'Mia Walker',
+    email: 'mia.walker@example.com',
+    phone: '+1-555-0513',
+    quantity: 1,
+    status: 'Paid',
+    isPaid: true,
+    notes: 'Birthday gift.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 72.5,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+        actor: 'Mia Walker',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment confirmed',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20 + 1000 * 60 * 25).toISOString(),
+        actor: 'Store Admin',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Signature Hoodie',
+    customerName: 'Henry Hall',
+    email: 'henry.hall@example.com',
+    phone: '+1-555-0514',
+    quantity: 3,
+    status: 'Shipped',
+    isPaid: true,
+    notes: 'Family order, different sizes.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 264,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21).toISOString(),
+        actor: 'Henry Hall',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21 + 1000 * 60 * 35).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Package dispatched',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+        actor: 'Logistics Bot',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Wireless Earbuds',
+    customerName: 'Ella Young',
+    email: 'ella.young@example.com',
+    phone: '+1-555-0515',
+    quantity: 1,
+    status: 'Completed',
+    isPaid: true,
+    notes: 'Customer requested warranty card.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 22).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 189,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 22).toISOString(),
+        actor: 'Ella Young',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 22 + 1000 * 60 * 20).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order shipped',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21).toISOString(),
+        actor: 'Logistics Bot',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Delivered',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+        actor: 'Delivery Partner',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Eco Water Bottle',
+    customerName: 'Alexander King',
+    email: 'alexander.king@example.com',
+    phone: '+1-555-0516',
+    quantity: 2,
+    status: 'Accepted',
+    isPaid: true,
+    notes: 'Fitness enthusiast order.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 23).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 68,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 23).toISOString(),
+        actor: 'Alexander King',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 23 + 1000 * 60 * 30).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order accepted, preparing fulfillment',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 22).toISOString(),
+        actor: 'Warehouse Team',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Limited Edition Sneakers',
+    customerName: 'Sofia Wright',
+    email: 'sofia.wright@example.com',
+    phone: '+1-555-0517',
+    quantity: 1,
+    status: 'Paid',
+    isPaid: true,
+    notes: 'Collector item order.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 135,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
+        actor: 'Sofia Wright',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment confirmed',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24 + 1000 * 60 * 15).toISOString(),
+        actor: 'Store Admin',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Travel Duffel Bag',
+    customerName: 'Daniel Lopez',
+    email: 'daniel.lopez@example.com',
+    phone: '+1-555-0518',
+    quantity: 1,
+    status: 'Shipped',
+    isPaid: true,
+    notes: 'Business trip order.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 158.5,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+        actor: 'Daniel Lopez',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25 + 1000 * 60 * 40).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Package dispatched',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
+        actor: 'Logistics Bot',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Artisan Coffee Mug',
+    customerName: 'Avery Scott',
+    email: 'avery.scott@example.com',
+    phone: '+1-555-0519',
+    quantity: 8,
+    status: 'Completed',
+    isPaid: true,
+    notes: 'Office kitchen restock.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26).toISOString(),
+    submittedBy: 'Store Admin',
+    total: 192,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26).toISOString(),
+        actor: 'Avery Scott',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Payment received',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26 + 1000 * 60 * 50).toISOString(),
+        actor: 'Store Admin',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Order shipped',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+        actor: 'Logistics Bot',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Delivered',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
+        actor: 'Delivery Partner',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    productName: 'Desktop Organizer Set',
+    customerName: 'Scarlett Green',
+    email: 'scarlett.green@example.com',
+    phone: '+1-555-0520',
+    quantity: 1,
+    status: 'Pending',
+    isPaid: false,
+    notes: 'Home office setup.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 27).toISOString(),
+    submittedBy: 'Staff Member',
+    total: 54,
+    timeline: [
+      {
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 27).toISOString(),
+        actor: 'Scarlett Green',
+      },
+      {
+        id: crypto.randomUUID(),
+        description: 'Awaiting payment',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 27 + 1000 * 60 * 10).toISOString(),
+        actor: 'Billing Bot',
+      },
+    ],
+  },
 ]
 
 const products = [
@@ -515,6 +1183,272 @@ const products = [
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
   },
+  {
+    id: crypto.randomUUID(),
+    name: 'Premium Yoga Mat',
+    description: 'Eco-friendly yoga mat with superior grip and cushioning, 72" x 24".',
+    price: 65,
+    stockQuantity: 4,
+    reorderThreshold: 8,
+    lowStock: true,
+    status: 'active',
+    category: 'Fitness',
+    imageUrl: 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Smart Watch Band',
+    description: 'Silicone watch band compatible with major smartwatch models, multiple colors.',
+    price: 32,
+    stockQuantity: 25,
+    reorderThreshold: 12,
+    lowStock: false,
+    status: 'active',
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Leather Backpack',
+    description: 'Genuine leather backpack with laptop compartment and multiple pockets.',
+    price: 195,
+    stockQuantity: 6,
+    reorderThreshold: 10,
+    lowStock: true,
+    status: 'active',
+    category: 'Accessories',
+    imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 22).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Bluetooth Speaker',
+    description: 'Portable waterproof Bluetooth speaker with 360-degree sound and 12-hour battery.',
+    price: 89,
+    stockQuantity: 11,
+    reorderThreshold: 8,
+    lowStock: false,
+    status: 'active',
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Cotton T-Shirt Pack',
+    description: 'Pack of 3 organic cotton t-shirts in assorted colors, sizes S-XXL.',
+    price: 45,
+    stockQuantity: 18,
+    reorderThreshold: 15,
+    lowStock: false,
+    status: 'active',
+    category: 'Apparel',
+    imageUrl: 'https://images.unsplash.com/photo-1521572163474-dffb81e738eb?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Stainless Steel Cookware Set',
+    description: '5-piece stainless steel cookware set with non-stick coating.',
+    price: 149,
+    stockQuantity: 3,
+    reorderThreshold: 5,
+    lowStock: true,
+    status: 'active',
+    category: 'Home & Kitchen',
+    imageUrl: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Running Shoes',
+    description: 'Lightweight running shoes with breathable mesh and cushioned sole.',
+    price: 115,
+    stockQuantity: 9,
+    reorderThreshold: 12,
+    lowStock: true,
+    status: 'active',
+    category: 'Footwear',
+    imageUrl: 'https://images.unsplash.com/photo-1542293787938-4d2226c12e5e?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 19).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Wireless Mouse',
+    description: 'Ergonomic wireless mouse with precision tracking and long battery life.',
+    price: 38,
+    stockQuantity: 22,
+    reorderThreshold: 10,
+    lowStock: false,
+    status: 'active',
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Bamboo Cutting Board',
+    description: 'Eco-friendly bamboo cutting board with juice groove, 18" x 12".',
+    price: 42,
+    stockQuantity: 15,
+    reorderThreshold: 8,
+    lowStock: false,
+    status: 'active',
+    category: 'Home & Kitchen',
+    imageUrl: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Laptop Stand',
+    description: 'Adjustable aluminum laptop stand for ergonomic workspace setup.',
+    price: 55,
+    stockQuantity: 7,
+    reorderThreshold: 6,
+    lowStock: true,
+    status: 'active',
+    category: 'Office',
+    imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 17).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Scented Diffuser',
+    description: 'Ultrasonic essential oil diffuser with LED mood lighting and timer.',
+    price: 58,
+    stockQuantity: 12,
+    reorderThreshold: 10,
+    lowStock: false,
+    status: 'active',
+    category: 'Home & Living',
+    imageUrl: 'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 23).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Fitness Tracker',
+    description: 'Waterproof fitness tracker with heart rate monitor and sleep tracking.',
+    price: 79,
+    stockQuantity: 5,
+    reorderThreshold: 8,
+    lowStock: true,
+    status: 'active',
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 16).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Canvas Sneakers',
+    description: 'Classic canvas sneakers in multiple color options, comfortable everyday wear.',
+    price: 52,
+    stockQuantity: 28,
+    reorderThreshold: 15,
+    lowStock: false,
+    status: 'active',
+    category: 'Footwear',
+    imageUrl: 'https://images.unsplash.com/photo-1542293787938-4d2226c12e5e?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Portable Phone Charger',
+    description: '10,000mAh portable power bank with fast charging and dual USB ports.',
+    price: 35,
+    stockQuantity: 16,
+    reorderThreshold: 10,
+    lowStock: false,
+    status: 'active',
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1609091839311-d5365f7e77b5?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Throw Pillow Set',
+    description: 'Set of 2 decorative throw pillows with premium covers, 18" x 18".',
+    price: 39,
+    stockQuantity: 20,
+    reorderThreshold: 12,
+    lowStock: false,
+    status: 'active',
+    category: 'Home & Living',
+    imageUrl: 'https://images.unsplash.com/photo-1584100936595-c0652b5f7c38?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 26).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Denim Jacket',
+    description: 'Classic denim jacket with modern fit, available in multiple washes.',
+    price: 95,
+    stockQuantity: 8,
+    reorderThreshold: 10,
+    lowStock: true,
+    status: 'active',
+    category: 'Apparel',
+    imageUrl: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 27).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Ceramic Plant Pot',
+    description: 'Handcrafted ceramic plant pot with drainage, 6" diameter, multiple colors.',
+    price: 28,
+    stockQuantity: 30,
+    reorderThreshold: 15,
+    lowStock: false,
+    status: 'active',
+    category: 'Home & Living',
+    imageUrl: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 28).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Mechanical Keyboard',
+    description: 'RGB backlit mechanical keyboard with Cherry MX switches and wrist rest.',
+    price: 125,
+    stockQuantity: 4,
+    reorderThreshold: 6,
+    lowStock: true,
+    status: 'active',
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 29).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 13).toISOString(),
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Yoga Block Set',
+    description: 'Set of 2 high-density foam yoga blocks for alignment and support.',
+    price: 22,
+    stockQuantity: 35,
+    reorderThreshold: 20,
+    lowStock: false,
+    status: 'active',
+    category: 'Fitness',
+    imageUrl: 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=800&q=60',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 31).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+  },
 ]
 
 const customers = [
@@ -622,6 +1556,246 @@ const customers = [
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString(),
     orderIds: () => [],
   },
+  {
+    id: crypto.randomUUID(),
+    name: 'Emma Watson',
+    email: 'emma.watson@example.com',
+    phone: '+1-555-0501',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 50).toISOString(),
+    orderIds: () => [orders[10].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'James Wilson',
+    email: 'james.wilson@example.com',
+    phone: '+1-555-0502',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 180).toISOString(),
+    orderIds: () => [orders[11].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Olivia Martinez',
+    email: 'olivia.martinez@example.com',
+    phone: '+1-555-0503',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 35).toISOString(),
+    orderIds: () => [orders[12].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Michael Brown',
+    email: 'michael.brown@example.com',
+    phone: '+1-555-0504',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+    orderIds: () => [orders[13].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Sophia Rodriguez',
+    email: 'sophia.rodriguez@example.com',
+    phone: '+1-555-0505',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 40).toISOString(),
+    orderIds: () => [orders[14].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'David Kim',
+    email: 'david.kim@example.com',
+    phone: '+1-555-0506',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString(),
+    orderIds: () => [orders[15].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Isabella Taylor',
+    email: 'isabella.taylor@example.com',
+    phone: '+1-555-0507',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 55).toISOString(),
+    orderIds: () => [orders[16].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'William Anderson',
+    email: 'william.anderson@example.com',
+    phone: '+1-555-0508',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 70).toISOString(),
+    orderIds: () => [orders[17].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Charlotte White',
+    email: 'charlotte.white@example.com',
+    phone: '+1-555-0509',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
+    orderIds: () => [orders[18].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Benjamin Harris',
+    email: 'benjamin.harris@example.com',
+    phone: '+1-555-0510',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
+    orderIds: () => [orders[19].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Amelia Clark',
+    email: 'amelia.clark@example.com',
+    phone: '+1-555-0511',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 80).toISOString(),
+    orderIds: () => [orders[20].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Lucas Lewis',
+    email: 'lucas.lewis@example.com',
+    phone: '+1-555-0512',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
+    orderIds: () => [orders[21].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Mia Walker',
+    email: 'mia.walker@example.com',
+    phone: '+1-555-0513',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 65).toISOString(),
+    orderIds: () => [orders[22].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Henry Hall',
+    email: 'henry.hall@example.com',
+    phone: '+1-555-0514',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 50).toISOString(),
+    orderIds: () => [orders[23].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Ella Young',
+    email: 'ella.young@example.com',
+    phone: '+1-555-0515',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 85).toISOString(),
+    orderIds: () => [orders[24].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Alexander King',
+    email: 'alexander.king@example.com',
+    phone: '+1-555-0516',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 95).toISOString(),
+    orderIds: () => [orders[25].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Sofia Wright',
+    email: 'sofia.wright@example.com',
+    phone: '+1-555-0517',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 100).toISOString(),
+    orderIds: () => [orders[26].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Daniel Lopez',
+    email: 'daniel.lopez@example.com',
+    phone: '+1-555-0518',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 110).toISOString(),
+    orderIds: () => [orders[27].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Avery Scott',
+    email: 'avery.scott@example.com',
+    phone: '+1-555-0519',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 120).toISOString(),
+    orderIds: () => [orders[28].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Scarlett Green',
+    email: 'scarlett.green@example.com',
+    phone: '+1-555-0520',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+    orderIds: () => [orders[29].id],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Robert Johnson',
+    email: 'robert.johnson@example.com',
+    phone: '+1-555-0521',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 130).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Emily Davis',
+    email: 'emily.davis@example.com',
+    phone: '+1-555-0522',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 140).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Christopher Miller',
+    email: 'christopher.miller@example.com',
+    phone: '+1-555-0523',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 150).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Jessica Garcia',
+    email: 'jessica.garcia@example.com',
+    phone: '+1-555-0524',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 160).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Matthew Martinez',
+    email: 'matthew.martinez@example.com',
+    phone: '+1-555-0525',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 170).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Ashley Robinson',
+    email: 'ashley.robinson@example.com',
+    phone: '+1-555-0526',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 190).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Joshua Clark',
+    email: 'joshua.clark@example.com',
+    phone: '+1-555-0527',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 105).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Amanda Rodriguez',
+    email: 'amanda.rodriguez@example.com',
+    phone: '+1-555-0528',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 115).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Andrew Lewis',
+    email: 'andrew.lewis@example.com',
+    phone: '+1-555-0529',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 125).toISOString(),
+    orderIds: () => [],
+  },
+  {
+    id: crypto.randomUUID(),
+    name: 'Stephanie Lee',
+    email: 'stephanie.lee@example.com',
+    phone: '+1-555-0530',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 135).toISOString(),
+    orderIds: () => [],
+  },
 ]
 
 customers.forEach((customer) => {
@@ -709,7 +1883,7 @@ function attachOrderToCustomer(order) {
   const existing = findCustomerByEmail(order.email)
   if (existing) {
     existing.name = existing.name || order.customerName
-    existing.phone = order.phone || existing.phone
+    existing.phone = order.phone || existing.phone || 'Not provided'
     existing.orderIds = existing.orderIds || []
     if (!existing.orderIds.includes(order.id)) {
       existing.orderIds.unshift(order.id)
@@ -722,7 +1896,7 @@ function attachOrderToCustomer(order) {
     id: crypto.randomUUID(),
     name: order.customerName || order.email,
     email: order.email.trim(),
-    phone: order.phone || '',
+    phone: order.phone || 'Not provided',
     createdAt: new Date().toISOString(),
     orderIds: [order.id],
   }
@@ -734,11 +1908,13 @@ function attachOrderToCustomer(order) {
 const serializeCustomer = (customer) => {
   const orderList = getOrdersForCustomer(customer)
   const lastOrderTimestamp = orderList
-    .map((order) => new Date(order.createdAt).getTime())
-    .filter((time) => !Number.isNaN(time))
+    .map((order) => order.createdAt ? new Date(order.createdAt).getTime() : null)
+    .filter((time) => time !== null && !Number.isNaN(time))
     .sort((a, b) => b - a)[0]
   return {
     ...customer,
+    phone: customer.phone || 'Not provided',
+    createdAt: customer.createdAt || new Date().toISOString(),
     orderIds: [...(customer.orderIds || [])],
     orderCount: orderList.length,
     lastOrderDate: lastOrderTimestamp ? new Date(lastOrderTimestamp).toISOString() : null,
@@ -768,9 +1944,39 @@ const sendCsv = (res, filename, headers, rows) => {
   res.send(arrayToCsv(headers, rows))
 }
 
-products.forEach((product) => ensureLowStockFlag(product))
+// Ensure all products have required fields
+products.forEach((product) => {
+  ensureLowStockFlag(product)
+  if (!product.category) product.category = 'Uncategorized'
+  if (product.price === undefined || product.price === null) product.price = 0
+  if (!product.createdAt) product.createdAt = new Date().toISOString()
+})
 
-orders.forEach((order) => attachOrderToCustomer(order))
+// Ensure all orders have required fields
+orders.forEach((order) => {
+  if (!order.createdAt) order.createdAt = new Date().toISOString()
+  if (!order.updatedAt) order.updatedAt = order.createdAt
+  if (order.total === undefined || order.total === null) {
+    const product = products.find((p) => p.name.toLowerCase() === order.productName.toLowerCase())
+    order.total = product ? product.price * (order.quantity || 1) : 0
+  }
+  attachOrderToCustomer(order)
+})
+
+// Ensure all customers have required fields
+customers.forEach((customer) => {
+  if (!customer.phone) customer.phone = 'Not provided'
+  if (!customer.createdAt) customer.createdAt = new Date().toISOString()
+  if (typeof customer.orderIds === 'function') {
+    customer.orderIds = customer.orderIds()
+  }
+})
+
+// Ensure all users have required fields
+users.forEach((user) => {
+  if (!user.createdAt) user.createdAt = new Date().toISOString()
+  if (!user.updatedAt) user.updatedAt = user.createdAt
+})
 
 const returns = [
   {
@@ -922,6 +2128,249 @@ const returns = [
       },
     ],
   },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[11].id,
+    customerId: customers.find((customer) => customer.email === 'james.wilson@example.com')?.id ?? '',
+    reason: 'Wallet color does not match description, requesting exchange.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+    status: 'Submitted',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via customer portal.',
+        status: 'Submitted',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[13].id,
+    customerId: customers.find((customer) => customer.email === 'michael.brown@example.com')?.id ?? '',
+    reason: 'Earbuds not charging properly, defective unit.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    status: 'Approved',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via support ticket.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+        actor: 'Returns Specialist',
+        note: 'Approved after technical review.',
+        status: 'Approved',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[16].id,
+    customerId: customers.find((customer) => customer.email === 'isabella.taylor@example.com')?.id ?? '',
+    reason: 'Duffel bag zipper broke on first use.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+    status: 'Refunded',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via customer account.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+        actor: 'Store Admin',
+        note: 'Approved — manufacturing defect confirmed.',
+        status: 'Approved',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
+        actor: 'Billing Team',
+        note: 'Full refund processed.',
+        status: 'Refunded',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[18].id,
+    customerId: customers.find((customer) => customer.email === 'charlotte.white@example.com')?.id ?? '',
+    reason: 'One organizer piece missing from set.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+    status: 'Approved',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via email support.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+        actor: 'Warehouse Team',
+        note: 'Approved — replacement sent.',
+        status: 'Approved',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[20].id,
+    customerId: customers.find((customer) => customer.email === 'amelia.clark@example.com')?.id ?? '',
+    reason: 'Tote bags arrived with stains, quality issue.',
+    returnedQuantity: 2,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+    status: 'Submitted',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via customer portal.',
+        status: 'Submitted',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[24].id,
+    customerId: customers.find((customer) => customer.email === 'ella.young@example.com')?.id ?? '',
+    reason: 'Earbuds right side not working, audio imbalance.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+    status: 'Approved',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via chat support.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+        actor: 'Returns Specialist',
+        note: 'Approved after testing.',
+        status: 'Approved',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[25].id,
+    customerId: customers.find((customer) => customer.email === 'alexander.king@example.com')?.id ?? '',
+    reason: 'Water bottle leaked, defective seal.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+    status: 'Refunded',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via customer account.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+        actor: 'Store Admin',
+        note: 'Approved — defect confirmed.',
+        status: 'Approved',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 8).toISOString(),
+        actor: 'Billing Team',
+        note: 'Refund processed.',
+        status: 'Refunded',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[28].id,
+    customerId: customers.find((customer) => customer.email === 'avery.scott@example.com')?.id ?? '',
+    reason: 'Coffee mugs arrived chipped, packaging issue.',
+    returnedQuantity: 3,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11).toISOString(),
+    status: 'Approved',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 11).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via support ticket.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
+        actor: 'Warehouse Team',
+        note: 'Approved — replacement dispatched.',
+        status: 'Approved',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[12].id,
+    customerId: customers.find((customer) => customer.email === 'olivia.martinez@example.com')?.id ?? '',
+    reason: 'Hoodie size incorrect, requesting exchange.',
+    returnedQuantity: 1,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    status: 'Rejected',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+        actor: 'System',
+        note: 'Return submitted for size exchange.',
+        status: 'Submitted',
+      },
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 10).toISOString(),
+        actor: 'Store Admin',
+        note: 'Rejected — exchange order created instead.',
+        status: 'Rejected',
+      },
+    ],
+  },
+  {
+    id: crypto.randomUUID(),
+    orderId: orders[14].id,
+    customerId: customers.find((customer) => customer.email === 'sophia.rodriguez@example.com')?.id ?? '',
+    reason: 'Water bottles arrived damaged, shipping issue.',
+    returnedQuantity: 2,
+    dateRequested: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+    status: 'Submitted',
+    history: [
+      {
+        id: crypto.randomUUID(),
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
+        actor: 'System',
+        note: 'Return submitted via customer portal.',
+        status: 'Submitted',
+      },
+    ],
+  },
 ]
 
 const RETURN_STATUSES = ['Submitted', 'Approved', 'Rejected', 'Refunded']
@@ -950,7 +2399,15 @@ const linkReturnToOrder = (returnRequest) => {
   }
 }
 
+// Ensure all returns have required fields (after helper functions are defined)
 returns.forEach((returnRequest) => {
+  if (!returnRequest.dateRequested) returnRequest.dateRequested = new Date().toISOString()
+  if (!returnRequest.customerId && returnRequest.orderId) {
+    const order = findOrderById(returnRequest.orderId)
+    if (order && order.customerId) {
+      returnRequest.customerId = order.customerId
+    }
+  }
   ensureReturnCustomer(returnRequest)
   linkReturnToOrder(returnRequest)
 })
@@ -1087,7 +2544,14 @@ app.post('/api/signup', async (req, res) => {
 
 // Order routes
 app.get('/api/orders', (_req, res) => {
-  res.json(orders)
+  // Ensure all orders have required fields before sending
+  const sanitizedOrders = orders.map((order) => ({
+    ...order,
+    createdAt: order.createdAt || new Date().toISOString(),
+    updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
+    total: order.total !== undefined && order.total !== null ? order.total : 0,
+  }))
+  res.json(sanitizedOrders)
 })
 
 app.get('/api/orders/:id', (req, res) => {
@@ -1128,6 +2592,10 @@ app.post('/api/orders', (req, res) => {
     }
   }
 
+  const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
+  const productPrice = product ? product.price : 0
+  const orderTotal = productPrice * quantity
+
   const newOrder = {
     id: crypto.randomUUID(),
     productName,
@@ -1139,7 +2607,9 @@ app.post('/api/orders', (req, res) => {
     isPaid: false,
     notes: notes || '',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     submittedBy,
+    total: orderTotal,
   }
 
   orders.unshift(newOrder)
@@ -1200,7 +2670,7 @@ app.post('/api/customers', authenticateToken, (req, res) => {
     id: crypto.randomUUID(),
     name: String(name).trim(),
     email: String(email).trim(),
-    phone: phone ? String(phone).trim() : '',
+    phone: phone ? String(phone).trim() : 'Not provided',
     createdAt: new Date().toISOString(),
     orderIds: [],
   }
@@ -1401,13 +2871,85 @@ app.put('/api/returns/:id', authenticateToken, (req, res) => {
   return res.json(serializeReturn(returnRequest))
 })
 
+// Metrics routes
+app.get('/api/metrics/overview', authenticateToken, (_req, res) => {
+  const totalOrders = orders.length
+  const pendingOrdersCount = orders.filter((order) => order.status === 'Pending').length
+  const totalProducts = products.length
+  const lowStockCount = products.filter((product) => product.lowStock).length
+  const pendingReturnsCount = returns.filter((returnRequest) => returnRequest.status === 'Submitted').length
+  
+  // Calculate new customers in last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
+  const newCustomersLast7Days = customers.filter(
+    (customer) => new Date(customer.createdAt) >= sevenDaysAgo
+  ).length
+
+  // Calculate total revenue
+  const totalRevenue = orders.reduce((acc, order) => acc + (order.total ?? 0), 0)
+
+  res.json({
+    totalOrders,
+    pendingOrdersCount,
+    totalProducts,
+    lowStockCount,
+    pendingReturnsCount,
+    newCustomersLast7Days,
+    totalRevenue,
+  })
+})
+
+app.get('/api/metrics/low-stock-trend', authenticateToken, (_req, res) => {
+  const today = new Date()
+  const trendData = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date(today)
+    date.setDate(date.getDate() - (6 - index))
+    date.setHours(0, 0, 0, 0)
+    
+    // Count products that were low stock on this date
+    // For simplicity, we'll use current low stock status
+    // In a real system, you'd track historical stock levels
+    const dateKey = date.toISOString().split('T')[0]
+    
+    // For demo purposes, we'll simulate trend data based on current low stock count
+    // In production, you'd query historical inventory snapshots
+    const baseCount = products.filter((p) => p.lowStock).length
+    const variation = Math.floor(Math.random() * 3) - 1 // -1, 0, or 1
+    const count = Math.max(0, baseCount + variation)
+    
+    return {
+      date: dateKey,
+      dateLabel: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      lowStockCount: count,
+    }
+  })
+  
+  res.json(trendData)
+})
+
 // Product routes
 app.get('/api/products', (_req, res) => {
-  res.json(products)
+  // Ensure all products have required fields before sending
+  const sanitizedProducts = products.map((product) => ({
+    ...product,
+    category: product.category || 'Uncategorized',
+    price: product.price !== undefined && product.price !== null ? product.price : 0,
+    createdAt: product.createdAt || new Date().toISOString(),
+  }))
+  res.json(sanitizedProducts)
 })
 
 app.get('/api/products/low-stock', (_req, res) => {
-  res.json(products.filter((product) => product.lowStock))
+  // Ensure all products have required fields before sending
+  const sanitizedProducts = products
+    .filter((product) => product.lowStock)
+    .map((product) => ({
+      ...product,
+      category: product.category || 'Uncategorized',
+      price: product.price !== undefined && product.price !== null ? product.price : 0,
+      createdAt: product.createdAt || new Date().toISOString(),
+    }))
+  res.json(sanitizedProducts)
 })
 
 app.post('/api/products', authenticateToken, (req, res) => {
@@ -1456,7 +2998,7 @@ app.post('/api/products', authenticateToken, (req, res) => {
     reorderThreshold: thresholdValue,
     lowStock: false,
     status,
-    category: category || undefined,
+    category: category && category.trim() ? category.trim() : 'Uncategorized',
     imageUrl: imageUrl || undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
