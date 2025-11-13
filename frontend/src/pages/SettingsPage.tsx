@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useContext } from 'react'
 import {
   Alert,
-  Avatar,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -49,6 +49,8 @@ import type {
   UpdateBusinessSettingsPayload,
 } from '../types/user'
 import { useForm, Controller } from 'react-hook-form'
+import { CURRENCIES } from '../constants/currencies'
+import { COUNTRIES } from '../constants/countries'
 
 type TabPanelProps = {
   children?: React.ReactNode
@@ -203,7 +205,23 @@ const SettingsPage = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { user: authUser, logout } = useAuth()
-  const { mode, toggleMode } = useContext(ThemeModeContext)
+  const { mode, color, toggleMode, setColor } = useContext(ThemeModeContext)
+  
+  // Theme colors for preview buttons
+  const themeColors = {
+    blue: {
+      light: { primary: '#1976d2' },
+      dark: { primary: '#90caf9' },
+    },
+    green: {
+      light: { primary: '#2e7d32' },
+      dark: { primary: '#81c784' },
+    },
+    purple: {
+      light: { primary: '#7b1fa2' },
+      dark: { primary: '#ba68c8' },
+    },
+  }
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null)
   const [loading, setLoading] = useState(true)
@@ -222,7 +240,7 @@ const SettingsPage = () => {
     defaultValues: {
       fullName: '',
       phone: '',
-      profilePictureUrl: null,
+      profilePictureUrl: undefined,
       defaultDateRangeFilter: 'last7',
       notificationPreferences: {
         newOrders: true,
@@ -239,9 +257,11 @@ const SettingsPage = () => {
     formState: { isDirty: businessDirty },
   } = useForm<UpdateBusinessSettingsPayload>({
     defaultValues: {
-      logoUrl: null,
+      logoUrl: undefined,
       brandColor: '#1976d2',
       defaultCurrency: 'USD',
+      country: 'US',
+      dashboardName: 'Shopify Admin Dashboard',
       defaultOrderStatuses: [],
     },
   })
@@ -268,7 +288,7 @@ const SettingsPage = () => {
       resetProfile({
         fullName: userData.fullName || '',
         phone: userData.phone || '',
-        profilePictureUrl: userData.profilePictureUrl || null,
+        profilePictureUrl: userData.profilePictureUrl || undefined,
         defaultDateRangeFilter: userData.defaultDateRangeFilter || 'last7',
         notificationPreferences: userData.notificationPreferences || {
           newOrders: true,
@@ -323,13 +343,6 @@ const SettingsPage = () => {
     }
   }
 
-  const resolveError = (err: unknown, fallback: string) => {
-    if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
-      logout()
-      return 'Your session has expired. Please sign in again.'
-    }
-    return err instanceof Error ? err.message : fallback
-  }
 
   if (loading) {
     return (
@@ -489,17 +502,52 @@ const SettingsPage = () => {
             Preferences
           </Typography>
           <Divider />
-          <Stack spacing={2}>
-            <FormControlLabel
-              control={
-                <Switch checked={mode === 'dark'} onChange={toggleMode} />
-              }
-              label={`Theme: ${mode === 'dark' ? 'Dark' : 'Light'}`}
-              sx={{ minHeight: 48 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              Toggle between light and dark mode. Your preference is saved automatically.
-            </Typography>
+          <Stack spacing={3}>
+            <Box>
+              <FormLabel component="legend" sx={{ mb: 1, display: 'block' }}>
+                Theme Mode
+              </FormLabel>
+              <FormControlLabel
+                control={
+                  <Switch checked={mode === 'dark'} onChange={toggleMode} />
+                }
+                label={`${mode === 'dark' ? 'Dark' : 'Light'} Mode`}
+                sx={{ minHeight: 48 }}
+              />
+              <Typography variant="body2" color="text.secondary" mt={1}>
+                Toggle between light and dark mode. Your preference is saved automatically.
+              </Typography>
+            </Box>
+            <Box>
+              <FormLabel component="legend" sx={{ mb: 1, display: 'block' }}>
+                Color Theme
+              </FormLabel>
+              <Stack direction="row" spacing={2} flexWrap="wrap">
+                {(['blue', 'green', 'purple'] as const).map((themeColor) => (
+                  <Button
+                    key={themeColor}
+                    variant={color === themeColor ? 'contained' : 'outlined'}
+                    onClick={() => setColor(themeColor)}
+                    sx={{
+                      textTransform: 'capitalize',
+                      minWidth: 100,
+                      bgcolor: color === themeColor ? themeColors[themeColor][mode].primary : undefined,
+                      borderColor: themeColors[themeColor][mode].primary,
+                      color: color === themeColor ? '#fff' : themeColors[themeColor][mode].primary,
+                      '&:hover': {
+                        bgcolor: color === themeColor ? undefined : themeColors[themeColor][mode].primary,
+                        color: '#fff',
+                      },
+                    }}
+                  >
+                    {themeColor}
+                  </Button>
+                ))}
+              </Stack>
+              <Typography variant="body2" color="text.secondary" mt={1}>
+                Choose your preferred color scheme. Available in both light and dark modes.
+              </Typography>
+            </Box>
           </Stack>
         </Stack>
       </CardContent>
@@ -542,17 +590,87 @@ const SettingsPage = () => {
               <Controller
                 name="defaultCurrency"
                 control={businessControl}
+                render={({ field: { onChange, value, ...field } }) => (
+                  <Autocomplete
+                    {...field}
+                    id="business-currency"
+                    options={CURRENCIES}
+                    getOptionLabel={(option) => 
+                      typeof option === 'string' 
+                        ? CURRENCIES.find(c => c.code === option)?.name || option
+                        : `${option.code} - ${option.name} (${option.symbol})`
+                    }
+                    value={CURRENCIES.find(c => c.code === value) || null}
+                    onChange={(_, newValue) => {
+                      onChange(newValue ? newValue.code : 'USD')
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Default Currency"
+                        size="small"
+                        autoComplete="off"
+                      />
+                    )}
+                    filterOptions={(options, { inputValue }) => {
+                      const searchLower = inputValue.toLowerCase()
+                      return options.filter((option) =>
+                        option.code.toLowerCase().includes(searchLower) ||
+                        option.name.toLowerCase().includes(searchLower) ||
+                        option.symbol.toLowerCase().includes(searchLower)
+                      )
+                    }}
+                  />
+                )}
+              />
+              <Controller
+                name="country"
+                control={businessControl}
+                render={({ field: { onChange, value, ...field } }) => (
+                  <Autocomplete
+                    {...field}
+                    id="business-country"
+                    options={COUNTRIES}
+                    getOptionLabel={(option) => 
+                      typeof option === 'string' 
+                        ? COUNTRIES.find(c => c.code === option)?.name || option
+                        : option.name
+                    }
+                    value={COUNTRIES.find(c => c.code === value) || null}
+                    onChange={(_, newValue) => {
+                      onChange(newValue ? newValue.code : 'US')
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Country"
+                        size="small"
+                        autoComplete="off"
+                      />
+                    )}
+                    filterOptions={(options, { inputValue }) => {
+                      const searchLower = inputValue.toLowerCase()
+                      return options.filter((option) =>
+                        option.code.toLowerCase().includes(searchLower) ||
+                        option.name.toLowerCase().includes(searchLower)
+                      )
+                    }}
+                  />
+                )}
+              />
+              <Controller
+                name="dashboardName"
+                control={businessControl}
                 render={({ field }) => (
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="business-currency-label">Default Currency</InputLabel>
-                    <Select {...field} id="business-currency" label="Default Currency" labelId="business-currency-label" autoComplete="off">
-                      <MenuItem value="USD">USD ($)</MenuItem>
-                      <MenuItem value="EUR">EUR (€)</MenuItem>
-                      <MenuItem value="GBP">GBP (£)</MenuItem>
-                      <MenuItem value="CAD">CAD (C$)</MenuItem>
-                      <MenuItem value="AUD">AUD (A$)</MenuItem>
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    {...field}
+                    id="business-dashboard-name"
+                    label="Dashboard Name"
+                    fullWidth
+                    size="small"
+                    placeholder="Shopify Admin Dashboard"
+                    autoComplete="off"
+                  />
                 )}
               />
               <Box>

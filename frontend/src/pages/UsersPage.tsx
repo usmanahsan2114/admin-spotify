@@ -10,7 +10,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControlLabel,
+  FormLabel,
   IconButton,
   MenuItem,
   Snackbar,
@@ -20,7 +22,11 @@ import {
   Tooltip,
   Typography,
   useMediaQuery,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useTheme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
@@ -31,7 +37,7 @@ import { DataGrid, type GridColDef, type GridRenderCellParams } from '@mui/x-dat
 import { Controller, useForm, type SubmitHandler, type Resolver } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
-import type { User, UserRole } from '../types/user'
+import type { User, UserRole, UserPermissions, CreateUserPayload, UpdateUserPayload } from '../types/user'
 import {
   createUser,
   deleteUser,
@@ -47,6 +53,7 @@ type FormValues = {
   password?: string
   active: boolean
   requirePassword: boolean
+  permissions: UserPermissions
 }
 
 const userSchema = yup
@@ -73,6 +80,59 @@ const userSchema = yup
 const roleLabels: Record<UserRole, string> = {
   admin: 'Admin',
   staff: 'Staff',
+}
+
+const getDefaultPermissions = (role: UserRole): UserPermissions => {
+  if (role === 'admin') {
+    // Admin has all permissions
+    return {
+      viewOrders: true,
+      editOrders: true,
+      deleteOrders: true,
+      viewProducts: true,
+      editProducts: true,
+      deleteProducts: true,
+      viewCustomers: true,
+      editCustomers: true,
+      viewReturns: true,
+      processReturns: true,
+      viewReports: true,
+      manageUsers: true,
+      manageSettings: true,
+    }
+  }
+  // Staff has limited permissions by default
+  return {
+    viewOrders: true,
+    editOrders: true,
+    deleteOrders: false,
+    viewProducts: true,
+    editProducts: true,
+    deleteProducts: false,
+    viewCustomers: true,
+    editCustomers: false,
+    viewReturns: true,
+    processReturns: true,
+    viewReports: true,
+    manageUsers: false,
+    manageSettings: false,
+  }
+}
+
+const permissionLabels: Record<keyof UserPermissions, string> = {
+  viewOrders: 'View Orders',
+  editOrders: 'Edit Orders',
+  deleteOrders: 'Delete Orders',
+  viewProducts: 'View Products',
+  editProducts: 'Edit Products',
+  deleteProducts: 'Delete Products',
+  viewCustomers: 'View Customers',
+  editCustomers: 'Edit Customers',
+  viewReturns: 'View Returns',
+  processReturns: 'Process Returns',
+  viewReports: 'View Reports',
+  manageUsers: 'Manage Users',
+  manageSettings: 'Manage Settings',
 }
 
 const currentAdminEmail =
@@ -108,6 +168,7 @@ const UsersPage = () => {
       password: '',
       active: true,
       requirePassword: true,
+      permissions: getDefaultPermissions('staff'),
     },
   })
 
@@ -159,6 +220,7 @@ const UsersPage = () => {
         password: '',
         active: user.active ?? true,
         requirePassword: false,
+        permissions: user.permissions || getDefaultPermissions(user.role),
       })
     } else {
       setSelectedUser(null)
@@ -169,6 +231,7 @@ const UsersPage = () => {
         password: '',
         active: true,
         requirePassword: true,
+        permissions: getDefaultPermissions('staff'),
       })
     }
     setIsDialogOpen(true)
@@ -180,14 +243,22 @@ const UsersPage = () => {
   }
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    const { requirePassword, ...data } = values
+    const { requirePassword, permissions, ...data } = values
     try {
       if (selectedUser) {
         const payload: Record<string, unknown> = {}
         if (selectedUser.name !== data.name) payload.name = data.name
-        if (selectedUser.role !== data.role) payload.role = data.role
+        if (selectedUser.role !== data.role) {
+          payload.role = data.role
+          // Update permissions when role changes
+          payload.permissions = getDefaultPermissions(data.role)
+        }
         if ((selectedUser.active ?? true) !== data.active) payload.active = data.active
         if (data.password) payload.password = data.password
+        // Always update permissions if they exist
+        if (permissions) {
+          payload.permissions = permissions
+        }
 
         if (Object.keys(payload).length === 0) {
           setSuccess('No changes to save.')
@@ -195,7 +266,7 @@ const UsersPage = () => {
           return
         }
 
-        const updated = await updateUser(selectedUser.id, payload)
+        const updated = await updateUser(selectedUser.id, { ...payload, permissions } as UpdateUserPayload)
         setUsers((prev) =>
           prev.map((user) => (user.id === selectedUser.id ? updated : user)),
         )
@@ -212,7 +283,8 @@ const UsersPage = () => {
           role: data.role,
           password: passwordForCreate,
           active: data.active,
-        })
+          permissions: permissions || getDefaultPermissions(data.role),
+        } as CreateUserPayload)
         setUsers((prev) => [created, ...prev])
         setSuccess('User added successfully.')
       }
@@ -547,6 +619,46 @@ const UsersPage = () => {
                 />
               )}
             />
+            <Divider sx={{ my: 2 }} />
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  Permissions
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    Configure what this user can access and modify. Admin users have all permissions by default.
+                  </Typography>
+                  <Box
+                    display="grid"
+                    gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)' }}
+                    gap={2}
+                  >
+                    {(Object.keys(permissionLabels) as Array<keyof UserPermissions>).map((key) => (
+                      <Controller
+                        key={key}
+                        name={`permissions.${key}`}
+                        control={control}
+                        render={({ field: { value, onChange } }) => (
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={value ?? false}
+                                onChange={(_, checked) => onChange(checked)}
+                                disabled={watch('role') === 'admin'}
+                              />
+                            }
+                            label={permissionLabels[key]}
+                          />
+                        )}
+                      />
+                    ))}
+                  </Box>
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>

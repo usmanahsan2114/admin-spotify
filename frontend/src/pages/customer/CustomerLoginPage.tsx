@@ -12,11 +12,10 @@ import {
   Typography,
 } from '@mui/material'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { apiFetch } from '../../services/apiClient'
 import SiteAttribution from '../../components/common/SiteAttribution'
 
-const LoginPage = () => {
-  const { login, isAuthenticated, loading } = useAuth()
+const CustomerLoginPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
@@ -24,30 +23,26 @@ const LoginPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      const redirectTo = searchParams.get('redirectTo') || '/'
-      navigate(redirectTo, { replace: true })
-    }
-  }, [isAuthenticated, loading, navigate, searchParams])
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
     try {
-      await login(email, password)
-      const redirectTo = searchParams.get('redirectTo') || '/'
-      navigate(redirectTo, { replace: true })
+      const response = await apiFetch<{ token: string; user: { email: string } }>(
+        '/api/customers/login',
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+          skipAuth: true,
+        }
+      )
+      localStorage.setItem('customer_token', response.token)
+      navigate('/customer/orders', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to login.')
     } finally {
       setSubmitting(false)
     }
-  }
-
-  if (loading && isAuthenticated) {
-    return null
   }
 
   return (
@@ -73,10 +68,10 @@ const LoginPage = () => {
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
             <Box textAlign="center">
               <Typography variant="h4" fontWeight={700}>
-                Welcome back
+                Customer Portal
               </Typography>
               <Typography variant="body2" color="text.secondary" mt={1}>
-                Sign in to continue to the admin dashboard.
+                Sign in to view your orders
               </Typography>
             </Box>
 
@@ -87,7 +82,7 @@ const LoginPage = () => {
             )}
 
             <TextField
-              id="login-email"
+              id="customer-login-email"
               label="Email address"
               type="email"
               value={email}
@@ -95,10 +90,10 @@ const LoginPage = () => {
               required
               fullWidth
               autoFocus
-              autoComplete="username"
+              autoComplete="email"
             />
             <TextField
-              id="login-password"
+              id="customer-login-password"
               label="Password"
               type="password"
               value={password}
@@ -120,25 +115,14 @@ const LoginPage = () => {
             </Button>
 
             <Typography variant="caption" color="text.secondary" textAlign="center">
-              Need credentials? Use{' '}
-              <Link component="button" type="button" onClick={() => {
-                setEmail('admin@example.com')
-                setPassword('admin123')
-              }}>
-                admin@example.com / admin123
-              </Link>
-              {' '}or{' '}
-              <Link component="button" type="button" onClick={() => {
-                setEmail('staff@example.com')
-                setPassword('staff123')
-              }}>
-                staff@example.com / staff123
+              Don't have an account?{' '}
+              <Link component="button" type="button" onClick={() => navigate('/customer/signup')}>
+                Sign up here
               </Link>
             </Typography>
             <Typography variant="caption" color="text.secondary" textAlign="center">
-              New here?{' '}
-              <Link component="button" type="button" onClick={() => navigate('/signup')}>
-                Create an account with our demo signup flow
+              <Link component="button" type="button" onClick={() => navigate('/track-order')}>
+                Track order without login
               </Link>
             </Typography>
           </Stack>
@@ -149,6 +133,5 @@ const LoginPage = () => {
   )
 }
 
-export default LoginPage
-
+export default CustomerLoginPage
 

@@ -54,7 +54,13 @@ export type GrowthComparisonResponse = {
   }
 }
 
-export const fetchMetricsOverview = () => apiFetch<MetricsOverview>('/api/metrics/overview')
+export const fetchMetricsOverview = (startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  const query = params.toString()
+  return apiFetch<MetricsOverview>(`/api/metrics/overview${query ? `?${query}` : ''}`)
+}
 
 export const fetchLowStockTrend = (startDate?: string, endDate?: string) => {
   const params = new URLSearchParams()

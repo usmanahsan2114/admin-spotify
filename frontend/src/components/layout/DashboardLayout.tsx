@@ -39,6 +39,7 @@ import SiteAttribution from '../common/SiteAttribution'
 import { SkipLink } from '../common/SkipLink'
 import { fetchReturns } from '../../services/returnsService'
 import { fetchMetricsOverview } from '../../services/metricsService'
+import { fetchBusinessSettings } from '../../services/usersService'
 import { DRAWER_WIDTH, TOUCH_TARGET_MIN_SIZE } from '../../constants'
 
 const drawerWidth = DRAWER_WIDTH
@@ -110,16 +111,23 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const { logout, user } = useAuth()
   const [pendingReturns, setPendingReturns] = useState<number>(0)
   const [lowStockCount, setLowStockCount] = useState<number>(0)
+  const [businessSettings, setBusinessSettings] = useState<{ logoUrl?: string | null; dashboardName?: string } | null>(null)
 
   useEffect(() => {
     let isMounted = true
     
-    // Fetch metrics for badges
-    fetchMetricsOverview()
-      .then((metrics) => {
+    // Fetch metrics for badges and business settings
+    Promise.all([
+      fetchMetricsOverview(),
+      user?.role === 'admin' ? fetchBusinessSettings().catch(() => null) : Promise.resolve(null),
+    ])
+      .then(([metrics, businessData]) => {
         if (!isMounted) return
         setPendingReturns(metrics.pendingReturnsCount)
         setLowStockCount(metrics.lowStockCount)
+        if (businessData) {
+          setBusinessSettings(businessData)
+        }
       })
       .catch(() => {
         if (!isMounted) return
@@ -130,7 +138,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [user?.role])
 
   const navItems = useMemo(
     () =>
@@ -157,10 +165,18 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   return (
     <Box role="presentation" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Toolbar sx={{ gap: 1 }}>
-        <Avatar sx={{ bgcolor: 'primary.main' }}>SA</Avatar>
+        {businessSettings?.logoUrl ? (
+          <Avatar
+            src={businessSettings.logoUrl}
+            sx={{ width: 40, height: 40 }}
+            alt="Logo"
+          />
+        ) : (
+          <Avatar sx={{ bgcolor: 'primary.main' }}>SA</Avatar>
+        )}
         <Box>
           <Typography variant="subtitle1" fontWeight={600}>
-            Shopify Admin
+            {businessSettings?.dashboardName || 'Shopify Admin'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Back Office
@@ -251,6 +267,21 @@ const DashboardLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { mode, toggleMode } = useContext(ThemeModeContext)
   const { user, logout } = useAuth()
+  const [businessSettings, setBusinessSettings] = useState<{ logoUrl?: string | null; dashboardName?: string } | null>(null)
+
+  useEffect(() => {
+    const loadBusinessSettings = async () => {
+      if (user?.role === 'admin') {
+        try {
+          const settings = await fetchBusinessSettings()
+          setBusinessSettings(settings)
+        } catch {
+          // Silently fail
+        }
+      }
+    }
+    loadBusinessSettings()
+  }, [user?.role])
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen((prev) => !prev)
@@ -303,6 +334,13 @@ const DashboardLayout = () => {
                 <MenuIcon />
               </IconButton>
             )}
+            {businessSettings?.logoUrl && (
+              <Avatar
+                src={businessSettings.logoUrl}
+                sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, mr: 1 }}
+                alt="Logo"
+              />
+            )}
             <Typography
               variant="h6"
               fontWeight={600}
@@ -311,7 +349,7 @@ const DashboardLayout = () => {
                 display: { xs: 'none', sm: 'block' },
               }}
             >
-              Shopify Admin Dashboard
+              {businessSettings?.dashboardName || 'Shopify Admin Dashboard'}
             </Typography>
             <Typography
               variant="h6"
@@ -321,7 +359,7 @@ const DashboardLayout = () => {
                 display: { xs: 'block', sm: 'none' },
               }}
             >
-              Dashboard
+              {businessSettings?.dashboardName?.split(' ')[0] || 'Dashboard'}
             </Typography>
           </Box>
 

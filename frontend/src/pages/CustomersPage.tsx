@@ -42,6 +42,8 @@ type FormValues = {
   name: string
   email: string
   phone: string
+  address?: string
+  alternativePhone?: string
 }
 
 const customerSchema = yup
@@ -53,6 +55,16 @@ const customerSchema = yup
       .optional()
       .transform((value) => value ?? '')
       .default(''),
+    address: yup
+      .string()
+      .optional()
+      .transform((value) => value ?? null)
+      .nullable(),
+    alternativePhone: yup
+      .string()
+      .optional()
+      .transform((value) => value ?? null)
+      .nullable(),
   })
   .required()
 
@@ -92,6 +104,8 @@ const CustomersPage = () => {
       name: '',
       email: '',
       phone: '',
+      address: '',
+      alternativePhone: '',
     },
   })
 
@@ -152,7 +166,7 @@ const CustomersPage = () => {
   }, [searchQuery, customers])
 
   const handleOpenDialog = () => {
-    reset({ name: '', email: '', phone: '' })
+    reset({ name: '', email: '', phone: '', address: '', alternativePhone: '' })
     setIsDialogOpen(true)
   }
 
@@ -166,6 +180,8 @@ const CustomersPage = () => {
         name: values.name.trim(),
         email: values.email.trim(),
         phone: values.phone.trim() ? values.phone.trim() : undefined,
+        address: values.address?.trim() || null,
+        alternativePhone: values.alternativePhone?.trim() || null,
       }
       const created = await createCustomer(payload)
       setCustomers((prev) => [created, ...prev])
@@ -437,6 +453,39 @@ const CustomersPage = () => {
                   placeholder="+1-555-0100"
                   error={Boolean(errors.phone)}
                   helperText={errors.phone?.message}
+                  autoComplete="tel"
+                />
+              )}
+            />
+            <Controller
+              name="address"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  id="customer-address"
+                  label="Address (Optional)"
+                  multiline
+                  minRows={2}
+                  placeholder="Street address, city, state, zip code"
+                  error={Boolean(errors.address)}
+                  helperText={errors.address?.message}
+                  autoComplete="street-address"
+                />
+              )}
+            />
+            <Controller
+              name="alternativePhone"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  id="customer-alternative-phone"
+                  label="Alternative Phone (Optional)"
+                  type="tel"
+                  placeholder="+1-555-0100"
+                  error={Boolean(errors.alternativePhone)}
+                  helperText={errors.alternativePhone?.message}
                   autoComplete="tel"
                 />
               )}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -471,7 +472,7 @@ const ReturnsPage = () => {
                         paddingAngle={4}
                         dataKey="value"
                       >
-                        {chartData.map((entry, index) => (
+                        {chartData.map((entry) => (
                           <Cell key={entry.name} fill={PIE_COLORS_MAP[entry.name] || theme.palette.primary.main} />
                         ))}
                       </Pie>
@@ -562,23 +563,34 @@ const ReturnsPage = () => {
             <Controller
               name="orderId"
               control={createControl}
-              render={({ field }) => (
-                <TextField
+              render={({ field: { onChange, value, ...field } }) => (
+                <Autocomplete
                   {...field}
                   id="return-create-order"
-                  select
-                  label="Order"
-                  required
-                  error={Boolean(createErrors.orderId)}
-                  helperText={createErrors.orderId?.message}
-                  autoComplete="off"
-                >
-                  {orderOptions.map((option) => (
-                    <MenuItem key={option.id} value={option.id}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                  options={orderOptions}
+                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.label)}
+                  value={orderOptions.find((opt) => opt.id === value) || null}
+                  onChange={(_, newValue) => {
+                    onChange(newValue ? newValue.id : '')
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Order"
+                      required
+                      error={Boolean(createErrors.orderId)}
+                      helperText={createErrors.orderId?.message}
+                      autoComplete="off"
+                    />
+                  )}
+                  filterOptions={(options, { inputValue }) => {
+                    const searchLower = inputValue.toLowerCase()
+                    return options.filter((option) =>
+                      option.label.toLowerCase().includes(searchLower) ||
+                      option.id.toLowerCase().includes(searchLower)
+                    )
+                  }}
+                />
               )}
             />
             <Controller

@@ -279,6 +279,40 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Fixed critical Settings page functionality, improved dark mode consistency across all devices, better desktop UX for login/signup pages, complete backend API coverage, cleaner codebase.
 
+## Step 26 – User Permissions & Granular Access Control
+
+**Date**: 2025-11-13
+
+**Objective**: Implement granular permission management system allowing admins to control specific user capabilities beyond simple role-based access.
+
+**Implementation Details**:
+
+1. **Frontend (`UsersPage.tsx`)**:
+   - Added `UserPermissions` type with 13 permission flags: `viewOrders`, `editOrders`, `deleteOrders`, `viewProducts`, `editProducts`, `deleteProducts`, `viewCustomers`, `editCustomers`, `viewReturns`, `processReturns`, `viewReports`, `manageUsers`, `manageSettings`.
+   - Extended `FormValues` and `userSchema` to include `permissions` field.
+   - Created `getDefaultPermissions()` function that returns role-based default permissions (admin gets all permissions, staff gets limited permissions).
+   - Added `permissionLabels` object mapping permission keys to human-readable labels.
+   - Updated `openDialog()` to initialize permissions from existing user or default permissions based on role.
+   - Updated `onSubmit()` to include permissions in create/update payloads.
+   - Added permissions UI in user dialog: Accordion component with expandable section containing grid of switches (2 columns on desktop, 1 column on mobile) for each permission. Admin role disables permission editing (admins always have all permissions).
+   - Imported `CreateUserPayload` and `UpdateUserPayload` types for proper TypeScript support.
+
+2. **Backend (`server.js`)**:
+   - Updated `POST /api/users` endpoint to accept `permissions` in request body, with default permissions based on role if not provided.
+   - Updated `PUT /api/users/:id` endpoint to accept `permissions` in request body. When role changes, permissions reset to defaults unless explicitly provided.
+   - Updated `POST /api/signup` endpoint to set default permissions based on role for new signups.
+   - Updated default users (admin and staff) to include permissions in their initialization.
+   - Permissions are stored in user objects and returned via `sanitizeUser()` (which excludes `passwordHash` but includes all other fields including `permissions`).
+
+**Technical Decisions**:
+- Permissions are stored as a nested object in the user model, allowing for easy extension in the future.
+- Admin users always have all permissions enabled and cannot have permissions edited (UI disables switches when role is admin).
+- When a user's role changes, permissions reset to defaults for that role (prevents permission mismatches).
+- Default permissions follow least-privilege principle: staff can view and edit but not delete most resources, cannot manage users or settings.
+- Permissions UI uses Accordion to keep dialog compact while providing full control when needed.
+
+**Impact**: Enables fine-grained access control, allowing admins to customize user capabilities beyond simple role assignment. Supports scenarios like "staff member who can view but not edit orders" or "staff member who can manage products but not customers". Foundation for future permission-based route guards and feature gating.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.

@@ -55,7 +55,7 @@ const SignupPage = () => {
       component="main"
       display="flex"
       flexDirection="column"
-      alignItems={{ xs: 'center', md: 'flex-start' }}
+      alignItems="center"
       justifyContent="center"
       minHeight="100vh"
       bgcolor="background.default"
@@ -68,7 +68,7 @@ const SignupPage = () => {
           theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
       }}
     >
-      <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6, mx: { xs: 'auto', md: 0 } }}>
+      <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6, mx: 'auto' }}>
         <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
             <Box textAlign="center">

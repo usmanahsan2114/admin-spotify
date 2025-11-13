@@ -412,52 +412,54 @@ const OrderDetailsPage = () => {
               <Divider sx={{ my: 2 }} />
               {order.returns && order.returns.length > 0 ? (
                 <Stack spacing={2}>
-                  {order.returns.map((returnRequest) => (
-                    <Box
-                      key={returnRequest.id}
-                      sx={{
-                        p: 1.5,
-                        borderRadius: 2,
-                        backgroundColor: 'action.hover',
-                      }}
-                    >
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        flexWrap="wrap"
-                        gap={1}
+                  {order.returns
+                    .filter((returnRequest) => returnRequest && returnRequest.id)
+                    .map((returnRequest) => (
+                      <Box
+                        key={returnRequest.id}
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          backgroundColor: 'action.hover',
+                        }}
                       >
-                        <Typography fontWeight={600}>
-                          Return #{returnRequest.id.slice(0, 8)}
-                        </Typography>
-                        <Chip
-                          label={returnRequest.status}
-                          size="small"
-                          color={returnStatusColor[returnRequest.status]}
-                        />
-                      </Stack>
-                      <Typography variant="body2" color="text.secondary" mt={0.5}>
-                        Requested {formatDate(returnRequest.dateRequested, 'datetime')}
-                      </Typography>
-                      <Typography variant="body2" mt={1}>
-                        <strong>Quantity:</strong> {returnRequest.returnedQuantity}
-                      </Typography>
-                      <Typography variant="body2" mt={0.5}>
-                        <strong>Reason:</strong> {returnRequest.reason}
-                      </Typography>
-                      <Box mt={1.5}>
-                        <Button
-                          component={RouterLink}
-                          to={`/returns/${returnRequest.id}`}
-                          size="small"
-                          variant="text"
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                          flexWrap="wrap"
+                          gap={1}
                         >
-                          View details
-                        </Button>
+                          <Typography fontWeight={600}>
+                            Return #{returnRequest.id ? returnRequest.id.slice(0, 8) : 'N/A'}
+                          </Typography>
+                          <Chip
+                            label={returnRequest.status || 'Unknown'}
+                            size="small"
+                            color={returnStatusColor[returnRequest.status as ReturnStatus] || 'default'}
+                          />
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary" mt={0.5}>
+                          Requested {formatDate(returnRequest.dateRequested, 'datetime')}
+                        </Typography>
+                        <Typography variant="body2" mt={1}>
+                          <strong>Quantity:</strong> {returnRequest.returnedQuantity || 0}
+                        </Typography>
+                        <Typography variant="body2" mt={0.5}>
+                          <strong>Reason:</strong> {returnRequest.reason || 'N/A'}
+                        </Typography>
+                        <Box mt={1.5}>
+                          <Button
+                            component={RouterLink}
+                            to={`/returns/${returnRequest.id}`}
+                            size="small"
+                            variant="text"
+                          >
+                            View details
+                          </Button>
+                        </Box>
                       </Box>
-                    </Box>
-                  ))}
+                    ))}
                 </Stack>
               ) : (
                 <Stack spacing={1.5}>

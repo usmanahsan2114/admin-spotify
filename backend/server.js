@@ -109,6 +109,13 @@ const users = [
     role: 'admin',
     passwordHash: bcrypt.hashSync('admin123', 10),
     active: true,
+    permissions: {
+      viewOrders: true, editOrders: true, deleteOrders: true,
+      viewProducts: true, editProducts: true, deleteProducts: true,
+      viewCustomers: true, editCustomers: true,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: true, manageSettings: true,
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     profilePictureUrl: null,
@@ -128,6 +135,13 @@ const users = [
     role: 'staff',
     passwordHash: bcrypt.hashSync('staff123', 10),
     active: true,
+    permissions: {
+      viewOrders: true, editOrders: true, deleteOrders: false,
+      viewProducts: true, editProducts: true, deleteProducts: false,
+      viewCustomers: true, editCustomers: false,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: false, manageSettings: false,
+    },
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
     profilePictureUrl: null,
@@ -250,6 +264,8 @@ const serializeCustomer = (customer) => {
     name: customer.name || 'Unknown',
     email: customer.email || '',
     phone: customer.phone || 'Not provided',
+    address: customer.address || null,
+    alternativePhone: customer.alternativePhone || null,
     createdAt: customer.createdAt || new Date().toISOString(),
     orderCount: ordersForCustomer.length,
     lastOrderDate: lastOrder ? lastOrder.createdAt : null,
@@ -271,6 +287,8 @@ let businessSettings = {
   logoUrl: null,
   brandColor: '#1976d2',
   defaultCurrency: 'USD',
+  country: 'US',
+  dashboardName: 'Shopify Admin Dashboard',
   defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
 }
 
@@ -388,6 +406,27 @@ app.post('/api/signup', validateSignup, async (req, res) => {
 
   const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
   const passwordHash = await bcrypt.hash(password, 10)
+  
+  // Set default permissions based on role
+  let userPermissions
+  if (userRole === 'admin') {
+    userPermissions = {
+      viewOrders: true, editOrders: true, deleteOrders: true,
+      viewProducts: true, editProducts: true, deleteProducts: true,
+      viewCustomers: true, editCustomers: true,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: true, manageSettings: true,
+    }
+  } else {
+    userPermissions = {
+      viewOrders: true, editOrders: true, deleteOrders: false,
+      viewProducts: true, editProducts: true, deleteProducts: false,
+      viewCustomers: true, editCustomers: false,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: false, manageSettings: false,
+    }
+  }
+  
   const newUser = {
     id: crypto.randomUUID(),
     email: email.toLowerCase(),
@@ -395,6 +434,7 @@ app.post('/api/signup', validateSignup, async (req, res) => {
     role: userRole,
     passwordHash,
     active: true,
+    permissions: userPermissions,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     profilePictureUrl: null,
@@ -470,9 +510,28 @@ app.get('/api/orders/:id', (req, res) => {
   if (!order) {
     return res.status(404).json({ message: 'Order not found.' })
   }
-  const relatedReturns = returns
-    .filter((returnRequest) => returnRequest.orderId === order.id)
-    .map((returnRequest) => serializeReturn(returnRequest))
+  
+  // Allow public access for order tracking (no authentication required)
+  // But still check if authenticated for full details
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.split(' ')[1]
+  let isAuthenticated = false
+  
+  if (token) {
+    try {
+      jwt.verify(token, JWT_SECRET)
+      isAuthenticated = true
+    } catch {
+      // Not authenticated, but allow basic order info
+    }
+  }
+  
+  const relatedReturns = isAuthenticated
+    ? returns
+        .filter((returnRequest) => returnRequest.orderId === order.id)
+        .map((returnRequest) => serializeReturn(returnRequest))
+    : []
+  
   return res.json({
     ...order,
     returns: relatedReturns,
@@ -552,6 +611,74 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) =>
   return res.json(order)
 })
 
+// Customer authentication routes (public)
+app.post('/api/customers/signup', (req, res) => {
+  const { name, email, password } = req.body || {}
+  
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email, and password are required.' })
+  }
+  
+  if (findCustomerByEmail(email)) {
+    return res.status(409).json({ message: 'A customer with this email already exists.' })
+  }
+  
+  // Create customer account with password
+  const newCustomer = {
+    id: crypto.randomUUID(),
+    name: String(name).trim(),
+    email: String(email).trim(),
+    phone: 'Not provided',
+    passwordHash: bcrypt.hashSync(password, 10),
+    address: null,
+    alternativePhone: null,
+    createdAt: new Date().toISOString(),
+    orderIds: [],
+  }
+  
+  customers.unshift(newCustomer)
+  
+  // Generate token for customer
+  const token = jwt.sign(
+    { customerId: newCustomer.id, email: newCustomer.email, type: 'customer' },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  )
+  
+  return res.status(201).json({
+    token,
+    user: { email: newCustomer.email, name: newCustomer.name },
+  })
+})
+
+app.post('/api/customers/login', (req, res) => {
+  const { email, password } = req.body || {}
+  
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required.' })
+  }
+  
+  const customer = findCustomerByEmail(email)
+  if (!customer || !customer.passwordHash) {
+    return res.status(401).json({ message: 'Invalid email or password.' })
+  }
+  
+  if (!bcrypt.compareSync(password, customer.passwordHash)) {
+    return res.status(401).json({ message: 'Invalid email or password.' })
+  }
+  
+  const token = jwt.sign(
+    { customerId: customer.id, email: customer.email, type: 'customer' },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  )
+  
+  return res.json({
+    token,
+    user: { email: customer.email, name: customer.name },
+  })
+})
+
 // Customer routes
 app.get('/api/customers', authenticateToken, (_req, res) => {
   try {
@@ -564,7 +691,7 @@ app.get('/api/customers', authenticateToken, (_req, res) => {
 })
 
 app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
-  const { name, email, phone } = req.body || {}
+  const { name, email, phone, address, alternativePhone } = req.body || {}
 
   if (findCustomerByEmail(email)) {
     return res.status(409).json({ message: 'A customer with this email already exists.' })
@@ -575,12 +702,35 @@ app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
     name: String(name).trim(),
     email: String(email).trim(),
     phone: phone ? String(phone).trim() : 'Not provided',
+    address: address ? String(address).trim() : null,
+    alternativePhone: alternativePhone ? String(alternativePhone).trim() : null,
     createdAt: new Date().toISOString(),
     orderIds: [],
   }
 
   customers.unshift(newCustomer)
   return res.status(201).json(serializeCustomer(newCustomer))
+})
+
+// Customer portal route - get own orders
+app.get('/api/customers/me/orders', authenticateCustomer, (req, res) => {
+  try {
+    const customerId = req.customer?.customerId
+    if (!customerId) {
+      return res.status(401).json({ message: 'Customer authentication required.' })
+    }
+    
+    const customer = findCustomerById(customerId)
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found.' })
+    }
+    
+    const ordersForCustomer = getOrdersForCustomer(customer)
+    return res.json(ordersForCustomer)
+  } catch (error) {
+    console.error('[ERROR] /api/customers/me/orders:', error)
+    return res.status(500).json({ message: 'Failed to fetch orders', error: error.message })
+  }
 })
 
 app.get('/api/customers/:id', authenticateToken, (req, res) => {
@@ -607,7 +757,7 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, (req, res) =>
     return res.status(404).json({ message: 'Customer not found.' })
   }
 
-  const { name, email, phone } = req.body || {}
+  const { name, email, phone, address, alternativePhone } = req.body || {}
 
   if (email && normalizeEmail(email) !== normalizeEmail(customer.email)) {
     if (findCustomerByEmail(email)) {
@@ -622,6 +772,14 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, (req, res) =>
 
   if (phone !== undefined) {
     customer.phone = phone ? String(phone).trim() : ''
+  }
+
+  if (address !== undefined) {
+    customer.address = address ? String(address).trim() : null
+  }
+
+  if (alternativePhone !== undefined) {
+    customer.alternativePhone = alternativePhone ? String(alternativePhone).trim() : null
   }
 
   return res.json(serializeCustomer(customer))
@@ -676,15 +834,20 @@ app.post('/api/returns', authenticateToken, validateReturn, (req, res) => {
     return res.status(404).json({ message: 'Order not found.' })
   }
 
+  // Check if there are existing returns for this order
+  const existingReturns = returns.filter((returnRequest) => returnRequest.orderId === orderId)
+  const totalReturnedQuantity = existingReturns.reduce((sum, returnRequest) => sum + (returnRequest.returnedQuantity || 0), 0)
+  const remainingQuantity = order.quantity - totalReturnedQuantity
+
   const quantityNumber = Number(returnedQuantity)
   if (Number.isNaN(quantityNumber) || quantityNumber <= 0) {
     return res.status(400).json({ message: 'returnedQuantity must be a positive number.' })
   }
 
-  if (quantityNumber > order.quantity) {
+  if (quantityNumber > remainingQuantity) {
     return res
       .status(400)
-      .json({ message: 'returnedQuantity cannot exceed the original order quantity.' })
+      .json({ message: `returnedQuantity cannot exceed the remaining order quantity (${remainingQuantity} available).` })
   }
 
   const newReturn = {
@@ -749,21 +912,47 @@ app.put('/api/returns/:id', authenticateToken, validateReturnUpdate, (req, res) 
 })
 
 // Metrics routes
-app.get('/api/metrics/overview', authenticateToken, (_req, res) => {
-  const totalOrders = orders.length
-  const pendingOrdersCount = orders.filter((order) => order.status === 'Pending').length
+app.get('/api/metrics/overview', authenticateToken, (req, res) => {
+  const startDate = req.query.startDate ? new Date(req.query.startDate) : null
+  const endDate = req.query.endDate ? new Date(req.query.endDate) : null
+  
+  // Filter orders by date range if provided
+  let filteredOrders = orders
+  if (startDate || endDate) {
+    filteredOrders = orders.filter((order) => {
+      if (!order.createdAt) return false
+      const orderDate = new Date(order.createdAt)
+      if (Number.isNaN(orderDate.getTime())) return false
+      
+      if (startDate && orderDate < startDate) return false
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999)
+        if (orderDate > end) return false
+      }
+      
+      return true
+    })
+  }
+  
+  const totalOrders = filteredOrders.length
+  const pendingOrdersCount = filteredOrders.filter((order) => order.status === 'Pending').length
   const totalProducts = products.length
   const lowStockCount = products.filter((product) => product.lowStock).length
   const pendingReturnsCount = returns.filter((returnRequest) => returnRequest.status === 'Submitted').length
   
-  // Calculate new customers in last 7 days
-  const sevenDaysAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
-  const newCustomersLast7Days = customers.filter(
-    (customer) => new Date(customer.createdAt) >= sevenDaysAgo
-  ).length
+  // Calculate new customers in date range or last 7 days
+  const dateStart = startDate || new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
+  const dateEnd = endDate || new Date()
+  const newCustomersLast7Days = customers.filter((customer) => {
+    if (!customer.createdAt) return false
+    const customerDate = new Date(customer.createdAt)
+    if (Number.isNaN(customerDate.getTime())) return false
+    return customerDate >= dateStart && customerDate <= dateEnd
+  }).length
 
-  // Calculate total revenue
-  const totalRevenue = orders.reduce((acc, order) => acc + (order.total ?? 0), 0)
+  // Calculate total revenue from filtered orders
+  const totalRevenue = filteredOrders.reduce((acc, order) => acc + (order.total ?? 0), 0)
 
   res.json({
     totalOrders,
@@ -980,7 +1169,7 @@ app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
 })
 
 app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
-  const { email, password, name, role } = req.body
+  const { email, password, name, role, active, permissions } = req.body
 
   if (findUserByEmail(email)) {
     return res.status(409).json({ message: 'An account with that email already exists.' })
@@ -988,13 +1177,37 @@ app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, 
 
   const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
   const passwordHash = await bcrypt.hash(password, 10)
+  
+  // Set default permissions based on role if not provided
+  let userPermissions = permissions
+  if (!userPermissions) {
+    if (userRole === 'admin') {
+      userPermissions = {
+        viewOrders: true, editOrders: true, deleteOrders: true,
+        viewProducts: true, editProducts: true, deleteProducts: true,
+        viewCustomers: true, editCustomers: true,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: true, manageSettings: true,
+      }
+    } else {
+      userPermissions = {
+        viewOrders: true, editOrders: true, deleteOrders: false,
+        viewProducts: true, editProducts: true, deleteProducts: false,
+        viewCustomers: true, editCustomers: false,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: false, manageSettings: false,
+      }
+    }
+  }
+  
   const newUser = {
     id: crypto.randomUUID(),
     email: email.toLowerCase(),
     name,
     role: userRole,
     passwordHash,
-    active: true,
+    active: active !== undefined ? active : true,
+    permissions: userPermissions,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     profilePictureUrl: null,
@@ -1022,7 +1235,7 @@ app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUse
     return res.status(403).json({ message: 'Cannot change primary admin email.' })
   }
 
-  const { name, email, role, password, active } = req.body
+  const { name, email, role, password, active, permissions } = req.body
 
   if (name) user.name = String(name).trim()
   if (email && user.id !== ADMIN_USER_ID) {
@@ -1031,10 +1244,31 @@ app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUse
     }
     user.email = email.toLowerCase()
   }
-  if (role) user.role = role
+  if (role) {
+    user.role = role
+    // Reset permissions to defaults when role changes
+    if (role === 'admin') {
+      user.permissions = {
+        viewOrders: true, editOrders: true, deleteOrders: true,
+        viewProducts: true, editProducts: true, deleteProducts: true,
+        viewCustomers: true, editCustomers: true,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: true, manageSettings: true,
+      }
+    } else if (role === 'staff' && !permissions) {
+      user.permissions = {
+        viewOrders: true, editOrders: true, deleteOrders: false,
+        viewProducts: true, editProducts: true, deleteProducts: false,
+        viewCustomers: true, editCustomers: false,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: false, manageSettings: false,
+      }
+    }
+  }
   if (password) user.passwordHash = await bcrypt.hash(password, 10)
   if (active !== undefined) user.active = active
   if (name) user.fullName = name
+  if (permissions) user.permissions = permissions
 
   user.updatedAt = new Date().toISOString()
   return res.json(sanitizeUser(user))
@@ -1064,7 +1298,7 @@ app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_r
 
 app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, (req, res) => {
   try {
-    const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'defaultOrderStatuses']
+    const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'country', 'dashboardName', 'defaultOrderStatuses']
     Object.entries(req.body).forEach(([key, value]) => {
       if (allowedFields.includes(key) && value !== undefined) {
         businessSettings[key] = value

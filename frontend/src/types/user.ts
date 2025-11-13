@@ -6,6 +6,22 @@ export type NotificationPreferences = {
   returnsPending: boolean
 }
 
+export type UserPermissions = {
+  viewOrders: boolean
+  editOrders: boolean
+  deleteOrders: boolean
+  viewProducts: boolean
+  editProducts: boolean
+  deleteProducts: boolean
+  viewCustomers: boolean
+  editCustomers: boolean
+  viewReturns: boolean
+  processReturns: boolean
+  viewReports: boolean
+  manageUsers: boolean
+  manageSettings: boolean
+}
+
 export type User = {
   id: string
   name: string
@@ -19,6 +35,7 @@ export type User = {
   phone?: string
   defaultDateRangeFilter?: 'last7' | 'thisMonth' | 'lastMonth' | 'custom'
   notificationPreferences?: NotificationPreferences
+  permissions?: UserPermissions
 }
 
 export type CreateUserPayload = {
@@ -27,10 +44,11 @@ export type CreateUserPayload = {
   password: string
   role: UserRole
   active?: boolean
+  permissions?: UserPermissions
 }
 
 export type UpdateUserPayload = Partial<
-  Pick<User, 'name' | 'role' | 'active'> & { password: string }
+  Pick<User, 'name' | 'role' | 'active' | 'permissions'> & { password?: string }
 >
 
 export type UpdateCurrentUserPayload = {
@@ -45,6 +63,8 @@ export type BusinessSettings = {
   logoUrl?: string
   brandColor?: string
   defaultCurrency?: string
+  country?: string
+  dashboardName?: string
   defaultOrderStatuses?: string[]
 }
 

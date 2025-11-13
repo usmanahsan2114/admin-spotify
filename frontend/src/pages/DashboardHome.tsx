@@ -121,7 +121,7 @@ const DashboardHome = () => {
           fetchOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
           fetchProducts(),
           fetchLowStockProducts(),
-          fetchMetricsOverview(),
+          fetchMetricsOverview(dateRange.startDate || undefined, dateRange.endDate || undefined),
           fetchLowStockTrend(dateRange.startDate || undefined, dateRange.endDate || undefined),
           fetchSalesOverTime(dateRange.startDate || undefined, dateRange.endDate || undefined),
           fetchGrowthComparison('month'),
@@ -701,14 +701,50 @@ const DashboardHome = () => {
                   <YAxis yAxisId="left" allowDecimals={false} />
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip
+                    contentStyle={{
+                      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.background.paper,
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: theme.shape.borderRadius,
+                      boxShadow: theme.shadows[4],
+                    }}
                     formatter={(value, name) => {
                       if (name === 'revenue') return currency.format(value as number)
                       return value
                     }}
                   />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="orders" fill={theme.palette.primary.main} name="Orders" />
-                  <Bar yAxisId="right" dataKey="revenue" fill={theme.palette.success.main} name="Revenue" />
+                  <Bar 
+                    yAxisId="left" 
+                    dataKey="orders" 
+                    fill={theme.palette.primary.main} 
+                    name="Orders"
+                    onMouseEnter={(data, index, e) => {
+                      if (e?.target) {
+                        (e.target as SVGElement).style.opacity = '0.8'
+                      }
+                    }}
+                    onMouseLeave={(data, index, e) => {
+                      if (e?.target) {
+                        (e.target as SVGElement).style.opacity = '1'
+                      }
+                    }}
+                  />
+                  <Bar 
+                    yAxisId="right" 
+                    dataKey="revenue" 
+                    fill={theme.palette.success.main} 
+                    name="Revenue"
+                    onMouseEnter={(data, index, e) => {
+                      if (e?.target) {
+                        (e.target as SVGElement).style.opacity = '0.8'
+                      }
+                    }}
+                    onMouseLeave={(data, index, e) => {
+                      if (e?.target) {
+                        (e.target as SVGElement).style.opacity = '1'
+                      }
+                    }}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </Box>

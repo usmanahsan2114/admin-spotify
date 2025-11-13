@@ -74,6 +74,8 @@ const validateCustomer = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('phone').optional().trim(),
+  body('address').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('alternativePhone').optional({ nullable: true, checkFalsy: true }).trim(),
   handleValidationErrors,
 ]
 
@@ -188,7 +190,8 @@ const validateBusinessSettings = [
     .optional({ nullable: true, checkFalsy: true })
     .custom((value) => {
       if (value === null || value === undefined || value === '') return true
-      // Basic URL validation
+      // Basic URL validation or data URL for base64 images
+      if (value.startsWith('data:image/')) return true
       try {
         new URL(value)
         return true
@@ -203,8 +206,17 @@ const validateBusinessSettings = [
     .withMessage('Brand color must be a valid hex color'),
   body('defaultCurrency')
     .optional({ nullable: true, checkFalsy: true })
-    .isIn(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'])
-    .withMessage('Invalid currency'),
+    .isLength({ min: 3, max: 3 })
+    .withMessage('Currency must be a 3-letter code'),
+  body('country')
+    .optional({ nullable: true, checkFalsy: true })
+    .isLength({ min: 2, max: 2 })
+    .withMessage('Country must be a 2-letter code'),
+  body('dashboardName')
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Dashboard name must be between 1 and 100 characters'),
   body('defaultOrderStatuses')
     .optional({ nullable: true, checkFalsy: true })
     .isArray()

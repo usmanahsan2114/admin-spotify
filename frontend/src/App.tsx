@@ -22,6 +22,10 @@ const UsersPage = lazy(() => import('./pages/UsersPage').then((m) => ({ default:
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then((m) => ({ default: m.default })))
 const NotFoundPage = lazy(() => import('./pages/auth/NotFoundPage').then((m) => ({ default: m.default })))
 const SignupPage = lazy(() => import('./pages/auth/SignupPage').then((m) => ({ default: m.default })))
+const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage').then((m) => ({ default: m.default })))
+const CustomerLoginPage = lazy(() => import('./pages/customer/CustomerLoginPage').then((m) => ({ default: m.default })))
+const CustomerSignupPage = lazy(() => import('./pages/customer/CustomerSignupPage').then((m) => ({ default: m.default })))
+const CustomerOrdersPage = lazy(() => import('./pages/customer/CustomerOrdersPage').then((m) => ({ default: m.default })))
 
 const LoadingFallback = () => (
   <Box
@@ -53,6 +57,38 @@ const App = () => (
   <ErrorBoundary>
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
+        <Route
+          path="/track-order"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <OrderTrackingPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/customer/login"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <CustomerLoginPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/customer/signup"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <CustomerSignupPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/customer/orders"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <CustomerOrdersPage />
+            </Suspense>
+          }
+        />
         <Route
           path="/test-order"
           element={

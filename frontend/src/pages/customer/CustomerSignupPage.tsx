@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   Alert,
   Box,
@@ -11,43 +11,38 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import { apiFetch } from '../../services/apiClient'
 import SiteAttribution from '../../components/common/SiteAttribution'
 
-const LoginPage = () => {
-  const { login, isAuthenticated, loading } = useAuth()
+const CustomerSignupPage = () => {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      const redirectTo = searchParams.get('redirectTo') || '/'
-      navigate(redirectTo, { replace: true })
-    }
-  }, [isAuthenticated, loading, navigate, searchParams])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
     try {
-      await login(email, password)
-      const redirectTo = searchParams.get('redirectTo') || '/'
-      navigate(redirectTo, { replace: true })
+      const response = await apiFetch<{ token: string; user: { email: string } }>(
+        '/api/customers/signup',
+        {
+          method: 'POST',
+          body: JSON.stringify({ name, email, password }),
+          skipAuth: true,
+        }
+      )
+      localStorage.setItem('customer_token', response.token)
+      navigate('/customer/orders', { replace: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to login.')
+      setError(err instanceof Error ? err.message : 'Unable to create account.')
     } finally {
       setSubmitting(false)
     }
-  }
-
-  if (loading && isAuthenticated) {
-    return null
   }
 
   return (
@@ -68,15 +63,15 @@ const LoginPage = () => {
           theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
       }}
     >
-      <Card sx={{ maxWidth: 420, width: '100%', boxShadow: 6, mx: 'auto' }}>
+      <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6, mx: 'auto' }}>
         <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
             <Box textAlign="center">
               <Typography variant="h4" fontWeight={700}>
-                Welcome back
+                Create Customer Account
               </Typography>
               <Typography variant="body2" color="text.secondary" mt={1}>
-                Sign in to continue to the admin dashboard.
+                Sign up to track your orders and view order history
               </Typography>
             </Box>
 
@@ -87,25 +82,33 @@ const LoginPage = () => {
             )}
 
             <TextField
-              id="login-email"
+              id="customer-signup-name"
+              label="Full name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              fullWidth
+              autoComplete="name"
+            />
+            <TextField
+              id="customer-signup-email"
               label="Email address"
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
               fullWidth
-              autoFocus
-              autoComplete="username"
+              autoComplete="email"
             />
             <TextField
-              id="login-password"
+              id="customer-signup-password"
               label="Password"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
               fullWidth
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
 
             <Button
@@ -116,29 +119,13 @@ const LoginPage = () => {
               startIcon={submitting ? <CircularProgress color="inherit" size={20} /> : null}
               sx={{ mt: 1 }}
             >
-              {submitting ? 'Signing in…' : 'Sign in'}
+              {submitting ? 'Creating account…' : 'Sign up'}
             </Button>
 
             <Typography variant="caption" color="text.secondary" textAlign="center">
-              Need credentials? Use{' '}
-              <Link component="button" type="button" onClick={() => {
-                setEmail('admin@example.com')
-                setPassword('admin123')
-              }}>
-                admin@example.com / admin123
-              </Link>
-              {' '}or{' '}
-              <Link component="button" type="button" onClick={() => {
-                setEmail('staff@example.com')
-                setPassword('staff123')
-              }}>
-                staff@example.com / staff123
-              </Link>
-            </Typography>
-            <Typography variant="caption" color="text.secondary" textAlign="center">
-              New here?{' '}
-              <Link component="button" type="button" onClick={() => navigate('/signup')}>
-                Create an account with our demo signup flow
+              Already have an account?{' '}
+              <Link component="button" type="button" onClick={() => navigate('/customer/login')}>
+                Sign in here
               </Link>
             </Typography>
           </Stack>
@@ -149,6 +136,5 @@ const LoginPage = () => {
   )
 }
 
-export default LoginPage
-
+export default CustomerSignupPage
 

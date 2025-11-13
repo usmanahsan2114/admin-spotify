@@ -3,6 +3,8 @@ export type Customer = {
   name: string
   email: string
   phone: string
+  address?: string | null
+  alternativePhone?: string | null
   createdAt: string
   orderIds: string[]
   orderCount?: number
@@ -23,6 +25,8 @@ export type CustomerPayload = {
   name: string
   email: string
   phone?: string
+  address?: string | null
+  alternativePhone?: string | null
 }
 
 
