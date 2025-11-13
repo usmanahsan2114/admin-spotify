@@ -84,7 +84,7 @@
 - ✅ **Recharts warnings**: Fixed negative dimension warnings by adding `minHeight` to all chart containers
 - ✅ **valueFormatter errors**: Fixed null destructuring errors in CustomersPage and OrdersPage by adding proper null checks
 - ✅ **Chart responsiveness**: Improved chart container sizing with explicit heights and minHeight properties
-- ✅ **Settings page 404 error**: Enhanced error handling in SettingsPage to check for authenticated user before API calls. Improved `/api/users/me` endpoint validation to check `req.user` and `req.user.userId` before user lookup.
+- ✅ **Settings page 404 error**: Enhanced error handling in SettingsPage to check for authenticated user before API calls. Improved `/api/users/me` endpoint validation to check `req.user` and `req.user.userId` before user lookup. **Root cause fix**: Changed default users to use fixed UUIDs instead of random UUIDs to ensure consistency across server restarts.
 
 **Impact**: Eliminated console warnings and errors, improved chart rendering reliability, fixed Settings page authentication issues.
 

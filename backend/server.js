@@ -1815,9 +1815,13 @@ customers.forEach((customer) => {
   customer.orderIds = customer.orderIds()
 })
 
+// Fixed UUIDs for default users to ensure consistency across server restarts
+const ADMIN_USER_ID = '00000000-0000-0000-0000-000000000001'
+const STAFF_USER_ID = '00000000-0000-0000-0000-000000000002'
+
 const users = [
   {
-    id: crypto.randomUUID(),
+    id: ADMIN_USER_ID,
     email: 'admin@example.com',
     name: 'Store Admin',
     role: 'admin',
@@ -1836,7 +1840,7 @@ const users = [
     },
   },
   {
-    id: crypto.randomUUID(),
+    id: STAFF_USER_ID,
     email: 'staff@example.com',
     name: 'Staff Member',
     role: 'staff',
@@ -1844,6 +1848,15 @@ const users = [
     active: true,
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    profilePictureUrl: null,
+    fullName: 'Staff Member',
+    phone: null,
+    defaultDateRangeFilter: 'last7',
+    notificationPreferences: {
+      newOrders: true,
+      lowStock: true,
+      returnsPending: true,
+    },
   },
   {
     id: crypto.randomUUID(),

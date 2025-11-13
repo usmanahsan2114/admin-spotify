@@ -125,7 +125,7 @@ docs/
 - **Fixed Recharts warnings**: Added `minHeight` to all chart containers to prevent negative dimension warnings
 - **Fixed valueFormatter errors**: Enhanced null/undefined handling in CustomersPage and OrdersPage DataGrid columns
 - **Improved chart responsiveness**: All charts now have explicit heights and minHeight to ensure proper rendering
-- **Fixed Settings page 404 error**: Enhanced error handling in SettingsPage and improved `/api/users/me` endpoint validation
+- **Fixed Settings page 404 error**: Enhanced error handling in SettingsPage and improved `/api/users/me` endpoint validation. Fixed user ID consistency by using fixed UUIDs for default users to prevent 404 errors after server restarts.
 
 See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) improvements.
 
