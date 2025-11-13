@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import PublicPageHeader from '../../components/common/PublicPageHeader'
 import SiteAttribution from '../../components/common/SiteAttribution'
 
 const DEFAULT_FORM = {
@@ -55,20 +56,26 @@ const SignupPage = () => {
       component="main"
       display="flex"
       flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
       minHeight="100vh"
       bgcolor="background.default"
-      px={{ xs: 2, md: 4 }}
-      py={6}
-      gap={4}
       sx={{
         width: '100%',
         background: (theme) =>
           theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
       }}
     >
-      <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6, mx: 'auto' }}>
+      <PublicPageHeader />
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        flex={1}
+        px={{ xs: 2, md: 4 }}
+        py={6}
+        gap={4}
+      >
+        <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6, mx: 'auto' }}>
         <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
             <Box textAlign="center">
@@ -141,6 +148,7 @@ const SignupPage = () => {
         </CardContent>
       </Card>
       <SiteAttribution variant="caption" />
+      </Box>
     </Box>
   )
 }

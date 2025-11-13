@@ -8,17 +8,19 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 
 ## Features
 
-- **Authentication & Roles**: JWT-based login with protected routes, admin/staff roles, persistent sessions, and logout from header/sidebar.
-- **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls. Includes time-based filtering with date range picker, mini area chart showing orders by day, and growth comparison summaries.
-- **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions. Features stock trend charts and time-based filtering.
-- **Returns & Refunds**: Track return requests, update statuses, and monitor stock impact. Includes returns-by-status pie chart and time-based filtering.
-- **Users**: Admin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion. Granular permission management with 13 permission types (view/edit/delete orders, products, customers, returns, reports, user management, settings) allowing fine-grained access control per user.
-- **Settings/Profile**: Comprehensive settings page with three sections: My Profile (upload profile picture, update full name/phone, set default date filter, configure notification preferences), Preferences (theme toggle, default settings), and Business Settings (admin only: upload logo, set brand color, default currency, manage order statuses). Fully responsive with mobile-first design using tabs on desktop and accordions on mobile.
-- **Dashboard Analytics**: Summary tiles, sales over time line chart, period comparison bar chart, 7-day order trend line, status distribution pie chart, and low stock trends using Recharts. All charts support time-based filtering with date range selection.
-- **Growth & Progress Reporting**: Comprehensive growth metrics with KPI cards showing sales, orders, average order value, and return rate with period-over-period growth percentages. Trend charts for sales, orders, and customers over time. Period selector (Last 7 days, This month, This quarter). Downloadable CSV reports. Fully responsive with mobile-optimized charts (area charts on mobile, line charts on desktop).
+- **Multi-Store System**: Support for 5 independent stores with complete data isolation. Each store has its own admin, staff, products, customers, orders, and settings.
+- **Authentication & Roles**: JWT-based login with protected routes, admin/staff roles, persistent sessions, and logout from header/sidebar. Store-specific authentication with `storeId` in JWT tokens.
+- **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls. Includes time-based filtering with date range picker, mini area chart showing orders by day, and growth comparison summaries. Store-specific data filtering.
+- **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions. Features stock trend charts and time-based filtering. Store-specific product catalogs.
+- **Returns & Refunds**: Track return requests, update statuses, and monitor stock impact. Includes returns-by-status pie chart and time-based filtering. Store-specific returns management.
+- **Users**: Admin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion. Granular permission management with 13 permission types (view/edit/delete orders, products, customers, returns, reports, user management, settings) allowing fine-grained access control per user. Store-specific user management.
+- **Settings/Profile**: Comprehensive settings page with three sections: My Profile (upload profile picture, update full name/phone, set default date filter, configure notification preferences), Preferences (theme toggle, default settings), and Business Settings (admin only: upload logo, set brand color, default currency PKR, country Pakistan PK, manage order statuses). Fully responsive with mobile-first design using tabs on desktop and accordions on mobile. Store-specific business settings.
+- **Dashboard Analytics**: Summary tiles, sales over time line chart, period comparison bar chart, 7-day order trend line, status distribution pie chart, and low stock trends using Recharts. All charts support time-based filtering with date range selection. Store-specific metrics and reports.
+- **Growth & Progress Reporting**: Comprehensive growth metrics with KPI cards showing sales, orders, average order value, and return rate with period-over-period growth percentages. Trend charts for sales, orders, and customers over time. Period selector (Last 7 days, This month, This quarter). Downloadable CSV reports. Fully responsive with mobile-optimized charts (area charts on mobile, line charts on desktop). **Store-specific growth metrics** - each store has independent reports.
 - **Time-Based Filtering**: Reusable DateFilter component with quick links (Last 7 days, This month, Last month) and custom date range picker. Available on Dashboard, Orders, Products, and Returns pages. Fully responsive with mobile-first design.
 - **Dark Mode**: Theme toggle with preference persistence via `ThemeModeProvider`.
-- **Dummy Order Form**: `/test-order` route for marketing-site integration testing.
+- **Public Pages**: Store selection page and store-specific order tracking and test order forms. No authentication required for public pages.
+- **Dummy Order Form**: `/store/:storeId/test-order` route for marketing-site integration testing (store-specific).
 
 ## Tech Stack
 
@@ -71,13 +73,24 @@ npm --prefix backend run start
 
 Ensure `VITE_API_BASE_URL` points to the deployed API when hosting frontend separately.
 
-## Default Accounts
+## Multi-Store System
 
-- Admin: `admin@example.com` / `admin123`
-- Staff: `staff@example.com` / `staff123`
-- Sample signup defaults: `jordan.avery@example.com` / `signup123`
+This application supports **5 independent stores**, each with its own:
+- Admin and staff accounts
+- Products, customers, orders, and returns
+- Business settings (logo, currency, country)
+- Complete data isolation
 
-Admin users can invite additional staff via `/users` or consume the `/api/signup` endpoint.
+**Default Store Accounts:**
+- **TechHub Electronics**: `admin@techhub.com` / `admin123`
+- **Fashion Forward**: `admin@fashionforward.com` / `admin123`
+- **Home & Living Store**: `admin@homeliving.com` / `admin123`
+- **Fitness Gear Pro**: `admin@fitnessgear.com` / `admin123`
+- **Beauty Essentials**: `admin@beautyessentials.com` / `admin123`
+
+See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for complete login credentials and all application URLs.
+
+**Default Currency & Country:** All stores default to **PKR (Pakistani Rupee)** and **Pakistan (PK)**.
 
 ## Testing Checklist
 
@@ -126,6 +139,9 @@ docs/
 - **Mobile UX**: Further enhanced touch targets, spacing, and responsive behavior across all pages
 
 ### 🐛 Bug Fixes (Latest)
+- **Fixed Growth & Progress reports**: Reports now filter by `storeId` ensuring each store's metrics are independent and accurate
+- **Fixed Settings page logout issue**: Enhanced error handling to prevent unnecessary logouts. Only logs out when user is truly not found (data regenerated)
+- **Fixed PK/PKR defaults**: All stores default to Pakistan (PK) and PKR currency. Public settings endpoint returns PK/PKR defaults
 - **Fixed Recharts warnings**: Added `minHeight` to all chart containers to prevent negative dimension warnings
 - **Fixed valueFormatter errors**: Enhanced null/undefined handling in CustomersPage and OrdersPage DataGrid columns
 - **Improved chart responsiveness**: All charts now have explicit heights and minHeight to ensure proper rendering

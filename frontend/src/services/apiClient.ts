@@ -98,7 +98,13 @@ export const apiFetch = async <TResponse>(
           errorMessage = 'Invalid request. Please check your input and try again.'
           break
         case 401:
-          errorMessage = 'Your session has expired. Please sign in again.'
+          // If skipAuth is true, this is expected for public endpoints
+          if (skipAuth) {
+            errorMessage = 'Access denied. This resource requires authentication.'
+          } else {
+            // Use the actual error message from backend if available
+            errorMessage = errorBody.message || 'Your session has expired. Please sign in again.'
+          }
           break
         case 403:
           errorMessage = 'You do not have permission to perform this action.'
@@ -123,8 +129,9 @@ export const apiFetch = async <TResponse>(
     }
     
     const error = new Error(errorMessage)
-    // Attach status for consumers (auth can act on 401)
-    ;(error as Error & { status?: number }).status = response.status
+    // Attach status and original message for consumers (auth can act on 401)
+    ;(error as Error & { status?: number; originalMessage?: string }).status = response.status
+    ;(error as Error & { status?: number; originalMessage?: string }).originalMessage = errorBody.message
     throw error
   }
 

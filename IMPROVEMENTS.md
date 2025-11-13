@@ -519,4 +519,7 @@ app.use(morgan('combined'))
 - Responsive design is well-implemented
 - Dark mode support is comprehensive
 - The code follows React best practices overall
+- **Multi-store system**: Complete data isolation with store-specific authentication, metrics, and settings
+- **Store-specific reports**: Growth & Progress reports filter by `storeId` ensuring independent metrics per store
+- **Default settings**: All stores default to PKR currency and Pakistan country
 

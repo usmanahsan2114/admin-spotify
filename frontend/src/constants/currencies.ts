@@ -23,5 +23,6 @@ export const CURRENCIES = [
   { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
   { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
   { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼' },
+  { code: 'PKR', name: 'Pakistani Rupee', symbol: '₨' },
 ]
 

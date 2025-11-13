@@ -5,6 +5,9 @@ export type Customer = {
   phone: string
   address?: string | null
   alternativePhone?: string | null
+  alternativeEmails?: string[]
+  alternativeNames?: string[]
+  alternativeAddresses?: string[]
   createdAt: string
   orderIds: string[]
   orderCount?: number

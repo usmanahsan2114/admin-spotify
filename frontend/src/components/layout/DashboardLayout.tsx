@@ -35,6 +35,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode'
 import type { Theme } from '@mui/material/styles'
 import { ThemeModeContext } from '../../providers/ThemeModeProvider'
 import { useAuth } from '../../context/AuthContext'
+import { useBusinessSettings } from '../../context/BusinessSettingsContext'
 import SiteAttribution from '../common/SiteAttribution'
 import { SkipLink } from '../common/SkipLink'
 import { fetchReturns } from '../../services/returnsService'
@@ -107,27 +108,20 @@ const activeStyles = (theme: Theme) => ({
 
 const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const theme = useTheme()
-
+  const { settings } = useBusinessSettings()
   const { logout, user } = useAuth()
   const [pendingReturns, setPendingReturns] = useState<number>(0)
   const [lowStockCount, setLowStockCount] = useState<number>(0)
-  const [businessSettings, setBusinessSettings] = useState<{ logoUrl?: string | null; dashboardName?: string } | null>(null)
 
   useEffect(() => {
     let isMounted = true
     
-    // Fetch metrics for badges and business settings
-    Promise.all([
-      fetchMetricsOverview(),
-      user?.role === 'admin' ? fetchBusinessSettings().catch(() => null) : Promise.resolve(null),
-    ])
-      .then(([metrics, businessData]) => {
+    // Fetch metrics for badges
+    fetchMetricsOverview()
+      .then((metrics) => {
         if (!isMounted) return
         setPendingReturns(metrics.pendingReturnsCount)
         setLowStockCount(metrics.lowStockCount)
-        if (businessData) {
-          setBusinessSettings(businessData)
-        }
       })
       .catch(() => {
         if (!isMounted) return
@@ -138,7 +132,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
     return () => {
       isMounted = false
     }
-  }, [user?.role])
+  }, [])
 
   const navItems = useMemo(
     () =>
@@ -165,9 +159,9 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   return (
     <Box role="presentation" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Toolbar sx={{ gap: 1 }}>
-        {businessSettings?.logoUrl ? (
+        {settings?.logoUrl ? (
           <Avatar
-            src={businessSettings.logoUrl}
+            src={settings.logoUrl}
             sx={{ width: 40, height: 40 }}
             alt="Logo"
           />
@@ -176,7 +170,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         )}
         <Box>
           <Typography variant="subtitle1" fontWeight={600}>
-            {businessSettings?.dashboardName || 'Shopify Admin'}
+            {settings?.dashboardName || 'Shopify Admin'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Back Office
@@ -267,21 +261,7 @@ const DashboardLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { mode, toggleMode } = useContext(ThemeModeContext)
   const { user, logout } = useAuth()
-  const [businessSettings, setBusinessSettings] = useState<{ logoUrl?: string | null; dashboardName?: string } | null>(null)
-
-  useEffect(() => {
-    const loadBusinessSettings = async () => {
-      if (user?.role === 'admin') {
-        try {
-          const settings = await fetchBusinessSettings()
-          setBusinessSettings(settings)
-        } catch {
-          // Silently fail
-        }
-      }
-    }
-    loadBusinessSettings()
-  }, [user?.role])
+  const { settings } = useBusinessSettings()
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen((prev) => !prev)
@@ -289,7 +269,7 @@ const DashboardLayout = () => {
 
   const drawer = useMemo(
     () => <DrawerContent onNavigate={() => setMobileOpen(false)} />,
-    [],
+    [settings],
   )
 
   return (
@@ -334,9 +314,9 @@ const DashboardLayout = () => {
                 <MenuIcon />
               </IconButton>
             )}
-            {businessSettings?.logoUrl && (
+            {settings?.logoUrl && (
               <Avatar
-                src={businessSettings.logoUrl}
+                src={settings.logoUrl}
                 sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, mr: 1 }}
                 alt="Logo"
               />
@@ -349,7 +329,7 @@ const DashboardLayout = () => {
                 display: { xs: 'none', sm: 'block' },
               }}
             >
-              {businessSettings?.dashboardName || 'Shopify Admin Dashboard'}
+              {settings?.dashboardName ? `${settings.dashboardName} Dashboard` : 'Shopify Admin Dashboard'}
             </Typography>
             <Typography
               variant="h6"
@@ -359,7 +339,7 @@ const DashboardLayout = () => {
                 display: { xs: 'block', sm: 'none' },
               }}
             >
-              {businessSettings?.dashboardName?.split(' ')[0] || 'Dashboard'}
+              {settings?.dashboardName?.split(' ')[0] || 'Dashboard'}
             </Typography>
           </Box>
 
@@ -385,8 +365,10 @@ const DashboardLayout = () => {
                 height: { xs: 32, sm: 36 },
                 fontSize: { xs: '0.875rem', sm: '1rem' },
               }}
+              src={user?.profilePictureUrl || undefined}
+              alt={user?.fullName || user?.name || user?.email || 'User'}
             >
-              {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+              {user?.fullName?.[0] || user?.name?.[0] || user?.email?.[0] || 'U'}
             </Avatar>
             <Tooltip title="Log out">
               <IconButton

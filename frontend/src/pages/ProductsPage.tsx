@@ -49,6 +49,7 @@ import {
   downloadProductsExport,
   importProducts,
 } from '../services/productsService'
+import { useCurrency } from '../hooks/useCurrency'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
 import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
@@ -105,15 +106,14 @@ const statusChips: Record<ProductStatus, 'success' | 'default' | 'warning'> = {
   inactive: 'default',
 }
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(value)
-
 const ProductsPage = () => {
+  const { formatCurrency } = useCurrency()
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [calculationError, setCalculationError] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -316,11 +316,48 @@ const ProductsPage = () => {
   }
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
+    setCalculationError(null)
+    
+    // Validate calculations
+    const price = Number(values.price)
+    const stockQuantity = Number(values.stockQuantity)
+    const reorderThreshold = Number(values.reorderThreshold)
+    
+    if (isNaN(price) || price < 0) {
+      setCalculationError('Price must be a valid number greater than or equal to 0.')
+      return
+    }
+    
+    if (price > 1000000) {
+      setCalculationError('Price cannot exceed $1,000,000. Please verify the product price.')
+      return
+    }
+    
+    if (isNaN(stockQuantity) || stockQuantity < 0 || !Number.isInteger(stockQuantity)) {
+      setCalculationError('Stock quantity must be a valid whole number greater than or equal to 0.')
+      return
+    }
+    
+    if (stockQuantity > 1000000) {
+      setCalculationError('Stock quantity cannot exceed 1,000,000. Please verify the stock quantity.')
+      return
+    }
+    
+    if (isNaN(reorderThreshold) || reorderThreshold < 0 || !Number.isInteger(reorderThreshold)) {
+      setCalculationError('Reorder threshold must be a valid whole number greater than or equal to 0.')
+      return
+    }
+    
+    if (reorderThreshold > stockQuantity) {
+      setCalculationError('Reorder threshold cannot exceed stock quantity. Please adjust the reorder threshold.')
+      return
+    }
+    
     const payload: ProductPayload = {
       ...values,
-      price: Number(values.price),
-      stockQuantity: Number(values.stockQuantity),
-      reorderThreshold: Number(values.reorderThreshold),
+      price,
+      stockQuantity,
+      reorderThreshold,
       imageUrl: values.imageUrl ? values.imageUrl : undefined,
       category: values.category || undefined,
     }
@@ -339,8 +376,13 @@ const ProductsPage = () => {
       }
       setIsDialogOpen(false)
       setSelectedProduct(null)
+      setCalculationError(null)
     } catch (err) {
-      setError(resolveError(err, 'Unable to save product.'))
+      const errorMsg = resolveError(err, 'Unable to save product.')
+      setError(errorMsg)
+      if (errorMsg.toLowerCase().includes('calculation') || errorMsg.toLowerCase().includes('invalid')) {
+        setCalculationError(errorMsg)
+      }
     }
   }
 
@@ -567,6 +609,19 @@ const ProductsPage = () => {
           {error}
         </Alert>
       )}
+      
+      {calculationError && (
+        <Alert 
+          severity="error" 
+          onClose={() => setCalculationError(null)}
+          sx={{ mb: 2 }}
+        >
+          <Typography variant="body2" fontWeight={600}>
+            Calculation Error
+          </Typography>
+          {calculationError}
+        </Alert>
+      )}
 
       {products.length > 0 && (() => {
         const stockTrend = products
@@ -708,6 +763,18 @@ const ProductsPage = () => {
           {selectedProduct ? 'Edit product' : 'Add product'}
         </DialogTitle>
         <DialogContent>
+          {calculationError && (
+            <Alert 
+              severity="error" 
+              onClose={() => setCalculationError(null)}
+              sx={{ mb: 2 }}
+            >
+              <Typography variant="body2" fontWeight={600}>
+                Calculation Error
+              </Typography>
+              {calculationError}
+            </Alert>
+          )}
           <Stack
             component="form"
             gap={2.5}

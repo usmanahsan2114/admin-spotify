@@ -35,6 +35,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import SettingsIcon from '@mui/icons-material/Settings'
 import BusinessIcon from '@mui/icons-material/Business'
 import { useAuth } from '../context/AuthContext'
+import { useBusinessSettings } from '../context/BusinessSettingsContext'
 import { ThemeModeContext } from '../providers/ThemeModeProvider'
 import {
   fetchCurrentUser,
@@ -273,6 +274,14 @@ const SettingsPage = () => {
       return
     }
     
+    // Check if we have a valid token before making the request
+    const token = localStorage.getItem('dashboard.authToken')
+    if (!token) {
+      setError('Please sign in to access settings.')
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       setError(null)
@@ -297,9 +306,37 @@ const SettingsPage = () => {
         },
       })
     } catch (err) {
+      const errorStatus = (err as Error & { status?: number; originalMessage?: string }).status
       const errorMessage = err instanceof Error ? err.message : 'Failed to load settings.'
+      const originalMessage = (err as Error & { originalMessage?: string }).originalMessage || errorMessage
+      
+      // Handle 401 errors - only logout if it's a "User not found" error
+      // This happens when backend data is regenerated and user IDs change
+      if (errorStatus === 401) {
+        // Check if it's specifically a "User not found" error from backend
+        // Also check if the error message contains "User not found" (case-insensitive)
+        const isUserNotFound = originalMessage === 'User not found.' || 
+                               originalMessage === 'Invalid or missing token.' ||
+                               errorMessage.toLowerCase().includes('user not found') ||
+                               errorMessage.toLowerCase().includes('invalid or missing token')
+        
+        if (isUserNotFound) {
+          // Only logout if user is truly not found (data regenerated)
+          console.log('[Settings] User not found - logging out. Error:', originalMessage)
+          logout()
+          setError('Your session is invalid. Please sign in again.')
+          return
+        } else {
+          // For other 401 errors (like expired token), show error but don't logout immediately
+          // This allows the user to try refreshing or manually logout
+          console.log('[Settings] 401 error but not user not found:', originalMessage)
+          setError(`Authentication failed: ${originalMessage || errorMessage}. Please try refreshing the page.`)
+          return
+        }
+      }
+      
       // Don't show error for 404 if user is not authenticated - redirect will happen
-      if ((err as Error & { status?: number }).status === 404) {
+      if (errorStatus === 404) {
         setError('User profile not found. Please try signing out and back in.')
       } else {
         setError(errorMessage)
@@ -307,11 +344,13 @@ const SettingsPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [authUser, resetProfile, resetBusiness])
+  }, [authUser, resetProfile, resetBusiness, logout])
 
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  const { refreshSettings } = useBusinessSettings()
 
   const handleProfileSave = async (data: UpdateCurrentUserPayload) => {
     try {
@@ -321,6 +360,20 @@ const SettingsPage = () => {
       setCurrentUser(updated)
       setSuccess('Profile updated successfully.')
       resetProfile(data, { keepDirty: false })
+      // Update user in localStorage so it reflects immediately
+      if (typeof window !== 'undefined') {
+        const storedUser = window.localStorage.getItem('dashboard.user')
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser)
+            window.localStorage.setItem('dashboard.user', JSON.stringify({ ...parsedUser, ...updated }))
+            // Reload page to refresh auth context
+            window.location.reload()
+          } catch {
+            // Ignore errors
+          }
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile.')
     } finally {
@@ -336,6 +389,8 @@ const SettingsPage = () => {
       setBusinessSettings(updated)
       setSuccess('Business settings saved successfully.')
       resetBusiness(updated, { keepDirty: false })
+      // Refresh business settings context to update all pages
+      await refreshSettings()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save business settings.')
     } finally {

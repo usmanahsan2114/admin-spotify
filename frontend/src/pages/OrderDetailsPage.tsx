@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { useApiErrorHandler } from '../hooks/useApiErrorHandler'
 import { formatDate, formatRelativeTime } from '../utils/dateUtils'
-import { formatCurrency } from '../utils/currencyUtils'
+import { useCurrency } from '../hooks/useCurrency'
 import {
   Alert,
   Box,
@@ -20,7 +20,7 @@ import {
   Stack,
   Switch,
   TextField,
-  Tooltip,
+  Tooltip as MuiTooltip,
   Typography,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -28,6 +28,16 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { fetchOrderById, updateOrder } from '../services/ordersService'
 import type { Order, OrderStatus } from '../types/order'
 import type { ReturnStatus } from '../types/return'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
+import { useTheme } from '@mui/material/styles'
 
 const statusOptions: OrderStatus[] = [
   'Pending',
@@ -67,12 +77,15 @@ const OrderDetailsPage = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
   const handleError = useApiErrorHandler()
+  const { formatCurrency } = useCurrency()
+  const theme = useTheme()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [calculationError, setCalculationError] = useState<string | null>(null)
 
   const [status, setStatus] = useState<OrderStatus | ''>('')
   const [notes, setNotes] = useState('')
@@ -115,10 +128,38 @@ const OrderDetailsPage = () => {
     )
   }, [order, status, notes, isPaid, quantity, phone])
 
+  // Calculate order progress data for visualization
+  const orderProgressData = useMemo(() => {
+    if (!order) return []
+    const statusOrder = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
+    const currentIndex = statusOrder.indexOf(order.status)
+    
+    return statusOrder.map((status, index) => ({
+      status,
+      progress: index <= currentIndex ? 100 : 0,
+      isCurrent: index === currentIndex,
+      date: order.timeline?.find((t) => t.description.toLowerCase().includes(status.toLowerCase()))?.timestamp || null,
+    }))
+  }, [order])
+
   const handleSave = async () => {
     if (!order || !orderId || !hasChanges) return
     setSaving(true)
+    setCalculationError(null)
     try {
+      // Validate calculations
+      if (quantity <= 0) {
+        setCalculationError('Quantity must be greater than 0.')
+        setSaving(false)
+        return
+      }
+      
+      if (quantity > 1000) {
+        setCalculationError('Quantity cannot exceed 1000. Please verify the order quantity.')
+        setSaving(false)
+        return
+      }
+
       const payload: Partial<Order> = {}
 
       if (order.status !== status && status) {
@@ -131,6 +172,14 @@ const OrderDetailsPage = () => {
         payload.isPaid = isPaid
       }
       if (order.quantity !== quantity) {
+        // Validate total calculation
+        const productPrice = order.total ? order.total / order.quantity : 0
+        const newTotal = productPrice * quantity
+        if (isNaN(newTotal) || newTotal < 0 || !isFinite(newTotal)) {
+          setCalculationError('Invalid calculation: Total amount cannot be calculated. Please check quantity and product price.')
+          setSaving(false)
+          return
+        }
         payload.quantity = quantity
       }
       if ((order.phone ?? '') !== phone) {
@@ -146,7 +195,12 @@ const OrderDetailsPage = () => {
       setPhone(updated.phone ?? '')
       setSuccessMessage('Order updated successfully.')
     } catch (err) {
-      setError(handleError(err, 'Unable to update order.'))
+      const errorMsg = handleError(err, 'Unable to update order.')
+      setError(errorMsg)
+      // Check if it's a calculation error
+      if (errorMsg.toLowerCase().includes('calculation') || errorMsg.toLowerCase().includes('invalid')) {
+        setCalculationError(errorMsg)
+      }
     } finally {
       setSaving(false)
     }
@@ -216,6 +270,18 @@ const OrderDetailsPage = () => {
         <Typography color="text.secondary">{order.id}</Typography>
       </Breadcrumbs>
 
+      {calculationError && (
+        <Alert 
+          severity="error" 
+          onClose={() => setCalculationError(null)}
+        >
+          <Typography variant="body2" fontWeight={600}>
+            Calculation Error
+          </Typography>
+          {calculationError}
+        </Alert>
+      )}
+
       <Card>
         <CardContent>
           <Stack
@@ -244,11 +310,11 @@ const OrderDetailsPage = () => {
               </Stack>
             </Box>
             <Stack direction="row" spacing={1}>
-              <Tooltip title="Reload order">
+              <MuiTooltip title="Reload order">
                 <IconButton onClick={loadOrder} aria-label="Reload order">
                   <RefreshIcon />
                 </IconButton>
-              </Tooltip>
+              </MuiTooltip>
               <Button
                 variant="contained"
                 onClick={handleSave}
@@ -260,6 +326,59 @@ const OrderDetailsPage = () => {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* Order Progress Visualization */}
+      {order && orderProgressData.length > 0 && (
+        <Card>
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={600} mb={2}>
+              Order Progress Visualization
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            <Box sx={{ width: '100%', height: 300, mb: 2 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={orderProgressData}>
+                  <defs>
+                    <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8} />
+                      <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.1} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                  <XAxis 
+                    dataKey="status" 
+                    tick={{ fill: theme.palette.text.primary }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tick={{ fill: theme.palette.text.primary }}
+                    label={{ value: 'Progress %', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip
+                    formatter={(value: number) => [`${value}%`, 'Progress']}
+                    contentStyle={{
+                      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.background.paper,
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: theme.shape.borderRadius,
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="progress"
+                    stroke={theme.palette.primary.main}
+                    fillOpacity={1}
+                    fill="url(#colorProgress)"
+                    animationDuration={1500}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       <Stack
         direction={{ xs: 'column', lg: 'row' }}
@@ -322,14 +441,22 @@ const OrderDetailsPage = () => {
                     name="quantity"
                     label="Quantity"
                     type="number"
-                    inputProps={{ min: 1 }}
+                    inputProps={{ min: 1, max: 1000 }}
                     value={quantity}
                     onChange={(event) => {
                       const value = Number(event.target.value)
                       if (!Number.isNaN(value) && value > 0) {
+                        if (value > 1000) {
+                          setCalculationError('Quantity cannot exceed 1000.')
+                        } else if (value <= 0) {
+                          setCalculationError('Quantity must be greater than 0.')
+                        } else {
+                          setCalculationError(null)
+                        }
                         setQuantity(value)
                       }
                     }}
+                    helperText={order.total ? `Estimated total: ${formatCurrency((order.total / order.quantity) * quantity)}` : undefined}
                     autoComplete="off"
                   />
                   <TextField

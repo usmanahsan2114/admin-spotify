@@ -74,6 +74,7 @@ const userSchema = yup
       }),
     active: yup.boolean().required(),
     requirePassword: yup.boolean().required(),
+    permissions: yup.object().optional(),
   })
   .required()
 
@@ -135,6 +136,76 @@ const permissionLabels: Record<keyof UserPermissions, string> = {
   manageSettings: 'Manage Settings',
 }
 
+// Permission presets/templates
+type PermissionPreset = {
+  name: string
+  description: string
+  permissions: UserPermissions
+}
+
+const permissionPresets: PermissionPreset[] = [
+  {
+    name: 'Full Access',
+    description: 'All permissions enabled (Admin default)',
+    permissions: {
+      viewOrders: true, editOrders: true, deleteOrders: true,
+      viewProducts: true, editProducts: true, deleteProducts: true,
+      viewCustomers: true, editCustomers: true,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: true, manageSettings: true,
+    },
+  },
+  {
+    name: 'Manager',
+    description: 'Can manage orders, products, and customers, but not users or settings',
+    permissions: {
+      viewOrders: true, editOrders: true, deleteOrders: true,
+      viewProducts: true, editProducts: true, deleteProducts: true,
+      viewCustomers: true, editCustomers: true,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: false, manageSettings: false,
+    },
+  },
+  {
+    name: 'Editor',
+    description: 'Can view and edit but not delete orders, products, and customers',
+    permissions: {
+      viewOrders: true, editOrders: true, deleteOrders: false,
+      viewProducts: true, editProducts: true, deleteProducts: false,
+      viewCustomers: true, editCustomers: true,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: false, manageSettings: false,
+    },
+  },
+  {
+    name: 'Support',
+    description: 'Can view and process returns, view orders and customers',
+    permissions: {
+      viewOrders: true, editOrders: true, deleteOrders: false,
+      viewProducts: true, editProducts: false, deleteProducts: false,
+      viewCustomers: true, editCustomers: false,
+      viewReturns: true, processReturns: true,
+      viewReports: true, manageUsers: false, manageSettings: false,
+    },
+  },
+  {
+    name: 'View Only',
+    description: 'Can only view data, no editing permissions',
+    permissions: {
+      viewOrders: true, editOrders: false, deleteOrders: false,
+      viewProducts: true, editProducts: false, deleteProducts: false,
+      viewCustomers: true, editCustomers: false,
+      viewReturns: true, processReturns: false,
+      viewReports: true, manageUsers: false, manageSettings: false,
+    },
+  },
+  {
+    name: 'Custom',
+    description: 'Manually configure permissions',
+    permissions: getDefaultPermissions('staff'),
+  },
+]
+
 const currentAdminEmail =
   import.meta.env.VITE_DEV_ADMIN_EMAIL?.toLowerCase() ?? 'admin@example.com'
 
@@ -160,7 +231,7 @@ const UsersPage = () => {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: yupResolver(userSchema) as Resolver<FormValues>,
+    resolver: yupResolver(userSchema) as unknown as Resolver<FormValues>,
     defaultValues: {
       name: '',
       email: '',
@@ -627,34 +698,69 @@ const UsersPage = () => {
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <Stack spacing={2}>
+                <Stack spacing={3}>
                   <Typography variant="body2" color="text.secondary">
                     Configure what this user can access and modify. Admin users have all permissions by default.
                   </Typography>
-                  <Box
-                    display="grid"
-                    gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)' }}
-                    gap={2}
-                  >
-                    {(Object.keys(permissionLabels) as Array<keyof UserPermissions>).map((key) => (
-                      <Controller
-                        key={key}
-                        name={`permissions.${key}`}
-                        control={control}
-                        render={({ field: { value, onChange } }) => (
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={value ?? false}
-                                onChange={(_, checked) => onChange(checked)}
-                                disabled={watch('role') === 'admin'}
-                              />
-                            }
-                            label={permissionLabels[key]}
-                          />
-                        )}
-                      />
-                    ))}
+                  
+                  {watch('role') !== 'admin' && (
+                    <Box>
+                      <FormLabel component="legend" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
+                        Quick Presets
+                      </FormLabel>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {permissionPresets.map((preset) => (
+                          <Button
+                            key={preset.name}
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              reset({
+                                ...watch(),
+                                permissions: preset.permissions,
+                              })
+                            }}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            {preset.name}
+                          </Button>
+                        ))}
+                      </Stack>
+                      <Typography variant="caption" color="text.secondary" mt={1} display="block">
+                        Click a preset to quickly apply common permission sets, then customize as needed below.
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  <Box>
+                    <FormLabel component="legend" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
+                      Individual Permissions
+                    </FormLabel>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)' }}
+                      gap={2}
+                    >
+                      {(Object.keys(permissionLabels) as Array<keyof UserPermissions>).map((key) => (
+                        <Controller
+                          key={key}
+                          name={`permissions.${key}`}
+                          control={control}
+                          render={({ field: { value, onChange } }) => (
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={value ?? false}
+                                  onChange={(_, checked) => onChange(checked)}
+                                  disabled={watch('role') === 'admin'}
+                                />
+                              }
+                              label={permissionLabels[key]}
+                            />
+                          )}
+                        />
+                      ))}
+                    </Box>
                   </Box>
                 </Stack>
               </AccordionDetails>

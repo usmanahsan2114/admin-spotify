@@ -23,9 +23,7 @@ const LoginPage = lazy(() => import('./pages/auth/LoginPage').then((m) => ({ def
 const NotFoundPage = lazy(() => import('./pages/auth/NotFoundPage').then((m) => ({ default: m.default })))
 const SignupPage = lazy(() => import('./pages/auth/SignupPage').then((m) => ({ default: m.default })))
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage').then((m) => ({ default: m.default })))
-const CustomerLoginPage = lazy(() => import('./pages/customer/CustomerLoginPage').then((m) => ({ default: m.default })))
-const CustomerSignupPage = lazy(() => import('./pages/customer/CustomerSignupPage').then((m) => ({ default: m.default })))
-const CustomerOrdersPage = lazy(() => import('./pages/customer/CustomerOrdersPage').then((m) => ({ default: m.default })))
+const StoreSelectionPage = lazy(() => import('./pages/public/StoreSelectionPage').then((m) => ({ default: m.default })))
 
 const LoadingFallback = () => (
   <Box
@@ -57,8 +55,18 @@ const App = () => (
   <ErrorBoundary>
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
+        {/* Store selection page */}
         <Route
-          path="/track-order"
+          path="/"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <StoreSelectionPage />
+            </Suspense>
+          }
+        />
+        {/* Store-specific routes */}
+        <Route
+          path="/store/:storeId/track-order"
           element={
             <Suspense fallback={<LoadingFallback />}>
               <OrderTrackingPage />
@@ -66,26 +74,19 @@ const App = () => (
           }
         />
         <Route
-          path="/customer/login"
+          path="/store/:storeId/test-order"
           element={
             <Suspense fallback={<LoadingFallback />}>
-              <CustomerLoginPage />
+              <OrderTestForm />
             </Suspense>
           }
         />
+        {/* Legacy routes (redirect to store selection) */}
         <Route
-          path="/customer/signup"
+          path="/track-order"
           element={
             <Suspense fallback={<LoadingFallback />}>
-              <CustomerSignupPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/customer/orders"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <CustomerOrdersPage />
+              <StoreSelectionPage />
             </Suspense>
           }
         />
@@ -93,7 +94,7 @@ const App = () => (
           path="/test-order"
           element={
             <Suspense fallback={<LoadingFallback />}>
-              <OrderTestForm />
+              <StoreSelectionPage />
             </Suspense>
           }
         />

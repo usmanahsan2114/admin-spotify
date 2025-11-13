@@ -37,6 +37,7 @@ import {
   updateCustomer,
 } from '../services/customersService'
 import { useAuth } from '../context/AuthContext'
+import { useCurrency } from '../hooks/useCurrency'
 
 type FormValues = {
   name: string
@@ -83,6 +84,7 @@ const formatDate = (value?: string | null) => {
 const CustomerDetailPage = () => {
   const { customerId } = useParams()
   const { logout } = useAuth()
+  const { formatCurrency } = useCurrency()
   const navigate = useNavigate()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
@@ -208,10 +210,7 @@ const CustomerDetailPage = () => {
         minWidth: 120,
         valueFormatter: ({ value }) => {
           if (typeof value !== 'number') return '—'
-          return new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency: 'USD',
-          }).format(value)
+          return formatCurrency(value)
         },
       },
     ],
@@ -271,12 +270,74 @@ const CustomerDetailPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Stack spacing={1.5}>
-              <Typography variant="body1">
-                <strong>Email:</strong> {customer.email}
-              </Typography>
-              <Typography variant="body1">
-                <strong>Phone:</strong> {customer.phone || '—'}
-              </Typography>
+              <Box>
+                <Typography variant="body1" fontWeight={600} mb={0.5}>
+                  Names:
+                </Typography>
+                <Stack spacing={0.5} pl={1}>
+                  <Typography variant="body2" color="primary.main">
+                    {customer.name} (Primary)
+                  </Typography>
+                  {customer.alternativeNames && customer.alternativeNames.length > 0 && (
+                    customer.alternativeNames.map((altName, idx) => (
+                      <Typography key={idx} variant="body2" color="text.secondary">
+                        {altName}
+                      </Typography>
+                    ))
+                  )}
+                </Stack>
+              </Box>
+              <Box>
+                <Typography variant="body1" fontWeight={600} mb={0.5}>
+                  Emails:
+                </Typography>
+                <Stack spacing={0.5} pl={1}>
+                  <Typography variant="body2" color="primary.main">
+                    {customer.email} (Primary)
+                  </Typography>
+                  {customer.alternativeEmails && customer.alternativeEmails.length > 0 && (
+                    customer.alternativeEmails.map((altEmail, idx) => (
+                      <Typography key={idx} variant="body2" color="text.secondary">
+                        {altEmail}
+                      </Typography>
+                    ))
+                  )}
+                </Stack>
+              </Box>
+              <Box>
+                <Typography variant="body1" fontWeight={600} mb={0.5}>
+                  Phones:
+                </Typography>
+                <Stack spacing={0.5} pl={1}>
+                  <Typography variant="body2" color="primary.main">
+                    {customer.phone || 'Not provided'} (Primary)
+                  </Typography>
+                  {customer.alternativePhone && (
+                    <Typography variant="body2" color="text.secondary">
+                      {customer.alternativePhone}
+                    </Typography>
+                  )}
+                </Stack>
+              </Box>
+              {customer.address && (
+                <Box>
+                  <Typography variant="body1" fontWeight={600} mb={0.5}>
+                    Addresses:
+                  </Typography>
+                  <Stack spacing={0.5} pl={1}>
+                    <Typography variant="body2" color="primary.main">
+                      {customer.address} (Primary)
+                    </Typography>
+                    {customer.alternativeAddresses && customer.alternativeAddresses.length > 0 && (
+                      customer.alternativeAddresses.map((altAddress, idx) => (
+                        <Typography key={idx} variant="body2" color="text.secondary">
+                          {altAddress}
+                        </Typography>
+                      ))
+                    )}
+                  </Stack>
+                </Box>
+              )}
               <Typography variant="body1">
                 <strong>Customer since:</strong> {formatDate(customer.createdAt)}
               </Typography>

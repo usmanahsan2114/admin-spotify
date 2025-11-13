@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const rateLimit = require('express-rate-limit')
 const { generateTestData } = require('./generateTestData')
+const { generateMultiStoreData } = require('./generateMultiStoreData')
 const {
   validateLogin,
   validateSignup,
@@ -86,75 +87,36 @@ const requestLogger = (req, res, next) => {
 
 app.use(requestLogger)
 
-// Generate comprehensive test data (1 year of data)
-const testData = generateTestData()
+// Generate multi-store test data
+const multiStoreData = generateMultiStoreData()
 
-// In-memory data stores (temporary for development/testing)
-let orders = testData.orders
-let products = testData.products
-let customers = testData.customers
-let returns = testData.returns
+// In-memory data stores (multi-store support)
+let stores = multiStoreData.stores
+let users = multiStoreData.users
+let orders = multiStoreData.orders
+let products = multiStoreData.products
+let customers = multiStoreData.customers
+let returns = multiStoreData.returns
 
-// Old array definitions removed - using generated test data instead
+// Debug: Log user count and sample admin emails
+console.log(`[INIT] Loaded ${stores.length} stores, ${users.length} users, ${orders.length} orders`)
+console.log('[INIT] Admin users:', users.filter(u => u.role === 'admin').map(u => u.email).join(', '))
 
-// Fixed UUIDs for default users to ensure consistency across server restarts
-const ADMIN_USER_ID = '00000000-0000-0000-0000-000000000001'
-const STAFF_USER_ID = '00000000-0000-0000-0000-000000000002'
+// Helper to find store by ID
+const findStoreById = (storeId) => stores.find((s) => s.id === storeId)
 
-const users = [
-  {
-    id: ADMIN_USER_ID,
-    email: 'admin@example.com',
-    name: 'Store Admin',
-    role: 'admin',
-    passwordHash: bcrypt.hashSync('admin123', 10),
-    active: true,
-    permissions: {
-      viewOrders: true, editOrders: true, deleteOrders: true,
-      viewProducts: true, editProducts: true, deleteProducts: true,
-      viewCustomers: true, editCustomers: true,
-      viewReturns: true, processReturns: true,
-      viewReports: true, manageUsers: true, manageSettings: true,
-    },
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    profilePictureUrl: null,
-    fullName: 'Store Admin',
-    phone: null,
-    defaultDateRangeFilter: 'last7',
-    notificationPreferences: {
-      newOrders: true,
-      lowStock: true,
-      returnsPending: true,
-    },
-  },
-  {
-    id: STAFF_USER_ID,
-    email: 'staff@example.com',
-    name: 'Staff Member',
-    role: 'staff',
-    passwordHash: bcrypt.hashSync('staff123', 10),
-    active: true,
-    permissions: {
-      viewOrders: true, editOrders: true, deleteOrders: false,
-      viewProducts: true, editProducts: true, deleteProducts: false,
-      viewCustomers: true, editCustomers: false,
-      viewReturns: true, processReturns: true,
-      viewReports: true, manageUsers: false, manageSettings: false,
-    },
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    profilePictureUrl: null,
-    fullName: 'Staff Member',
-    phone: null,
-    defaultDateRangeFilter: 'last7',
-    notificationPreferences: {
-      newOrders: true,
-      lowStock: true,
-      returnsPending: true,
-    },
-  },
-]
+// Helper to get store settings (per store)
+const getStoreSettings = (storeId) => {
+  const store = findStoreById(storeId)
+  if (!store) return null
+  return {
+    logoUrl: store.logoUrl,
+    brandColor: store.brandColor,
+    defaultCurrency: store.defaultCurrency,
+    country: store.country,
+    dashboardName: store.dashboardName,
+  }
+}
 
 // Ensure all users have required fields
 users.forEach((user) => {
@@ -187,14 +149,28 @@ const findOrderProduct = (order) =>
 const findCustomerById = (id) => customers.find((customer) => customer.id === id)
 const findCustomerByEmail = (email) =>
   customers.find((customer) => normalizeEmail(customer.email) === normalizeEmail(email)) || null
+const findCustomerByPhone = (phone) => {
+  const normalizedPhone = normalizePhone(phone)
+  return customers.find((customer) => 
+    (customer.phone && normalizePhone(customer.phone) === normalizedPhone) ||
+    (customer.alternativePhone && normalizePhone(customer.alternativePhone) === normalizedPhone)
+  ) || null
+}
+const findCustomerByAddress = (address) => {
+  const normalizedAddress = normalizeAddress(address)
+  return customers.find((customer) => 
+    customer.address && normalizeAddress(customer.address) === normalizedAddress
+  ) || null
+}
 
 const ensureReturnCustomer = (returnRequest) => {
   if (returnRequest.customerId) return returnRequest
   const order = findOrderById(returnRequest.orderId)
   if (!order) return returnRequest
+  // Use enhanced matching by contact info
   const customer =
     (order.customerId && findCustomerById(order.customerId)) ||
-    findCustomerByEmail(order.email)
+    findCustomerByContact(order.email, order.phone, null)
   if (customer) {
     returnRequest.customerId = customer.id
   }
@@ -227,7 +203,7 @@ const serializeReturn = (returnRequest) => {
   const order = findOrderById(returnRequest.orderId)
   const customer =
     (returnRequest.customerId && findCustomerById(returnRequest.customerId)) ||
-    (order ? findCustomerByEmail(order.email) : null)
+    (order ? findCustomerByContact(order.email, order.phone, null) : null)
   return {
     ...returnRequest,
     history: [...(returnRequest.history || [])],
@@ -254,6 +230,104 @@ const serializeReturn = (returnRequest) => {
 const sanitizeUser = ({ passwordHash, ...rest }) => rest
 
 const normalizeEmail = (value = '') => value.trim().toLowerCase()
+const normalizePhone = (value = '') => String(value || '').trim().replace(/\D/g, '')
+const normalizeAddress = (value = '') => String(value || '').trim().toLowerCase()
+
+// Find customer by email, phone, or address (any match) - optionally filter by storeId
+const findCustomerByContact = (email, phone, address, storeId = null) => {
+  if (!email && !phone && !address) return null
+  
+  const normalizedEmail = email ? normalizeEmail(email) : null
+  const normalizedPhone = phone ? normalizePhone(phone) : null
+  const normalizedAddress = address ? normalizeAddress(address) : null
+  
+  // Filter by storeId if provided
+  const customersToSearch = storeId ? filterByStore(customers, storeId) : customers
+  
+  return customersToSearch.find((customer) => {
+    // Match by primary email
+    if (normalizedEmail && customer.email && normalizeEmail(customer.email) === normalizedEmail) {
+      return true
+    }
+    // Match by alternative emails
+    if (normalizedEmail && customer.alternativeEmails && Array.isArray(customer.alternativeEmails)) {
+      if (customer.alternativeEmails.some((altEmail) => normalizeEmail(altEmail) === normalizedEmail)) {
+        return true
+      }
+    }
+    // Match by primary phone
+    if (normalizedPhone && customer.phone && normalizePhone(customer.phone) === normalizedPhone) {
+      return true
+    }
+    // Match by alternative phone
+    if (normalizedPhone && customer.alternativePhone && normalizePhone(customer.alternativePhone) === normalizedPhone) {
+      return true
+    }
+    // Match by primary address
+    if (normalizedAddress && customer.address && normalizeAddress(customer.address) === normalizedAddress) {
+      return true
+    }
+    // Match by alternative addresses
+    if (normalizedAddress && customer.alternativeAddresses && Array.isArray(customer.alternativeAddresses)) {
+      if (customer.alternativeAddresses.some((altAddress) => normalizeAddress(altAddress) === normalizedAddress)) {
+        return true
+      }
+    }
+    return false
+  }) || null
+}
+
+// Merge customer information - add new info to existing customer
+const mergeCustomerInfo = (existingCustomer, newInfo) => {
+  if (!existingCustomer) return newInfo
+  
+  const merged = { ...existingCustomer }
+  
+  // Merge names - keep existing name, add new name as alternative if different
+  if (newInfo.name && newInfo.name.trim() && newInfo.name.trim() !== existingCustomer.name?.trim()) {
+    if (!merged.alternativeNames) merged.alternativeNames = []
+    if (!merged.alternativeNames.includes(newInfo.name.trim())) {
+      merged.alternativeNames.push(newInfo.name.trim())
+    }
+  }
+  
+  // Merge emails - keep primary email, add new email as alternative if different
+  if (newInfo.email && normalizeEmail(newInfo.email) !== normalizeEmail(existingCustomer.email || '')) {
+    if (!merged.alternativeEmails) merged.alternativeEmails = []
+    const normalizedNewEmail = normalizeEmail(newInfo.email)
+    if (!merged.alternativeEmails.some((e) => normalizeEmail(e) === normalizedNewEmail)) {
+      merged.alternativeEmails.push(newInfo.email.trim())
+    }
+  }
+  
+  // Merge phones - keep primary phone, add new phone as alternative if different
+  if (newInfo.phone && normalizePhone(newInfo.phone) !== normalizePhone(existingCustomer.phone || '')) {
+    const normalizedNewPhone = normalizePhone(newInfo.phone)
+    const normalizedExistingPhone = normalizePhone(existingCustomer.phone || '')
+    const normalizedExistingAltPhone = normalizePhone(existingCustomer.alternativePhone || '')
+    
+    if (normalizedNewPhone && normalizedNewPhone !== normalizedExistingPhone && normalizedNewPhone !== normalizedExistingAltPhone) {
+      if (!merged.alternativePhone) {
+        merged.alternativePhone = newInfo.phone.trim()
+      } else if (normalizePhone(merged.alternativePhone) !== normalizedNewPhone) {
+        // If we already have an alternative phone, we could add to a list, but for now keep the first alternative
+        // In a more advanced system, we'd use an array
+      }
+    }
+  }
+  
+  // Merge addresses - keep existing address, add new address as alternative if different
+  if (newInfo.address && normalizeAddress(newInfo.address) !== normalizeAddress(existingCustomer.address || '')) {
+    if (!merged.alternativeAddresses) merged.alternativeAddresses = []
+    const normalizedNewAddress = normalizeAddress(newInfo.address)
+    if (!merged.alternativeAddresses.some((a) => normalizeAddress(a) === normalizedNewAddress)) {
+      merged.alternativeAddresses.push(newInfo.address.trim())
+    }
+  }
+  
+  merged.updatedAt = new Date().toISOString()
+  return merged
+}
 
 const serializeCustomer = (customer) => {
   if (!customer) return null
@@ -266,6 +340,9 @@ const serializeCustomer = (customer) => {
     phone: customer.phone || 'Not provided',
     address: customer.address || null,
     alternativePhone: customer.alternativePhone || null,
+    alternativeEmails: customer.alternativeEmails || [],
+    alternativeNames: customer.alternativeNames || [],
+    alternativeAddresses: customer.alternativeAddresses || [],
     createdAt: customer.createdAt || new Date().toISOString(),
     orderCount: ordersForCustomer.length,
     lastOrderDate: lastOrder ? lastOrder.createdAt : null,
@@ -275,11 +352,43 @@ const serializeCustomer = (customer) => {
 
 const getOrdersForCustomer = (customer) => {
   if (!customer || !customer.id) return []
-  return orders.filter((order) => {
-    if (order.customerId === customer.id) return true
-    if (normalizeEmail(order.email) === normalizeEmail(customer.email)) return true
-    return false
-  })
+  const customerEmails = [
+    customer.email,
+    ...(customer.alternativeEmails || [])
+  ].filter(Boolean).map(normalizeEmail)
+  
+  const customerPhones = [
+    customer.phone,
+    customer.alternativePhone,
+  ].filter(Boolean).map(normalizePhone)
+  
+  const customerAddresses = [
+    customer.address,
+    ...(customer.alternativeAddresses || [])
+  ].filter(Boolean).map(normalizeAddress)
+  
+  // Filter orders by storeId first
+  const storeOrders = customer.storeId ? filterByStore(orders, customer.storeId) : orders
+  
+  return storeOrders
+    .filter((order) => {
+      // Match by customer ID
+      if (order.customerId === customer.id) return true
+      
+      // Match by email
+      if (order.email && customerEmails.includes(normalizeEmail(order.email))) return true
+      
+      // Match by phone
+      if (order.phone && customerPhones.includes(normalizePhone(order.phone))) return true
+      
+      return false
+    })
+    .sort((a, b) => {
+      // Sort by createdAt descending (latest first)
+      const dateA = new Date(a.createdAt || 0).getTime()
+      const dateB = new Date(b.createdAt || 0).getTime()
+      return dateB - dateA
+    })
 }
 
 // Business settings (in-memory store)
@@ -305,18 +414,49 @@ const appendReturnHistory = (returnRequest, status, actor, note) => {
   })
 }
 
-// Attach order to customer helper
+// Attach order to customer helper - matches by email, phone, or address
 const attachOrderToCustomer = (order) => {
-  if (!order || !order.email) return
-  const customer = findCustomerByEmail(order.email)
+  if (!order) return
+  
+  // Try to find existing customer by email, phone, or address within the same store
+  let customer = findCustomerByContact(order.email, order.phone, null, order.storeId)
+  
   if (customer) {
-    if (!customer.orderIds) customer.orderIds = []
-    if (!customer.orderIds.includes(order.id)) {
-      customer.orderIds.push(order.id)
+    // Merge new information from order into existing customer
+    const mergedInfo = {
+      name: order.customerName,
+      email: order.email,
+      phone: order.phone,
+      address: null, // Orders don't typically have address, but we could add it
     }
-    if (!order.customerId) {
-      order.customerId = customer.id
+    Object.assign(customer, mergeCustomerInfo(customer, mergedInfo))
+  } else {
+    // Create new customer if none found
+    customer = {
+      id: crypto.randomUUID(),
+      storeId: order.storeId, // Assign to same store as order
+      name: order.customerName || 'Unknown',
+      email: order.email || '',
+      phone: order.phone || 'Not provided',
+      address: null,
+      alternativePhone: null,
+      alternativeEmails: [],
+      alternativeNames: [],
+      alternativeAddresses: [],
+      orderIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }
+    customers.unshift(customer)
+  }
+  
+  // Link order to customer
+  if (!customer.orderIds) customer.orderIds = []
+  if (!customer.orderIds.includes(order.id)) {
+    customer.orderIds.push(order.id)
+  }
+  if (!order.customerId) {
+    order.customerId = customer.id
   }
 }
 
@@ -346,15 +486,54 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader.split(' ')[1]
 
   if (!token) {
+    console.log('[AUTH] No token provided in Authorization header')
     return res.status(401).json({ message: 'Authorization token required.' })
   }
 
   return jwt.verify(token, JWT_SECRET, (error, payload) => {
     if (error) {
+      console.log('[AUTH] Token verification failed:', error.message)
       return res.status(401).json({ message: 'Invalid or expired token.' })
     }
 
-    req.user = payload
+    // Find user and attach full user object + storeId
+    const user = users.find((u) => u.id === payload.userId)
+    if (!user) {
+      console.log(`[AUTH] User not found for userId: ${payload.userId}`)
+      console.log(`[AUTH] Available user IDs: ${users.slice(0, 5).map(u => u.id).join(', ')}...`)
+      return res.status(401).json({ message: 'User not found.' })
+    }
+
+    if (!user.active) {
+      return res.status(403).json({ message: 'Account is inactive.' })
+    }
+
+    req.user = user
+    req.storeId = user.storeId // Add storeId to request for filtering
+    return next()
+  })
+}
+
+// Helper to filter data by storeId
+const filterByStore = (dataArray, storeId) => {
+  if (!storeId) return []
+  return dataArray.filter((item) => item.storeId === storeId)
+}
+
+const authenticateCustomer = (req, res, next) => {
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.split(' ')[1]
+
+  if (!token) {
+    return res.status(401).json({ message: 'Authorization token required.' })
+  }
+
+  return jwt.verify(token, JWT_SECRET, (error, payload) => {
+    if (error || payload.type !== 'customer') {
+      return res.status(401).json({ message: 'Invalid or expired customer token.' })
+    }
+
+    req.customer = payload // Attach customer payload
     return next()
   })
 }
@@ -373,13 +552,38 @@ app.get('/', (_req, res) => {
   res.status(200).send('API running')
 })
 
+// Get all stores (public endpoint for store selection)
+app.get('/api/stores', (_req, res) => {
+  try {
+    const storeList = stores.map((store) => ({
+      id: store.id,
+      name: store.name,
+      dashboardName: store.dashboardName,
+      domain: store.domain,
+      category: store.category,
+    }))
+    return res.json(storeList)
+  } catch (error) {
+    console.error('[ERROR] /api/stores:', error)
+    return res.status(500).json({ message: 'Failed to fetch stores', error: error.message })
+  }
+})
+
 app.post('/api/login', validateLogin, async (req, res) => {
   const { email, password } = req.body
 
   const normalizedEmail = normalizeEmail(email)
   const user = users.find((u) => normalizeEmail(u.email) === normalizedEmail)
 
-  if (!user || !bcrypt.compareSync(password, user.passwordHash)) {
+  // Debug logging
+  if (!user) {
+    console.log(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
+    console.log(`[LOGIN] Available users: ${users.slice(0, 5).map(u => u.email).join(', ')}...`)
+    return res.status(401).json({ message: 'Invalid email or password.' })
+  }
+
+  if (!bcrypt.compareSync(password, user.passwordHash)) {
+    console.log(`[LOGIN] Password mismatch for: ${email}`)
     return res.status(401).json({ message: 'Invalid email or password.' })
   }
 
@@ -387,13 +591,21 @@ app.post('/api/login', validateLogin, async (req, res) => {
     return res.status(403).json({ message: 'Account is inactive.' })
   }
 
-  const token = jwt.sign({ userId: user.id, email: user.email, role: user.role }, JWT_SECRET, {
-    expiresIn: '7d',
-  })
+  // Include storeId in JWT token
+  const token = jwt.sign(
+    { userId: user.id, email: user.email, role: user.role, storeId: user.storeId },
+    JWT_SECRET,
+    { expiresIn: '7d' }
+  )
 
   return res.json({
     token,
     user: sanitizeUser(user),
+    store: findStoreById(user.storeId) ? {
+      id: user.storeId,
+      name: findStoreById(user.storeId).name,
+      dashboardName: findStoreById(user.storeId).dashboardName,
+    } : null,
   })
 })
 
@@ -427,8 +639,17 @@ app.post('/api/signup', validateSignup, async (req, res) => {
     }
   }
   
+  // Get storeId from request or default to first store
+  const { storeId } = req.body
+  const targetStoreId = storeId && findStoreById(storeId) ? storeId : stores[0]?.id
+
+  if (!targetStoreId) {
+    return res.status(400).json({ message: 'No store available. Please create a store first.' })
+  }
+
   const newUser = {
     id: crypto.randomUUID(),
+    storeId: targetStoreId,
     email: email.toLowerCase(),
     name,
     role: userRole,
@@ -451,24 +672,94 @@ app.post('/api/signup', validateSignup, async (req, res) => {
   users.push(newUser)
 
   const token = jwt.sign(
-    { userId: newUser.id, email: newUser.email, role: newUser.role },
+    { userId: newUser.id, email: newUser.email, role: newUser.role, storeId: newUser.storeId },
     JWT_SECRET,
-    {
-      expiresIn: '7d',
-    },
+    { expiresIn: '7d' }
   )
 
   return res.status(201).json({
     token,
     user: sanitizeUser(newUser),
+    store: findStoreById(newUser.storeId) ? {
+      id: newUser.storeId,
+      name: findStoreById(newUser.storeId).name,
+      dashboardName: findStoreById(newUser.storeId).dashboardName,
+    } : null,
   })
 })
 
 const findUserByEmail = (email) => users.find((u) => normalizeEmail(u.email) === normalizeEmail(email))
 
 // Order routes
-app.get('/api/orders', (req, res) => {
-  let filteredOrders = [...orders]
+// Public endpoint to search orders by email or phone (uses customer matching logic)
+// MUST be before /api/orders/:id to avoid route conflict
+app.get('/api/orders/search/by-contact', (req, res) => {
+  try {
+    const { email, phone } = req.query
+
+    if (!email && !phone) {
+      return res.status(400).json({ message: 'Email or phone number is required.' })
+    }
+
+    // Get storeId from query param if provided (for public search)
+    const storeId = req.query.storeId || null
+    
+    // Find customer by contact info (matches by email, phone, or address) - optionally filter by storeId
+    const customer = findCustomerByContact(email, phone, null, storeId)
+    
+    let matchingOrders = []
+    
+    if (customer) {
+      // Get all orders for this customer (using the enhanced matching)
+      matchingOrders = getOrdersForCustomer(customer)
+    } else {
+      // Fallback: search orders directly if no customer found
+      const ordersToSearch = storeId ? filterByStore(orders, storeId) : orders
+      if (email) {
+        const normalizedEmail = normalizeEmail(email)
+        matchingOrders = ordersToSearch.filter((order) => normalizeEmail(order.email) === normalizedEmail)
+      } else if (phone) {
+        const normalizedPhone = normalizePhone(phone)
+        matchingOrders = ordersToSearch.filter((order) => {
+          const orderPhone = normalizePhone(order.phone || '')
+          return orderPhone && orderPhone === normalizedPhone
+        })
+      }
+    }
+
+    // Return limited public details, sorted by latest first
+    const publicOrders = matchingOrders
+      .map((order) => ({
+        id: order.id,
+        productName: order.productName,
+        customerName: order.customerName,
+        email: order.email,
+        phone: order.phone,
+        quantity: order.quantity,
+        status: order.status,
+        isPaid: order.isPaid,
+        total: order.total,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        notes: order.notes,
+      }))
+      .sort((a, b) => {
+        // Sort by createdAt descending (latest first)
+        const dateA = new Date(a.createdAt || 0).getTime()
+        const dateB = new Date(b.createdAt || 0).getTime()
+        return dateB - dateA
+      })
+
+    return res.json(publicOrders)
+  } catch (error) {
+    console.error('[ERROR] /api/orders/search/by-contact:', error)
+    return res.status(500).json({ message: 'Failed to search orders', error: error.message })
+  }
+})
+
+app.get('/api/orders', authenticateToken, (req, res) => {
+  // Filter orders by storeId
+  let filteredOrders = filterByStore(orders, req.storeId)
   
   // Apply date filtering if provided
   const startDate = req.query.startDate
@@ -496,18 +787,31 @@ app.get('/api/orders', (req, res) => {
   }
   
   // Ensure all orders have required fields before sending
-  const sanitizedOrders = filteredOrders.map((order) => ({
-    ...order,
-    createdAt: order.createdAt || new Date().toISOString(),
-    updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
-    total: order.total !== undefined && order.total !== null ? order.total : 0,
-  }))
+  const sanitizedOrders = filteredOrders
+    .map((order) => ({
+      ...order,
+      createdAt: order.createdAt || new Date().toISOString(),
+      updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
+      total: order.total !== undefined && order.total !== null ? order.total : 0,
+    }))
+    .sort((a, b) => {
+      // Sort by createdAt descending (latest first)
+      const dateA = new Date(a.createdAt || 0).getTime()
+      const dateB = new Date(b.createdAt || 0).getTime()
+      return dateB - dateA
+    })
   res.json(sanitizedOrders)
 })
 
 app.get('/api/orders/:id', (req, res) => {
   const order = findOrderById(req.params.id)
   if (!order) {
+    return res.status(404).json({ message: 'Order not found.' })
+  }
+  
+  // Filter by storeId if provided (for public store-specific access)
+  const storeId = req.query.storeId
+  if (storeId && order.storeId !== storeId) {
     return res.status(404).json({ message: 'Order not found.' })
   }
   
@@ -548,7 +852,15 @@ app.post('/api/orders', validateOrder, (req, res) => {
   if (token) {
     try {
       const payload = jwt.verify(token, JWT_SECRET)
-      submittedBy = payload.userId ?? null
+      if (payload.userId) {
+        // Find user to get name and email
+        const user = users.find((u) => u.id === payload.userId)
+        if (user) {
+          submittedBy = `${user.name || user.email} (${user.email})`
+        } else {
+          submittedBy = payload.userId
+        }
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.warn('Invalid token supplied on order submission.')
@@ -559,8 +871,32 @@ app.post('/api/orders', validateOrder, (req, res) => {
   const productPrice = product ? product.price : 0
   const orderTotal = productPrice * quantity
 
+  // Determine storeId - from auth token or from product
+  let orderStoreId = null
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET)
+      const user = users.find((u) => u.id === payload.userId)
+      if (user) orderStoreId = user.storeId
+    } catch (error) {
+      // If no valid token, try to get storeId from product
+      const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
+      if (product) orderStoreId = product.storeId
+    }
+  } else {
+    // Public order - get storeId from product
+    const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
+    if (product) orderStoreId = product.storeId
+  }
+
+  // Default to first store if no storeId found
+  if (!orderStoreId && stores.length > 0) {
+    orderStoreId = stores[0].id
+  }
+
   const newOrder = {
     id: crypto.randomUUID(),
+    storeId: orderStoreId,
     productName,
     customerName,
     email,
@@ -588,6 +924,11 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) =>
 
   if (!order) {
     return res.status(404).json({ message: 'Order not found.' })
+  }
+
+  // Verify order belongs to user's store
+  if (order.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Order does not belong to your store.' })
   }
 
   const allowedFields = ['status', 'isPaid', 'notes', 'quantity', 'phone']
@@ -680,9 +1021,19 @@ app.post('/api/customers/login', (req, res) => {
 })
 
 // Customer routes
-app.get('/api/customers', authenticateToken, (_req, res) => {
+app.get('/api/customers', authenticateToken, (req, res) => {
   try {
-    const payload = customers.map((customer) => serializeCustomer(customer)).filter(Boolean)
+    // Filter customers by storeId
+    const storeCustomers = filterByStore(customers, req.storeId)
+    const payload = storeCustomers
+      .map((customer) => serializeCustomer(customer))
+      .filter(Boolean)
+      .sort((a, b) => {
+        // Sort by createdAt descending (latest first)
+        const dateA = new Date(a.createdAt || 0).getTime()
+        const dateB = new Date(b.createdAt || 0).getTime()
+        return dateB - dateA
+      })
     return res.json(payload)
   } catch (error) {
     console.error('[ERROR] /api/customers:', error)
@@ -693,19 +1044,37 @@ app.get('/api/customers', authenticateToken, (_req, res) => {
 app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
   const { name, email, phone, address, alternativePhone } = req.body || {}
 
-  if (findCustomerByEmail(email)) {
-    return res.status(409).json({ message: 'A customer with this email already exists.' })
+  // Check if customer exists by email, phone, or address within the same store
+  const existingCustomer = findCustomerByContact(email, phone, address, req.storeId)
+
+  if (existingCustomer) {
+    // Merge new information with existing customer
+    const mergedInfo = {
+      name: name ? String(name).trim() : existingCustomer.name,
+      email: email ? String(email).trim() : existingCustomer.email,
+      phone: phone ? String(phone).trim() : existingCustomer.phone,
+      address: address ? String(address).trim() : existingCustomer.address,
+      alternativePhone: alternativePhone ? String(alternativePhone).trim() : existingCustomer.alternativePhone,
+    }
+    Object.assign(existingCustomer, mergeCustomerInfo(existingCustomer, mergedInfo))
+    return res.json(serializeCustomer(existingCustomer))
   }
 
+  // Create new customer if none found
   const newCustomer = {
     id: crypto.randomUUID(),
+    storeId: req.storeId, // Assign to user's store
     name: String(name).trim(),
     email: String(email).trim(),
     phone: phone ? String(phone).trim() : 'Not provided',
     address: address ? String(address).trim() : null,
     alternativePhone: alternativePhone ? String(alternativePhone).trim() : null,
-    createdAt: new Date().toISOString(),
+    alternativeEmails: [],
+    alternativeNames: [],
+    alternativeAddresses: [],
     orderIds: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   }
 
   customers.unshift(newCustomer)
@@ -740,11 +1109,18 @@ app.get('/api/customers/:id', authenticateToken, (req, res) => {
     return res.status(404).json({ message: 'Customer not found.' })
   }
 
+  // Verify customer belongs to user's store
+  if (customer.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Customer does not belong to your store.' })
+  }
+
   const ordersForCustomer = getOrdersForCustomer(customer)
+  // Filter returns by storeId
+  const storeReturns = filterByStore(returns, req.storeId)
   return res.json({
     ...serializeCustomer(customer),
     orders: ordersForCustomer,
-    returns: returns
+    returns: storeReturns
       .filter((returnRequest) => returnRequest.customerId === customer.id)
       .map((returnRequest) => serializeReturn(returnRequest)),
   })
@@ -757,37 +1133,75 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, (req, res) =>
     return res.status(404).json({ message: 'Customer not found.' })
   }
 
+  // Verify customer belongs to user's store
+  if (customer.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Customer does not belong to your store.' })
+  }
+
   const { name, email, phone, address, alternativePhone } = req.body || {}
 
+  // Check if updated email/phone/address matches another customer within the same store
+  // (but allow if it matches the same customer being updated)
   if (email && normalizeEmail(email) !== normalizeEmail(customer.email)) {
-    if (findCustomerByEmail(email)) {
-      return res.status(409).json({ message: 'Another customer already uses this email.' })
+    const existingByEmail = findCustomerByEmail(email)
+    if (existingByEmail && existingByEmail.id !== customer.id && existingByEmail.storeId === req.storeId) {
+      // Check if they match by other contact info (phone/address) within the same store
+      const existingByContact = findCustomerByContact(email, phone, address, req.storeId)
+      if (existingByContact && existingByContact.id !== customer.id) {
+        // Merge this customer into the existing one
+        const mergedInfo = {
+          name: name || customer.name,
+          email: email || customer.email,
+          phone: phone || customer.phone,
+          address: address !== undefined ? address : customer.address,
+          alternativePhone: alternativePhone !== undefined ? alternativePhone : customer.alternativePhone,
+        }
+        Object.assign(existingByContact, mergeCustomerInfo(existingByContact, {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address,
+          alternativePhone: customer.alternativePhone,
+        }))
+        Object.assign(existingByContact, mergeCustomerInfo(existingByContact, mergedInfo))
+        
+        // Transfer orders
+        if (customer.orderIds) {
+          existingByContact.orderIds = [...new Set([...(existingByContact.orderIds || []), ...customer.orderIds])]
+          customer.orderIds.forEach((orderId) => {
+            const order = findOrderById(orderId)
+            if (order) order.customerId = existingByContact.id
+          })
+        }
+        
+        // Remove old customer
+        const customerIndex = customers.findIndex((c) => c.id === customer.id)
+        if (customerIndex !== -1) customers.splice(customerIndex, 1)
+        
+        return res.json(serializeCustomer(existingByContact))
+      }
+      return res.status(409).json({ message: 'Email already in use by another customer.' })
     }
-    customer.email = String(email).trim()
   }
 
-  if (name) {
-    customer.name = String(name).trim()
+  // Merge new information
+  const mergedInfo = {
+    name: name || customer.name,
+    email: email || customer.email,
+    phone: phone !== undefined ? phone : customer.phone,
+    address: address !== undefined ? address : customer.address,
+    alternativePhone: alternativePhone !== undefined ? alternativePhone : customer.alternativePhone,
   }
-
-  if (phone !== undefined) {
-    customer.phone = phone ? String(phone).trim() : ''
-  }
-
-  if (address !== undefined) {
-    customer.address = address ? String(address).trim() : null
-  }
-
-  if (alternativePhone !== undefined) {
-    customer.alternativePhone = alternativePhone ? String(alternativePhone).trim() : null
-  }
+  Object.assign(customer, mergeCustomerInfo(customer, mergedInfo))
+  customer.updatedAt = new Date().toISOString()
 
   return res.json(serializeCustomer(customer))
 })
 
 // Returns routes
 app.get('/api/returns', authenticateToken, (req, res) => {
-  let filteredReturns = [...returns]
+  // Filter returns by storeId
+  let filteredReturns = filterByStore(returns, req.storeId)
   
   // Apply date filtering if provided
   const startDate = req.query.startDate
@@ -823,6 +1237,10 @@ app.get('/api/returns/:id', authenticateToken, (req, res) => {
   if (!returnRequest) {
     return res.status(404).json({ message: 'Return request not found.' })
   }
+  // Verify return belongs to user's store
+  if (returnRequest.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Return does not belong to your store.' })
+  }
   return res.json(serializeReturn(returnRequest))
 })
 
@@ -850,8 +1268,14 @@ app.post('/api/returns', authenticateToken, validateReturn, (req, res) => {
       .json({ message: `returnedQuantity cannot exceed the remaining order quantity (${remainingQuantity} available).` })
   }
 
+  // Verify order belongs to user's store
+  if (order.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Order does not belong to your store.' })
+  }
+
   const newReturn = {
     id: crypto.randomUUID(),
+    storeId: req.storeId, // Assign to user's store
     orderId,
     customerId: customerId || order.customerId || null,
     reason: String(reason).trim(),
@@ -874,6 +1298,11 @@ app.put('/api/returns/:id', authenticateToken, validateReturnUpdate, (req, res) 
 
   if (!returnRequest) {
     return res.status(404).json({ message: 'Return request not found.' })
+  }
+
+  // Verify return belongs to user's store
+  if (returnRequest.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Return does not belong to your store.' })
   }
 
   const { status, note } = req.body || {}
@@ -916,10 +1345,16 @@ app.get('/api/metrics/overview', authenticateToken, (req, res) => {
   const startDate = req.query.startDate ? new Date(req.query.startDate) : null
   const endDate = req.query.endDate ? new Date(req.query.endDate) : null
   
+  // Filter by storeId first
+  const storeOrders = filterByStore(orders, req.storeId)
+  const storeProducts = filterByStore(products, req.storeId)
+  const storeReturns = filterByStore(returns, req.storeId)
+  const storeCustomers = filterByStore(customers, req.storeId)
+  
   // Filter orders by date range if provided
-  let filteredOrders = orders
+  let filteredOrders = storeOrders
   if (startDate || endDate) {
-    filteredOrders = orders.filter((order) => {
+    filteredOrders = storeOrders.filter((order) => {
       if (!order.createdAt) return false
       const orderDate = new Date(order.createdAt)
       if (Number.isNaN(orderDate.getTime())) return false
@@ -937,14 +1372,14 @@ app.get('/api/metrics/overview', authenticateToken, (req, res) => {
   
   const totalOrders = filteredOrders.length
   const pendingOrdersCount = filteredOrders.filter((order) => order.status === 'Pending').length
-  const totalProducts = products.length
-  const lowStockCount = products.filter((product) => product.lowStock).length
-  const pendingReturnsCount = returns.filter((returnRequest) => returnRequest.status === 'Submitted').length
+  const totalProducts = storeProducts.length
+  const lowStockCount = storeProducts.filter((product) => product.lowStock).length
+  const pendingReturnsCount = storeReturns.filter((returnRequest) => returnRequest.status === 'Submitted').length
   
   // Calculate new customers in date range or last 7 days
   const dateStart = startDate || new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
   const dateEnd = endDate || new Date()
-  const newCustomersLast7Days = customers.filter((customer) => {
+  const newCustomersLast7Days = storeCustomers.filter((customer) => {
     if (!customer.createdAt) return false
     const customerDate = new Date(customer.createdAt)
     if (Number.isNaN(customerDate.getTime())) return false
@@ -969,6 +1404,9 @@ app.get('/api/metrics/low-stock-trend', authenticateToken, (req, res) => {
   const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
   
+  // Filter products by storeId
+  const storeProducts = filterByStore(products, req.storeId)
+  
   // Calculate number of days
   const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
   const numDays = Math.min(Math.max(daysDiff, 1), 90) // Limit to 90 days
@@ -981,7 +1419,7 @@ app.get('/api/metrics/low-stock-trend', authenticateToken, (req, res) => {
     const dateKey = date.toISOString().split('T')[0]
     
     // For demo purposes, simulate trend data
-    const baseCount = products.filter((p) => p.lowStock).length
+    const baseCount = storeProducts.filter((p) => p.lowStock).length
     const variation = Math.floor(Math.random() * 3) - 1
     const count = Math.max(0, baseCount + variation)
     
@@ -1009,7 +1447,10 @@ app.get('/api/metrics/sales-over-time', authenticateToken, (req, res) => {
     currentDate.setDate(currentDate.getDate() + 1)
   }
   
-  orders.forEach((order) => {
+  // Filter orders by storeId
+  const storeOrders = filterByStore(orders, req.storeId)
+  
+  storeOrders.forEach((order) => {
     if (!order.createdAt) return
     const orderDate = new Date(order.createdAt)
     if (orderDate < startDate || orderDate > endDate) return
@@ -1075,8 +1516,11 @@ app.get('/api/metrics/growth-comparison', authenticateToken, (req, res) => {
     previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0)
   }
   
+  // Filter orders by storeId
+  const storeOrders = filterByStore(orders, req.storeId)
+  
   const getPeriodData = (start, end) => {
-    const periodOrders = orders.filter((order) => {
+    const periodOrders = storeOrders.filter((order) => {
       if (!order.createdAt) return false
       const orderDate = new Date(order.createdAt)
       return orderDate >= start && orderDate <= end
@@ -1133,29 +1577,30 @@ const sendCsv = (res, filename, headers, rows) => {
 }
 
 // User routes
-app.get('/api/users', authenticateToken, authorizeRole('admin'), (_req, res) => {
-  return res.json(users.map((user) => sanitizeUser(user)))
+app.get('/api/users', authenticateToken, authorizeRole('admin'), (req, res) => {
+  // Filter users by storeId
+  const storeUsers = filterByStore(users, req.storeId)
+  return res.json(storeUsers.map((user) => sanitizeUser(user)))
 })
 
 app.get('/api/users/me', authenticateToken, (req, res) => {
-  if (!req.user || !req.user.userId) {
+  // req.user is already set by authenticateToken middleware (full user object)
+  if (!req.user || !req.user.id) {
+    console.log('[ERROR] /api/users/me: req.user is missing or invalid')
+    console.log('[ERROR] req.user:', req.user)
     return res.status(401).json({ message: 'Invalid or missing token.' })
   }
-  const user = users.find((u) => u.id === req.user.userId)
-  if (!user) {
-    return res.status(404).json({ message: 'User not found.' })
-  }
-  return res.json(sanitizeUser(user))
+  // User is already found and attached by authenticateToken, just return it
+  return res.json(sanitizeUser(req.user))
 })
 
 app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
-  if (!req.user || !req.user.userId) {
+  // req.user is already set by authenticateToken middleware (full user object)
+  if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Invalid or missing token.' })
   }
-  const user = users.find((u) => u.id === req.user.userId)
-  if (!user) {
-    return res.status(404).json({ message: 'User not found.' })
-  }
+  // User is already found and attached by authenticateToken
+  const user = req.user
 
   const allowedFields = ['fullName', 'phone', 'profilePictureUrl', 'defaultDateRangeFilter', 'notificationPreferences']
   Object.entries(req.body).forEach(([key, value]) => {
@@ -1287,9 +1732,38 @@ app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), (req, re
 })
 
 // Business settings routes
-app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_req, res) => {
+// Public endpoint for logo, dashboard name, currency, and country (used in customer portal and public pages)
+app.get('/api/settings/business/public', (req, res) => {
   try {
-    return res.json(businessSettings)
+    // Get storeId from query param or use first store as default
+    const storeId = req.query.storeId || stores[0]?.id
+    const storeSettings = getStoreSettings(storeId)
+    
+    if (!storeSettings) {
+      // Return default settings if no store found (Pakistan/PKR defaults)
+      return res.json({
+        logoUrl: null,
+        dashboardName: 'Shopify Admin Dashboard',
+        defaultCurrency: 'PKR',
+        country: 'PK',
+      })
+    }
+    
+    return res.json(storeSettings)
+  } catch (error) {
+    console.error('[ERROR] /api/settings/business/public:', error)
+    return res.status(500).json({ message: 'Failed to fetch business settings', error: error.message })
+  }
+})
+
+app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (req, res) => {
+  try {
+    // Return store-specific settings
+    const storeSettings = getStoreSettings(req.storeId)
+    if (!storeSettings) {
+      return res.status(404).json({ message: 'Store settings not found.' })
+    }
+    return res.json(storeSettings)
   } catch (error) {
     console.error('[ERROR] /api/settings/business:', error)
     return res.status(500).json({ message: 'Failed to fetch business settings', error: error.message })
@@ -1298,13 +1772,20 @@ app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_r
 
 app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, (req, res) => {
   try {
-    const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'country', 'dashboardName', 'defaultOrderStatuses']
+    const store = findStoreById(req.storeId)
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found.' })
+    }
+    
+    const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'country', 'dashboardName']
     Object.entries(req.body).forEach(([key, value]) => {
       if (allowedFields.includes(key) && value !== undefined) {
-        businessSettings[key] = value
+        store[key] = value
       }
     })
-    return res.json(businessSettings)
+    
+    store.updatedAt = new Date().toISOString()
+    return res.json(getStoreSettings(req.storeId))
   } catch (error) {
     console.error('[ERROR] /api/settings/business:', error)
     return res.status(500).json({ message: 'Failed to update business settings', error: error.message })
@@ -1312,9 +1793,41 @@ app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), val
 })
 
 // Product routes
+// Public endpoint for products (for test-order page)
+app.get('/api/products/public', (req, res) => {
+  try {
+    // Filter by storeId if provided
+    const storeId = req.query.storeId
+    let filteredProducts = products
+    
+    if (storeId) {
+      filteredProducts = filterByStore(products, storeId)
+    }
+    
+    // Return only active products with basic info (public access)
+    const publicProducts = filteredProducts
+      .filter((p) => p.status === 'active')
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        stockQuantity: p.stockQuantity,
+        category: p.category,
+        imageUrl: p.imageUrl,
+        status: p.status,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+    return res.json(publicProducts)
+  } catch (error) {
+    console.error('[ERROR] /api/products/public:', error)
+    return res.status(500).json({ message: 'Failed to fetch products', error: error.message })
+  }
+})
+
 app.get('/api/products', authenticateToken, (req, res) => {
+  // Filter products by storeId
+  let filteredProducts = filterByStore(products, req.storeId)
   const lowStockOnly = req.query.lowStock === 'true'
-  let filteredProducts = [...products]
 
   if (lowStockOnly) {
     filteredProducts = filteredProducts.filter((p) => p.lowStock)
@@ -1323,14 +1836,20 @@ app.get('/api/products', authenticateToken, (req, res) => {
   return res.json(filteredProducts)
 })
 
-app.get('/api/products/low-stock', authenticateToken, (_req, res) => {
-  return res.json(products.filter((p) => p.lowStock))
+app.get('/api/products/low-stock', authenticateToken, (req, res) => {
+  // Filter products by storeId
+  const storeProducts = filterByStore(products, req.storeId)
+  return res.json(storeProducts.filter((p) => p.lowStock))
 })
 
 app.get('/api/products/:id', authenticateToken, (req, res) => {
   const product = findProductById(req.params.id)
   if (!product) {
     return res.status(404).json({ message: 'Product not found.' })
+  }
+  // Verify product belongs to user's store
+  if (product.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Product does not belong to your store.' })
   }
   return res.json(product)
 })
@@ -1340,6 +1859,7 @@ app.post('/api/products', authenticateToken, authorizeRole('admin'), validatePro
 
   const newProduct = {
     id: crypto.randomUUID(),
+    storeId: req.storeId, // Assign to user's store
     name: String(name).trim(),
     description: description ? String(description).trim() : '',
     price: Number(price),
@@ -1364,6 +1884,11 @@ app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validate
     return res.status(404).json({ message: 'Product not found.' })
   }
 
+  // Verify product belongs to user's store
+  if (product.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Product does not belong to your store.' })
+  }
+
   const allowedFields = ['name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'category', 'imageUrl', 'status']
   Object.entries(req.body).forEach(([key, value]) => {
     if (allowedFields.includes(key) && value !== undefined) {
@@ -1377,10 +1902,17 @@ app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validate
 })
 
 app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), (req, res) => {
-  const index = products.findIndex((p) => p.id === req.params.id)
-  if (index === -1) {
+  const product = findProductById(req.params.id)
+  if (!product) {
     return res.status(404).json({ message: 'Product not found.' })
   }
+
+  // Verify product belongs to user's store
+  if (product.storeId !== req.storeId) {
+    return res.status(403).json({ message: 'Product does not belong to your store.' })
+  }
+
+  const index = products.findIndex((p) => p.id === req.params.id)
   products.splice(index, 1)
   return res.status(204).send()
 })
@@ -1428,8 +1960,13 @@ app.get('/api/reports/growth', authenticateToken, (req, res) => {
     previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   }
 
+  // Filter by storeId first
+  const storeOrders = filterByStore(orders, req.storeId)
+  const storeReturns = filterByStore(returns, req.storeId)
+  const storeCustomers = filterByStore(customers, req.storeId)
+
   const filterOrders = (start, end) => {
-    return orders.filter((order) => {
+    return storeOrders.filter((order) => {
       if (!order.createdAt) return false
       const orderDate = new Date(order.createdAt)
       return orderDate >= start && orderDate <= end
@@ -1437,7 +1974,7 @@ app.get('/api/reports/growth', authenticateToken, (req, res) => {
   }
 
   const filterReturns = (start, end) => {
-    return returns.filter((returnRequest) => {
+    return storeReturns.filter((returnRequest) => {
       if (!returnRequest.dateRequested) return false
       const returnDate = new Date(returnRequest.dateRequested)
       return returnDate >= start && returnDate <= end
@@ -1445,7 +1982,7 @@ app.get('/api/reports/growth', authenticateToken, (req, res) => {
   }
 
   const filterCustomers = (start, end) => {
-    return customers.filter((customer) => {
+    return storeCustomers.filter((customer) => {
       if (!customer.createdAt) return false
       const customerDate = new Date(customer.createdAt)
       return customerDate >= start && customerDate <= end
@@ -1502,6 +2039,10 @@ app.get('/api/reports/trends', authenticateToken, (req, res) => {
   const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
   const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
 
+  // Filter by storeId first
+  const storeOrders = filterByStore(orders, req.storeId)
+  const storeCustomers = filterByStore(customers, req.storeId)
+
   // Group data by day
   const dailyData = {}
   const currentDate = new Date(startDate)
@@ -1513,7 +2054,7 @@ app.get('/api/reports/trends', authenticateToken, (req, res) => {
   }
 
   if (metric === 'sales' || metric === 'orders') {
-    orders.forEach((order) => {
+    storeOrders.forEach((order) => {
       if (!order.createdAt) return
       const orderDate = new Date(order.createdAt)
       if (orderDate < startDate || orderDate > endDate) return
@@ -1527,7 +2068,7 @@ app.get('/api/reports/trends', authenticateToken, (req, res) => {
   }
 
   if (metric === 'customers') {
-    customers.forEach((customer) => {
+    storeCustomers.forEach((customer) => {
       if (!customer.createdAt) return
       const customerDate = new Date(customer.createdAt)
       if (customerDate < startDate || customerDate > endDate) return

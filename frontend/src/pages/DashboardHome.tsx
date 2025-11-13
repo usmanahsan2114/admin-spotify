@@ -52,6 +52,7 @@ import {
   type TrendReportResponse,
 } from '../services/metricsService'
 import { useAuth } from '../context/AuthContext'
+import { useCurrency } from '../hooks/useCurrency'
 import { Link as RouterLink } from 'react-router-dom'
 import { alpha } from '@mui/material/styles'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
@@ -147,14 +148,7 @@ const DashboardHome = () => {
     load()
   }, [logout, dateRange.startDate, dateRange.endDate, growthPeriod, trendMetric])
 
-  const currency = useMemo(
-    () =>
-      new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-      }),
-    [],
-  )
+  const { formatCurrency } = useCurrency()
 
   const summary = useMemo<SummaryCard[]>(() => {
     if (!metrics) return []
@@ -162,7 +156,7 @@ const DashboardHome = () => {
     const cards: SummaryCard[] = [
       { label: 'Total Orders', value: metrics.totalOrders.toString() },
       { label: 'Pending Orders', value: metrics.pendingOrdersCount.toString() },
-      { label: 'Total Revenue', value: currency.format(metrics.totalRevenue) },
+      { label: 'Total Revenue', value: formatCurrency(metrics.totalRevenue) },
       { label: 'Total Products', value: metrics.totalProducts.toString() },
       {
         label: 'Low Stock Products',
@@ -185,7 +179,7 @@ const DashboardHome = () => {
     ]
 
     return cards
-  }, [metrics, currency])
+  }, [metrics, formatCurrency])
 
   const statusDistribution = useMemo(() => {
     if (orders.length === 0) return []
@@ -227,9 +221,9 @@ const DashboardHome = () => {
       ['End Date', dayjs(growthReport.endDate).format('YYYY-MM-DD')],
       [''],
       ['Metric', 'Value', 'Growth %'],
-      ['Total Sales', currency.format(growthReport.totalSales), `${growthReport.growthSalesPct > 0 ? '+' : ''}${growthReport.growthSalesPct}%`],
+      ['Total Sales', formatCurrency(growthReport.totalSales), `${growthReport.growthSalesPct > 0 ? '+' : ''}${growthReport.growthSalesPct}%`],
       ['Total Orders', growthReport.totalOrders.toString(), `${growthReport.growthOrdersPct > 0 ? '+' : ''}${growthReport.growthOrdersPct}%`],
-      ['Average Order Value', currency.format(growthReport.averageOrderValue), ''],
+      ['Average Order Value', formatCurrency(growthReport.averageOrderValue), ''],
       ['Return Rate', `${growthReport.returnRatePct}%`, `${growthReport.returnRateChangePct > 0 ? '+' : ''}${growthReport.returnRateChangePct}pp`],
       ['New Customers', growthReport.newCustomersCount.toString(), ''],
       [''],
@@ -356,7 +350,7 @@ const DashboardHome = () => {
                   label="Sales This Period"
                   value={growthReport.totalSales}
                   growthPct={growthReport.growthSalesPct}
-                  formatValue={(val) => currency.format(val as number)}
+                  formatValue={(val) => formatCurrency(val as number)}
                 />
                 <GrowthKPI
                   label="Orders This Period"
@@ -376,7 +370,7 @@ const DashboardHome = () => {
                         )
                       : undefined
                   }
-                  formatValue={(val) => currency.format(val as number)}
+                  formatValue={(val) => formatCurrency(val as number)}
                 />
                 <GrowthKPI
                   label="Return Rate"
@@ -433,7 +427,7 @@ const DashboardHome = () => {
                     <YAxis allowDecimals={trendMetric === 'sales'} />
                     <Tooltip
                       formatter={(value) => {
-                        if (trendMetric === 'sales') return currency.format(value as number)
+                        if (trendMetric === 'sales') return formatCurrency(value as number)
                         return value
                       }}
                     />
@@ -452,7 +446,7 @@ const DashboardHome = () => {
                     <YAxis allowDecimals={trendMetric === 'sales'} />
                     <Tooltip
                       formatter={(value) => {
-                        if (trendMetric === 'sales') return currency.format(value as number)
+                        if (trendMetric === 'sales') return formatCurrency(value as number)
                         return value
                       }}
                     />
@@ -480,7 +474,7 @@ const DashboardHome = () => {
               {growthReport.startDate && growthReport.endDate
                 ? `(${dayjs(growthReport.startDate).format('MMM D')} - ${dayjs(growthReport.endDate).format('MMM D, YYYY')})`
                 : ''}{' '}
-              you processed <strong>{currency.format(growthReport.totalSales)}</strong> in sales
+              you processed <strong>{formatCurrency(growthReport.totalSales)}</strong> in sales
               {growthReport.growthSalesPct !== 0 && (
                 <>
                   {' '}
@@ -507,7 +501,7 @@ const DashboardHome = () => {
                   )}
                 </>
               )}
-              . Average order value is <strong>{currency.format(growthReport.averageOrderValue)}</strong>
+              . Average order value is <strong>{formatCurrency(growthReport.averageOrderValue)}</strong>
               {growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0 && (
                 <>
                   {' '}
@@ -649,7 +643,7 @@ const DashboardHome = () => {
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip
                     formatter={(value, name) => {
-                      if (name === 'revenue') return currency.format(value as number)
+                      if (name === 'revenue') return formatCurrency(value as number)
                       return value
                     }}
                   />
@@ -708,7 +702,7 @@ const DashboardHome = () => {
                       boxShadow: theme.shadows[4],
                     }}
                     formatter={(value, name) => {
-                      if (name === 'revenue') return currency.format(value as number)
+                      if (name === 'revenue') return formatCurrency(value as number)
                       return value
                     }}
                   />

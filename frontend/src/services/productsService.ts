@@ -1,7 +1,8 @@
 import { apiDownload, apiFetch } from './apiClient'
 import type { Product, ProductPayload } from '../types/product'
 
-export const fetchProducts = () => apiFetch<Product[]>('/api/products')
+export const fetchProducts = (skipAuth = false) => 
+  apiFetch<Product[]>(skipAuth ? '/api/products/public' : '/api/products', { skipAuth })
 
 export const fetchLowStockProducts = () =>
   apiFetch<Product[]>('/api/products/low-stock')
