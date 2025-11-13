@@ -240,6 +240,12 @@ const SettingsPage = () => {
   })
 
   const loadData = useCallback(async () => {
+    if (!authUser) {
+      setError('Please sign in to access settings.')
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       setError(null)
@@ -264,11 +270,17 @@ const SettingsPage = () => {
         },
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load settings.')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load settings.'
+      // Don't show error for 404 if user is not authenticated - redirect will happen
+      if ((err as Error & { status?: number }).status === 404) {
+        setError('User profile not found. Please try signing out and back in.')
+      } else {
+        setError(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
-  }, [authUser?.role, resetProfile, resetBusiness])
+  }, [authUser, resetProfile, resetBusiness])
 
   useEffect(() => {
     loadData()

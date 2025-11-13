@@ -3371,9 +3371,14 @@ app.delete(
 
 // Current user profile endpoints
 app.get('/api/users/me', authenticateToken, (req, res) => {
-  const user = users.find((u) => u.id === req.user?.userId)
+  // Ensure req.user exists (should be set by authenticateToken middleware)
+  if (!req.user || !req.user.userId) {
+    return res.status(401).json({ message: 'Invalid authentication token.' })
+  }
+  
+  const user = users.find((u) => u.id === req.user.userId)
   if (!user) {
-    return res.status(404).json({ message: 'User not found.' })
+    return res.status(404).json({ message: 'User not found. Please try signing out and back in.' })
   }
   return res.json(sanitizeUser(user))
 })
