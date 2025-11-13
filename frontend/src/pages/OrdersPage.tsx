@@ -226,9 +226,9 @@ const OrdersPage = () => {
       flex: 1,
       minWidth: 150,
       valueGetter: (_value, row: Order) => row.createdAt || null,
-      valueFormatter: ({ value }) => {
-        if (!value) return '—'
-        return formatDate(value as string)
+      valueFormatter: (params) => {
+        if (!params || params.value === null || params.value === undefined) return '—'
+        return formatDate(params.value as string)
       },
       sortComparator: (v1, v2) =>
         new Date(v1 as string).getTime() - new Date(v2 as string).getTime(),

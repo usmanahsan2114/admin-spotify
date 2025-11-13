@@ -221,9 +221,9 @@ const CustomersPage = () => {
         flex: 0.9,
         minWidth: 160,
         valueGetter: (_value, row: Customer) => row.lastOrderDate || null,
-        valueFormatter: ({ value }) => {
-          if (!value) return '—'
-          return formatDate(value as string)
+        valueFormatter: (params) => {
+          if (!params || params.value === null || params.value === undefined) return '—'
+          return formatDate(params.value as string)
         },
       },
       {

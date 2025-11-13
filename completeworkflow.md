@@ -234,6 +234,14 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Better performance (smaller initial bundle), improved accessibility (WCAG 2.1 compliance), better security (input validation), reduced boilerplate code.
 
+## Step 22 – Bug Fixes & Console Error Resolution
+- Fixed Recharts negative dimension warnings: Added `minHeight` property to all chart container Box components in DashboardHome, OrdersPage, ProductsPage, and ReturnsPage. Ensures charts have proper dimensions before rendering, preventing width(-1) and height(-1) warnings.
+- Fixed valueFormatter null destructuring errors: Enhanced null/undefined parameter handling in CustomersPage (`lastOrderDate` column) and OrdersPage (`createdAt` column) DataGrid valueFormatter functions. Now properly checks if params object exists before destructuring.
+- Improved chart container sizing: All ResponsiveContainer components now have explicit heights (200px, 250px, 300px) and parent Box containers have matching `minHeight` to ensure proper rendering on initial load and resize.
+- Server management: Implemented proper server restart process to ensure only one instance runs on ports 5000 (backend) and 5173 (frontend).
+
+**Impact**: Eliminated console warnings and errors, improved chart rendering reliability, better user experience.
+
 ### Future Improvements (Tier 3)
 
 See `IMPROVEMENTS.md` for detailed recommendations including:

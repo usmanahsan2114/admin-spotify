@@ -424,7 +424,7 @@ const DashboardHome = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: isDesktop ? 300 : 250 }}>
               <ResponsiveContainer width="100%" height={isDesktop ? 300 : 250}>
                 {isDesktop ? (
                   <LineChart data={trendReport.data}>
@@ -640,7 +640,7 @@ const DashboardHome = () => {
             <Typography variant="h6" fontWeight={600} mb={2}>
               Sales Over Time
             </Typography>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <LineChart data={salesOverTime.data}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -693,7 +693,7 @@ const DashboardHome = () => {
             <Typography variant="h6" fontWeight={600} mb={2}>
               Period Comparison
             </Typography>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart data={growthChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -748,7 +748,7 @@ const DashboardHome = () => {
                   No order activity recorded yet.
                 </Typography>
               ) : (
-                <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+                <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <PieChart>
                       <Pie
@@ -786,7 +786,7 @@ const DashboardHome = () => {
               <Typography variant="h6" fontWeight={600} mb={2}>
                 Low Stock Products Over Time
               </Typography>
-              <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+              <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <BarChart data={lowStockTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />

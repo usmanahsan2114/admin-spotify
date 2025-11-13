@@ -597,8 +597,8 @@ const ProductsPage = () => {
                 Stock Trend
               </Typography>
               {trendData.length > 0 && (
-                <Box sx={{ width: '100%', height: 200, minWidth: 0, mb: 2 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <Box sx={{ width: '100%', height: 250, minWidth: 0, mb: 2, minHeight: 250 }}>
+                  <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                       <XAxis dataKey="dateLabel" />

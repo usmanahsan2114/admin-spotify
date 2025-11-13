@@ -447,8 +447,8 @@ const ReturnsPage = () => {
                 Returns by Status
               </Typography>
               {chartData.length > 0 && (
-                <Box sx={{ width: '100%', height: 300, minWidth: 0, mb: 2 }}>
-                  <ResponsiveContainer width="100%" height="100%">
+                <Box sx={{ width: '100%', height: 300, minWidth: 0, mb: 2, minHeight: 300 }}>
+                  <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
                         data={chartData}

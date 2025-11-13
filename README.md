@@ -121,6 +121,11 @@ docs/
 - **Code Splitting**: Route-based lazy loading with React.lazy and Suspense for improved initial load performance
 - **Mobile UX**: Further enhanced touch targets, spacing, and responsive behavior across all pages
 
+### 🐛 Bug Fixes (Latest)
+- **Fixed Recharts warnings**: Added `minHeight` to all chart containers to prevent negative dimension warnings
+- **Fixed valueFormatter errors**: Enhanced null/undefined handling in CustomersPage and OrdersPage DataGrid columns
+- **Improved chart responsiveness**: All charts now have explicit heights and minHeight to ensure proper rendering
+
 See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) improvements.
 
 ## Future Enhancements
