@@ -4,6 +4,8 @@ import dayjs from 'dayjs'
 import {
   Line,
   LineChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -12,11 +14,13 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from 'recharts'
 import type { Order } from '../types/order'
 import type { Product } from '../types/product'
 import { fetchOrders } from '../services/ordersService'
 import { fetchProducts, fetchLowStockProducts } from '../services/productsService'
+import { fetchMetricsOverview, fetchLowStockTrend, type LowStockTrendData } from '../services/metricsService'
 import { useAuth } from '../context/AuthContext'
 import { Link as RouterLink } from 'react-router-dom'
 import { alpha } from '@mui/material/styles'
@@ -27,13 +31,23 @@ type SummaryCard = {
   label: string
   value: string
   to?: string
-  intent?: 'alert'
+  intent?: 'alert' | 'info'
 }
 
 const DashboardHome = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
+  const [metrics, setMetrics] = useState<{
+    totalOrders: number
+    pendingOrdersCount: number
+    totalProducts: number
+    lowStockCount: number
+    pendingReturnsCount: number
+    newCustomersLast7Days: number
+    totalRevenue: number
+  } | null>(null)
+  const [lowStockTrend, setLowStockTrend] = useState<LowStockTrendData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { logout } = useAuth()
@@ -54,14 +68,18 @@ const DashboardHome = () => {
       try {
         setLoading(true)
         setError(null)
-        const [ordersResponse, productsResponse, lowStockResponse] = await Promise.all([
+        const [ordersResponse, productsResponse, lowStockResponse, metricsResponse, trendResponse] = await Promise.all([
           fetchOrders(),
           fetchProducts(),
           fetchLowStockProducts(),
+          fetchMetricsOverview(),
+          fetchLowStockTrend(),
         ])
         setOrders(ordersResponse)
         setProducts(productsResponse)
         setLowStockProducts(lowStockResponse)
+        setMetrics(metricsResponse)
+        setLowStockTrend(trendResponse)
       } catch (err) {
         setError(resolveError(err, 'Unable to load dashboard data.'))
       } finally {
@@ -82,27 +100,35 @@ const DashboardHome = () => {
   )
 
   const summary = useMemo<SummaryCard[]>(() => {
-    const totalOrders = orders.length
-    const pendingOrders = orders.filter((order) => order.status === 'Pending').length
-    const totalRevenue = orders.reduce((acc, order) => acc + (order.total ?? 0), 0)
-    const totalProducts = products.length
-    const lowStockCount = lowStockProducts.length
-
+    if (!metrics) return []
+    
     const cards: SummaryCard[] = [
-      { label: 'Total Orders', value: totalOrders.toString() },
-      { label: 'Pending Orders', value: pendingOrders.toString() },
-      { label: 'Total Revenue', value: currency.format(totalRevenue) },
-      { label: 'Total Products', value: totalProducts.toString() },
+      { label: 'Total Orders', value: metrics.totalOrders.toString() },
+      { label: 'Pending Orders', value: metrics.pendingOrdersCount.toString() },
+      { label: 'Total Revenue', value: currency.format(metrics.totalRevenue) },
+      { label: 'Total Products', value: metrics.totalProducts.toString() },
       {
         label: 'Low Stock Products',
-        value: lowStockCount.toString(),
+        value: metrics.lowStockCount.toString(),
         to: '/inventory-alerts',
         intent: 'alert' as const,
+      },
+      {
+        label: 'Pending Returns',
+        value: metrics.pendingReturnsCount.toString(),
+        to: '/returns',
+        intent: metrics.pendingReturnsCount > 0 ? ('alert' as const) : ('info' as const),
+      },
+      {
+        label: 'New Customers (7 Days)',
+        value: metrics.newCustomersLast7Days.toString(),
+        to: '/customers',
+        intent: 'info' as const,
       },
     ]
 
     return cards
-  }, [orders, products, currency, lowStockProducts])
+  }, [metrics, currency])
 
   const lastSevenDaysData = useMemo(() => {
     const today = dayjs().startOf('day')
@@ -168,13 +194,23 @@ const DashboardHome = () => {
       >
         {summary.map((card) => {
           const isAlert = card.intent === 'alert'
+          const isInfo = card.intent === 'info'
           const hasAlert = isAlert && card.value !== '0'
+          const hasValue = card.value !== '0'
           const cardProps = card.to
             ? {
                 component: RouterLink,
                 to: card.to,
               }
             : {}
+
+          const getCardColor = () => {
+            if (hasAlert) return theme.palette.error.main
+            if (isInfo && hasValue) return theme.palette.info.main
+            return undefined
+          }
+
+          const cardColor = getCardColor()
 
           return (
             <Card
@@ -183,9 +219,9 @@ const DashboardHome = () => {
               sx={{
                 textDecoration: 'none',
                 cursor: card.to ? 'pointer' : 'default',
-                border: hasAlert ? `1px solid ${theme.palette.error.main}` : undefined,
-                backgroundColor: hasAlert
-                  ? alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.15 : 0.08)
+                border: cardColor ? `1px solid ${cardColor}` : undefined,
+                backgroundColor: cardColor
+                  ? alpha(cardColor, theme.palette.mode === 'dark' ? 0.15 : 0.08)
                   : undefined,
                 transition: 'transform 150ms ease, box-shadow 150ms ease',
                 '&:hover': card.to
@@ -199,11 +235,15 @@ const DashboardHome = () => {
               <CardContent>
                 <Typography
                   variant="subtitle2"
-                  color={hasAlert ? 'error.main' : 'text.secondary'}
+                  color={hasAlert ? 'error.main' : isInfo ? 'info.main' : 'text.secondary'}
                 >
                   {card.label}
                 </Typography>
-                <Typography variant="h4" mt={1}>
+                <Typography 
+                  variant="h4" 
+                  mt={1} 
+                  color={hasAlert ? 'error.main' : isInfo && hasValue ? 'info.main' : 'text.primary'}
+                >
                   {card.value}
                 </Typography>
                 {isAlert && (
@@ -212,7 +252,12 @@ const DashboardHome = () => {
                     color={hasAlert ? 'error.dark' : 'text.secondary'}
                     mt={0.75}
                   >
-                    {hasAlert ? 'Tap to review inventory alerts.' : 'All stock levels look healthy.'}
+                    {hasAlert ? 'Tap to review.' : 'All clear.'}
+                  </Typography>
+                )}
+                {isInfo && hasValue && (
+                  <Typography variant="body2" color="info.dark" mt={0.75}>
+                    Tap to view customers.
                   </Typography>
                 )}
               </CardContent>
@@ -317,6 +362,36 @@ const DashboardHome = () => {
           </CardContent>
         </Card>
       </Box>
+
+      {lowStockTrend.length > 0 && (
+        <Card sx={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <CardContent
+            sx={{
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              gap: 2,
+              pb: 3,
+            }}
+          >
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Low Stock Products Over Time (Last 7 Days)
+            </Typography>
+            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%' }}>
+              <ResponsiveContainer width="100%" height={chartHeight}>
+                <BarChart data={lowStockTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                  <XAxis dataKey="dateLabel" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="lowStockCount" fill={theme.palette.error.main} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
     </Stack>
   )
 }

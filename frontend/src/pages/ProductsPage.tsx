@@ -366,9 +366,10 @@ const ProductsPage = () => {
       headerName: 'Category',
       flex: 0.8,
       minWidth: 130,
-      valueFormatter: (params) => {
-        const value = (params as { value?: Product['category'] } | undefined)?.value
-        return value ? String(value) : '—'
+      valueGetter: (_value, row: Product) => row.category || null,
+      valueFormatter: ({ value }: { value: string | null }) => {
+        if (!value || (typeof value === 'string' && value.trim() === '')) return '—'
+        return String(value)
       },
     },
     {
@@ -376,9 +377,10 @@ const ProductsPage = () => {
       headerName: 'Price',
       flex: 0.6,
       minWidth: 110,
-      valueFormatter: (params) => {
-        const value = (params as { value?: Product['price'] } | undefined)?.value
-        return typeof value === 'number' ? formatCurrency(value) : '—'
+      valueGetter: (_value, row: Product) => row.price ?? null,
+      valueFormatter: ({ value }) => {
+        if (value === null || value === undefined || (typeof value === 'number' && Number.isNaN(value))) return '—'
+        return formatCurrency(value as number)
       },
     },
     {

@@ -276,8 +276,15 @@ const UsersPage = () => {
         headerName: 'Added',
         flex: 0.8,
         minWidth: 150,
-        valueFormatter: ({ value }) =>
-          value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value as string)) : '—',
+        valueGetter: (_value, row: User) => row.createdAt || null,
+        valueFormatter: ({ value }) => {
+          if (!value) return '—'
+          try {
+            return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value as string))
+          } catch {
+            return '—'
+          }
+        },
       },
       {
         field: 'actions',

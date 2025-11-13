@@ -37,6 +37,7 @@ import { ThemeModeContext } from '../../providers/ThemeModeProvider'
 import { useAuth } from '../../context/AuthContext'
 import SiteAttribution from '../common/SiteAttribution'
 import { fetchReturns } from '../../services/returnsService'
+import { fetchMetricsOverview } from '../../services/metricsService'
 
 const drawerWidth = 264
 
@@ -45,6 +46,7 @@ type NavItem = {
   to: string
   icon: ReactElement
   badge?: number
+  badgeColor?: 'error' | 'warning' | 'info'
 }
 
 const baseNavItems: NavItem[] = [
@@ -102,19 +104,24 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   const { logout, user } = useAuth()
   const [pendingReturns, setPendingReturns] = useState<number>(0)
+  const [lowStockCount, setLowStockCount] = useState<number>(0)
 
   useEffect(() => {
     let isMounted = true
-    fetchReturns()
-      .then((items) => {
+    
+    // Fetch metrics for badges
+    fetchMetricsOverview()
+      .then((metrics) => {
         if (!isMounted) return
-        const submitted = items.filter((entry) => entry.status === 'Submitted').length
-        setPendingReturns(submitted)
+        setPendingReturns(metrics.pendingReturnsCount)
+        setLowStockCount(metrics.lowStockCount)
       })
       .catch(() => {
         if (!isMounted) return
         setPendingReturns(0)
+        setLowStockCount(0)
       })
+    
     return () => {
       isMounted = false
     }
@@ -122,15 +129,24 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   const navItems = useMemo(
     () =>
-      baseNavItems.map((item) =>
-        item.label === 'Returns'
-          ? {
-              ...item,
-              badge: pendingReturns,
-            }
-          : item,
-      ),
-    [pendingReturns],
+      baseNavItems.map((item) => {
+        if (item.label === 'Returns') {
+          return {
+            ...item,
+            badge: pendingReturns > 0 ? pendingReturns : undefined,
+            badgeColor: 'error' as const,
+          }
+        }
+        if (item.label === 'Inventory Alerts') {
+          return {
+            ...item,
+            badge: lowStockCount > 0 ? lowStockCount : undefined,
+            badgeColor: 'error' as const,
+          }
+        }
+        return item
+      }),
+    [pendingReturns, lowStockCount],
   )
 
   return (
@@ -170,8 +186,13 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
                       <Chip
                         size="small"
                         label={item.badge}
-                        color="error"
-                        sx={{ fontWeight: 600, height: 20 }}
+                        color={item.badgeColor || 'error'}
+                        sx={{ 
+                          fontWeight: 600, 
+                          height: 20,
+                          minWidth: 20,
+                          fontSize: '0.7rem',
+                        }}
                       />
                     ) : null}
                   </Box>
@@ -295,7 +316,7 @@ const DashboardLayout = () => {
           sx={{
             maxWidth: '1200px',
             mx: 'auto',
-            width: '100%',
+            width: { xs: '100%', lg: '120%' },
             display: 'flex',
             flexDirection: 'column',
             gap: 3,

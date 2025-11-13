@@ -196,7 +196,11 @@ const CustomersPage = () => {
         headerName: 'Phone',
         flex: 1,
         minWidth: 160,
-        valueFormatter: ({ value }) => (value ? String(value) : '—'),
+        valueGetter: (_value, row: Customer) => row.phone || null,
+        valueFormatter: ({ value }: { value: string | null }) => {
+          if (!value || value === 'Not provided' || (typeof value === 'string' && value.trim() === '')) return '—'
+          return String(value)
+        },
       },
       {
         field: 'orderCount',
@@ -216,14 +220,22 @@ const CustomersPage = () => {
         headerName: 'Last Order',
         flex: 0.9,
         minWidth: 160,
-      valueFormatter: (params) => formatDate((params?.value as string) ?? null),
+        valueGetter: (_value, row: Customer) => row.lastOrderDate || null,
+        valueFormatter: ({ value }) => {
+          if (!value) return '—'
+          return formatDate(value as string)
+        },
       },
       {
         field: 'createdAt',
         headerName: 'Customer Since',
         flex: 0.9,
         minWidth: 160,
-      valueFormatter: (params) => formatDate((params?.value as string) ?? null),
+        valueGetter: (_value, row: Customer) => row.createdAt || null,
+        valueFormatter: ({ value }) => {
+          if (!value) return '—'
+          return formatDate(value as string)
+        },
       },
     ],
     [],

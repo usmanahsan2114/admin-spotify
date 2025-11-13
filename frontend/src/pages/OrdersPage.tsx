@@ -56,17 +56,21 @@ const getStatusColor = (status: OrderStatus) => {
   }
 }
 
-const formatDate = (value?: string) => {
-  if (!value) return '—'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return '—'
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed)
+const formatDate = (value?: string | null) => {
+  if (!value || value === null || value === undefined) return '—'
+  try {
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return '—'
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsed)
+  } catch {
+    return '—'
+  }
 }
 
 const filterByDate = (orders: Order[], filter: DateFilter) => {
@@ -214,7 +218,11 @@ const OrdersPage = () => {
       headerName: 'Date',
       flex: 1,
       minWidth: 150,
-      valueFormatter: ({ value }) => formatDate(value as string),
+      valueGetter: (_value, row: Order) => row.createdAt || null,
+      valueFormatter: ({ value }) => {
+        if (!value) return '—'
+        return formatDate(value as string)
+      },
       sortComparator: (v1, v2) =>
         new Date(v1 as string).getTime() - new Date(v2 as string).getTime(),
     },

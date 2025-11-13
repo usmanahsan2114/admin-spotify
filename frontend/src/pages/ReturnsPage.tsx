@@ -72,16 +72,20 @@ type EditFormValues = {
 }
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) return '—'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return '—'
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed)
+  if (!value || value === null || value === undefined) return '—'
+  try {
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return '—'
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsed)
+  } catch {
+    return '—'
+  }
 }
 
 const ReturnsPage = () => {
@@ -141,21 +145,22 @@ const ReturnsPage = () => {
   const filteredReturns = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return returns.filter((returnRequest) => {
+      if (!returnRequest) return false
       const matchesStatus =
         statusFilter === 'All' || returnRequest.status === statusFilter
       const matchesQuery =
         !query ||
-        returnRequest.id.toLowerCase().includes(query) ||
-        returnRequest.orderId.toLowerCase().includes(query) ||
+        (returnRequest.id?.toLowerCase() ?? '').includes(query) ||
+        (returnRequest.orderId?.toLowerCase() ?? '').includes(query) ||
         (returnRequest.customer?.name ?? '').toLowerCase().includes(query)
       return matchesStatus && matchesQuery
     })
   }, [returns, searchQuery, statusFilter])
 
-  const orderOptions = useMemo(() => orders.map((order) => ({
-    id: order.id,
-    label: `${order.id.slice(0, 8)} · ${order.customerName} · ${order.productName}`,
-    quantity: order.quantity,
+  const orderOptions = useMemo(() => orders.filter(Boolean).map((order) => ({
+    id: order.id ?? '',
+    label: `${(order.id ?? '').slice(0, 8)} · ${order.customerName ?? 'Unknown'} · ${order.productName ?? 'Unknown'}`,
+    quantity: order.quantity ?? 1,
   })), [orders])
 
   const handleOpenCreate = () => {
@@ -223,16 +228,18 @@ const ReturnsPage = () => {
       headerName: 'Order',
       minWidth: 140,
       flex: 0.9,
-      renderCell: (params: GridRenderCellParams) => {
-        const row = params.row as ReturnRequest
+      valueGetter: (_value, row: ReturnRequest) => row.orderId || null,
+      renderCell: (params: GridRenderCellParams<ReturnRequest>) => {
+        const orderId = params.value as string | null
+        if (!orderId) return '—'
         return (
           <Button
             component={RouterLink}
-            to={`/orders/${row.orderId}`}
+            to={`/orders/${orderId}`}
             variant="text"
             size="small"
           >
-            {row.orderId.slice(0, 8)}
+            {orderId.slice(0, 8)}
           </Button>
         )
       },
@@ -242,15 +249,22 @@ const ReturnsPage = () => {
       headerName: 'Customer',
       minWidth: 160,
       flex: 1,
-      valueGetter: ({ row }) => (row as ReturnRequest).customer?.name ?? '—',
+      valueGetter: (_value, row: ReturnRequest) => row.customer?.name || null,
+      valueFormatter: ({ value }: { value: string | null }) => {
+        if (!value) return '—'
+        return String(value)
+      },
     },
     {
       field: 'dateRequested',
       headerName: 'Requested',
       minWidth: 180,
       flex: 1,
-      valueGetter: ({ row }) => (row as ReturnRequest).dateRequested,
-      valueFormatter: ({ value }) => formatDateTime(value as string),
+      valueGetter: (_value, row: ReturnRequest) => row.dateRequested || null,
+      valueFormatter: ({ value }: { value: string | null }) => {
+        if (!value) return '—'
+        return formatDateTime(value)
+      },
     },
     {
       field: 'status',
@@ -258,7 +272,8 @@ const ReturnsPage = () => {
       minWidth: 130,
       flex: 0.8,
       renderCell: (params: GridRenderCellParams) => {
-        const row = params.row as ReturnRequest
+        const row = params.row as ReturnRequest | undefined
+        if (!row?.status) return '—'
         return (
           <Chip
             size="small"
@@ -289,7 +304,8 @@ const ReturnsPage = () => {
       filterable: false,
       width: 120,
       renderCell: (params: GridRenderCellParams) => {
-        const row = params.row as ReturnRequest
+        const row = params.row as ReturnRequest | undefined
+        if (!row) return null
         return (
           <Tooltip title="View & update">
             <IconButton

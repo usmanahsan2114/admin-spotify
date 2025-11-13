@@ -11,3 +11,30 @@
 - Delivered customer management (CRM) with backend endpoints, auto-linking orders to customers, and new customers list/detail experiences.
 - Patched backend init crash (hoisted `attachOrderToCustomer`) restoring `/api/customers` availability, addressed lingering Recharts (-1) sizing warnings with fixed container heights, and added proper autocomplete hints on auth forms.
 - Implemented returns & refund workflow (API endpoints, stock adjustments, navigation badge, returns list/detail UI, order-level context) and delivered CSV export/import tooling for orders, products, and customers with admin-gated product imports.
+- Fixed ReturnsPage null/undefined handling for customer, dateRequested, and valueFormatter to prevent crashes and blank screens.
+- Implemented dashboard enhancements with attention alerts: added `/api/metrics/overview` and `/api/metrics/low-stock-trend` endpoints, new KPI cards for pending returns and new customers, low stock trend chart, navigation badges on Inventory Alerts and Returns menu items, color-coded alert cards (red for issues, blue for info), and improved responsive design.
+- Fixed blank field display issues across all pages: added `valueGetter` functions to DataGrid columns for proper data access, enhanced backend GET endpoints to sanitize responses with default values, updated backend initialization to populate missing fields in seed data, improved serializeCustomer to always include phone and createdAt, fixed attachOrderToCustomer defaults, and increased DashboardLayout container width to 120% on desktop view. All fields (Orders Date, Customers Phone/Last Order/Customer Since, Products Category/Price, Returns Order/Customer/Requested, Users Added) now display correctly instead of showing "—".
+
+## Software Modules & Features
+
+**Dashboard** - The main page you see first. Shows important numbers like total orders, money earned, products running low, pending returns, and new customers from the last week. Cards for low stock and pending returns turn red when there are issues needing attention, and you can click them to go directly to those pages. Displays charts showing orders from the past week, what status they're in, and how many products were low in stock each day. The sidebar menu shows red badges next to "Inventory Alerts" and "Returns" when there are items needing your attention. Has buttons to go to other sections.
+
+**Orders** - See all customer orders in one big list. Search for specific orders or filter by status (like "Pending" or "Completed") or by date. Change order statuses, mark if customers have paid, and click on any order to see all the details including a timeline of what happened and any return requests.
+
+**Products** - Manage everything you sell. Add new products, change prices or descriptions, remove products you don't sell anymore. For each product, you can add the name, price, what category it's in, and upload pictures. The system tracks how many you have in stock and warns you when you're running low.
+
+**Inventory Alerts** - A special page that shows products with low stock. When you have fewer items than your minimum, they appear here. You can mark them as "reordered" so you know you've already ordered more. You can also get to this page from the dashboard.
+
+**Customers (CRM)** - Keep a list of all your customers. See their name, email, phone number, how many orders they've made, and when they last ordered. When someone places an order, their information is automatically saved or updated. You can search for customers and see everything they've ever ordered.
+
+**Returns & Refunds** - Handle when customers want to return something. Customers send return requests, and you can approve them, say no, or process a refund. When you approve a return, the product is automatically added back to your stock. You can see the complete history of what happened with each return request.
+
+**Users** - Only administrators can use this section. Add new employees to the system, change their passwords, decide if they're an admin or regular staff member, and turn their access on or off. This controls who can use the system and what they're allowed to do.
+
+**Data Export/Import** - Download all your orders, products, or customer information as a spreadsheet file that you can open in Excel. Administrators can also upload a spreadsheet file to add many products at once. The system checks the file to make sure everything is correct before adding it.
+
+**Authentication** - The login system. Everyone needs to sign in with their email and password. The system remembers who they are and only lets them see and do things they're allowed to. If someone doesn't use the system for a while, they get logged out automatically to keep things secure.
+
+**Settings** - Change how the application looks and works to match what you like.
+
+**Responsive Design** - The system works on desktop computers, laptops, tablets, and phones. You can choose between a dark theme (dark background) or light theme (light background). Everything automatically adjusts to fit your screen size, so it's easy to use on any device.
