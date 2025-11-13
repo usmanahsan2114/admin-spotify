@@ -322,7 +322,8 @@ const generateTestData = () => {
   
   ordersForReturns.forEach((order) => {
     const orderDate = new Date(order.createdAt)
-    const returnDate = randomDate(orderDate, Math.min(addDays(orderDate, 30), now))
+    const maxReturnDate = addDays(orderDate, 30)
+    const returnDate = randomDate(orderDate, maxReturnDate > now ? now : maxReturnDate)
     const daysSinceReturn = Math.floor((now - returnDate) / (1000 * 60 * 60 * 24))
     
     let status

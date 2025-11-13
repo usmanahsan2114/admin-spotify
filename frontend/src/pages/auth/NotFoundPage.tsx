@@ -17,6 +17,11 @@ const NotFoundPage = () => {
       px={3}
       py={6}
       gap={4}
+      sx={{
+        width: '100%',
+        background: (theme) =>
+          theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+      }}
     >
       <Stack spacing={3} alignItems="center" textAlign="center">
         <Typography variant="h2" fontWeight={700}>

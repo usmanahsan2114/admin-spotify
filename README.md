@@ -2,6 +2,10 @@
 
 This repository delivers a full-stack ecommerce admin workspace modeled after Shopify. It allows a store team to ingest orders from a marketing site, manage inventory, administer users, and view daily operational analytics in a modern, responsive UI.
 
+## 📖 User Guide
+
+**New to the app?** Check out **[USER_GUIDE.md](./USER_GUIDE.md)** for a simple, easy-to-understand explanation of all features, modules, and how to use the app. Perfect for non-technical users!
+
 ## Features
 
 - **Authentication & Roles**: JWT-based login with protected routes, admin/staff roles, persistent sessions, and logout from header/sidebar.
@@ -126,6 +130,9 @@ docs/
 - **Fixed valueFormatter errors**: Enhanced null/undefined handling in CustomersPage and OrdersPage DataGrid columns
 - **Improved chart responsiveness**: All charts now have explicit heights and minHeight to ensure proper rendering
 - **Fixed Settings page 404 error**: Enhanced error handling in SettingsPage and improved `/api/users/me` endpoint validation. Fixed user ID consistency by using fixed UUIDs for default users to prevent 404 errors after server restarts.
+- **Fixed Settings page 400 errors**: Added missing `/api/users/me` GET and PUT endpoints and `/api/settings/business` GET and PUT endpoints. Fixed validation middleware to properly handle optional/nullable fields (profilePictureUrl, logoUrl) using `optional({ nullable: true, checkFalsy: true })` and custom validation functions.
+- **Fixed dark theme background colors**: Removed hardcoded CSS that conflicted with MUI theme. Added explicit background colors to all pages to ensure consistent dark mode backgrounds, especially on mobile view.
+- **Fixed desktop alignment**: Login/signup pages are now left-aligned on desktop (better UX) while remaining centered on mobile. All dashboard pages remain centered for optimal readability.
 
 ### ✅ Tier 3 Improvements (Completed)
 - **Retry logic**: Implemented automatic retry mechanism for failed API requests with exponential backoff (3 retries by default)

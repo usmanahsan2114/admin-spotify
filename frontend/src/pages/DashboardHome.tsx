@@ -202,17 +202,17 @@ const DashboardHome = () => {
   }, [orders])
 
   const growthChartData = useMemo(() => {
-    if (!growthComparison) return []
+    if (!growthComparison || !growthComparison.current || !growthComparison.previous) return []
     return [
       {
-        period: growthComparison.current.period,
-        orders: growthComparison.current.orders,
-        revenue: growthComparison.current.revenue,
+        period: growthComparison.current.period || 'Current',
+        orders: growthComparison.current.orders || 0,
+        revenue: growthComparison.current.revenue || 0,
       },
       {
-        period: growthComparison.previous.period,
-        orders: growthComparison.previous.orders,
-        revenue: growthComparison.previous.revenue,
+        period: growthComparison.previous.period || 'Previous',
+        orders: growthComparison.previous.orders || 0,
+        revenue: growthComparison.previous.revenue || 0,
       },
     ]
   }, [growthComparison])
@@ -282,7 +282,7 @@ const DashboardHome = () => {
               {dateRange.startDate && dateRange.endDate
                 ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
                 : ' in the selected period'}
-              {growthComparison.change.ordersPercent !== 0 && (
+              {growthComparison?.change?.ordersPercent !== undefined && growthComparison.change.ordersPercent !== 0 && (
                 <>
                   {' '}
                   {growthComparison.change.ordersPercent > 0 ? (
@@ -294,7 +294,7 @@ const DashboardHome = () => {
                       down {Math.abs(growthComparison.change.ordersPercent)}%
                     </Typography>
                   )}{' '}
-                  vs {growthComparison.previous.period.toLowerCase()}.
+                  vs {growthComparison.previous?.period?.toLowerCase() || 'previous period'}.
                 </>
               )}
             </Typography>

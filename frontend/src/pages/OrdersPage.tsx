@@ -344,18 +344,25 @@ const OrdersPage = () => {
               alignItems={{ xs: 'stretch', md: 'center' }}
             >
               <TextField
+                id="orders-search"
+                name="orders-search"
                 label="Search orders"
                 placeholder="Search by customer, product, or email"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 fullWidth
+                autoComplete="off"
+                aria-label="Search orders by customer, product, or email"
               />
               <Select
+                id="orders-status-filter"
+                name="orders-status-filter"
                 value={statusFilter}
                 onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
                 size="small"
                 fullWidth={isSmall}
                 sx={{ minWidth: isSmall ? undefined : 160 }}
+                autoComplete="off"
               >
                 <MenuItem value="All">All statuses</MenuItem>
                 {statusOptions.map((option) => (
@@ -404,7 +411,7 @@ const OrdersPage = () => {
                 {dateRange.startDate && dateRange.endDate
                   ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
                   : ' in the selected period'}
-                {growthComparison.change.ordersPercent !== 0 && (
+                {growthComparison?.change?.ordersPercent !== undefined && growthComparison.change.ordersPercent !== 0 && (
                   <>
                     {' '}
                     {growthComparison.change.ordersPercent > 0 ? (
@@ -416,7 +423,7 @@ const OrdersPage = () => {
                         down {Math.abs(growthComparison.change.ordersPercent)}%
                       </Typography>
                     )}{' '}
-                    vs {growthComparison.previous.period.toLowerCase()}.
+                    vs {growthComparison.previous?.period?.toLowerCase() || 'previous period'}.
                   </>
                 )}
               </Typography>

@@ -294,7 +294,7 @@ const ReturnDetailPage = () => {
                   name="status"
                   control={control}
                   render={({ field }) => (
-                    <TextField {...field} select label="Status">
+                    <TextField {...field} id="return-detail-status" select label="Status" autoComplete="off">
                       {RETURN_STATUSES.map((status) => (
                         <MenuItem key={status} value={status}>
                           {status}
@@ -309,10 +309,12 @@ const ReturnDetailPage = () => {
                   render={({ field }) => (
                     <TextField
                       {...field}
+                      id="return-detail-note"
                       label="Internal note"
                       multiline
                       minRows={3}
                       placeholder="Optional note about this update."
+                      autoComplete="off"
                     />
                   )}
                 />

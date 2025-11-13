@@ -241,6 +241,87 @@ const sanitizeUser = ({ passwordHash, ...rest }) => rest
 
 const normalizeEmail = (value = '') => value.trim().toLowerCase()
 
+const serializeCustomer = (customer) => {
+  if (!customer) return null
+  const ordersForCustomer = getOrdersForCustomer(customer)
+  const lastOrder = ordersForCustomer.length > 0 ? ordersForCustomer[0] : null
+  return {
+    id: customer.id,
+    name: customer.name || 'Unknown',
+    email: customer.email || '',
+    phone: customer.phone || 'Not provided',
+    createdAt: customer.createdAt || new Date().toISOString(),
+    orderCount: ordersForCustomer.length,
+    lastOrderDate: lastOrder ? lastOrder.createdAt : null,
+    totalSpent: ordersForCustomer.reduce((sum, order) => sum + (order.total || 0), 0),
+  }
+}
+
+const getOrdersForCustomer = (customer) => {
+  if (!customer || !customer.id) return []
+  return orders.filter((order) => {
+    if (order.customerId === customer.id) return true
+    if (normalizeEmail(order.email) === normalizeEmail(customer.email)) return true
+    return false
+  })
+}
+
+// Business settings (in-memory store)
+let businessSettings = {
+  logoUrl: null,
+  brandColor: '#1976d2',
+  defaultCurrency: 'USD',
+  defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
+}
+
+// Return history helper
+const appendReturnHistory = (returnRequest, status, actor, note) => {
+  if (!returnRequest) return
+  returnRequest.history = returnRequest.history || []
+  returnRequest.history.unshift({
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    status,
+    actor: actor || 'System',
+    note: note || '',
+  })
+}
+
+// Attach order to customer helper
+const attachOrderToCustomer = (order) => {
+  if (!order || !order.email) return
+  const customer = findCustomerByEmail(order.email)
+  if (customer) {
+    if (!customer.orderIds) customer.orderIds = []
+    if (!customer.orderIds.includes(order.id)) {
+      customer.orderIds.push(order.id)
+    }
+    if (!order.customerId) {
+      order.customerId = customer.id
+    }
+  }
+}
+
+// Ensure low stock flag helper
+const ensureLowStockFlag = (product) => {
+  if (!product) return
+  product.lowStock = product.stockQuantity <= product.reorderThreshold
+}
+
+// Adjust product stock for return helper
+const adjustProductStockForReturn = (returnRequest) => {
+  if (!returnRequest || !returnRequest.orderId) return
+  const order = findOrderById(returnRequest.orderId)
+  if (!order) return
+  
+  const product = findOrderProduct(order)
+  if (product && returnRequest.returnedQuantity) {
+    product.stockQuantity = (product.stockQuantity || 0) + returnRequest.returnedQuantity
+    ensureLowStockFlag(product)
+    product.updatedAt = new Date().toISOString()
+  }
+}
+
 // Authentication helpers
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization || ''
@@ -473,8 +554,13 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) =>
 
 // Customer routes
 app.get('/api/customers', authenticateToken, (_req, res) => {
-  const payload = customers.map((customer) => serializeCustomer(customer))
-  return res.json(payload)
+  try {
+    const payload = customers.map((customer) => serializeCustomer(customer)).filter(Boolean)
+    return res.json(payload)
+  } catch (error) {
+    console.error('[ERROR] /api/customers:', error)
+    return res.status(500).json({ message: 'Failed to fetch customers', error: error.message })
+  }
 })
 
 app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
@@ -825,56 +911,75 @@ app.get('/api/metrics/growth-comparison', authenticateToken, (req, res) => {
   res.json({
     period,
     current: {
-      start: currentStart.toISOString(),
-      end: currentEnd.toISOString(),
-      ...currentData,
+      period: period === 'week' ? 'Last 7 days' : 'This month',
+      orders: currentData.orders,
+      revenue: currentData.revenue,
+      startDate: currentStart.toISOString(),
+      endDate: currentEnd.toISOString(),
     },
     previous: {
-      start: previousStart.toISOString(),
-      end: previousEnd.toISOString(),
-      ...previousData,
+      period: period === 'week' ? 'Previous 7 days' : 'Last month',
+      orders: previousData.orders,
+      revenue: previousData.revenue,
+      startDate: previousStart.toISOString(),
+      endDate: previousEnd.toISOString(),
     },
-    growth: {
-      orders: calculateGrowth(currentData.orders, previousData.orders),
-      revenue: calculateGrowth(currentData.revenue, previousData.revenue),
-      customers: calculateGrowth(currentData.customers, previousData.customers),
+    change: {
+      ordersPercent: calculateGrowth(currentData.orders, previousData.orders),
+      revenuePercent: calculateGrowth(currentData.revenue, previousData.revenue),
     },
   })
 })
 
-// Routes
-app.get('/', (_req, res) => {
-  res.status(200).send('API running')
+// Helper function to send CSV responses
+const sendCsv = (res, filename, headers, rows) => {
+  const csvContent = [
+    headers.join(','),
+    ...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+  ].join('\n')
+
+  res.setHeader('Content-Type', 'text/csv')
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+  return res.send(csvContent)
+}
+
+// User routes
+app.get('/api/users', authenticateToken, authorizeRole('admin'), (_req, res) => {
+  return res.json(users.map((user) => sanitizeUser(user)))
 })
 
-app.post('/api/login', validateLogin, async (req, res) => {
-  const { email, password } = req.body
-
-  const user = findUserByEmail(email)
-
+app.get('/api/users/me', authenticateToken, (req, res) => {
+  if (!req.user || !req.user.userId) {
+    return res.status(401).json({ message: 'Invalid or missing token.' })
+  }
+  const user = users.find((u) => u.id === req.user.userId)
   if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials.' })
+    return res.status(404).json({ message: 'User not found.' })
   }
-
-  const passwordMatches = await bcrypt.compare(password, user.passwordHash)
-
-  if (!passwordMatches) {
-    return res.status(401).json({ message: 'Invalid credentials.' })
-  }
-
-  const token = jwt.sign(
-    { userId: user.id, role: user.role, name: user.name, email: user.email },
-    JWT_SECRET,
-    { expiresIn: '2h' },
-  )
-
-  return res.json({
-    token,
-    user: sanitizeUser(user),
-  })
+  return res.json(sanitizeUser(user))
 })
 
-app.post('/api/signup', validateSignup, async (req, res) => {
+app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
+  if (!req.user || !req.user.userId) {
+    return res.status(401).json({ message: 'Invalid or missing token.' })
+  }
+  const user = users.find((u) => u.id === req.user.userId)
+  if (!user) {
+    return res.status(404).json({ message: 'User not found.' })
+  }
+
+  const allowedFields = ['fullName', 'phone', 'profilePictureUrl', 'defaultDateRangeFilter', 'notificationPreferences']
+  Object.entries(req.body).forEach(([key, value]) => {
+    if (allowedFields.includes(key) && value !== undefined) {
+      user[key] = value
+    }
+  })
+
+  user.updatedAt = new Date().toISOString()
+  return res.json(sanitizeUser(user))
+})
+
+app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
   const { email, password, name, role } = req.body
 
   if (findUserByEmail(email)) {
@@ -904,861 +1009,157 @@ app.post('/api/signup', validateSignup, async (req, res) => {
   }
 
   users.push(newUser)
-
-  const token = jwt.sign(
-    { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
-    JWT_SECRET,
-    { expiresIn: '2h' },
-  )
-
-  return res.status(201).json({
-    token,
-    user: sanitizeUser(newUser),
-  })
+  return res.status(201).json(sanitizeUser(newUser))
 })
 
-// Order routes
-app.get('/api/orders', (req, res) => {
-  let filteredOrders = [...orders]
-  
-  // Apply date filtering if provided
-  const startDate = req.query.startDate
-  const endDate = req.query.endDate
-  
-  if (startDate || endDate) {
-    filteredOrders = filteredOrders.filter((order) => {
-      if (!order.createdAt) return false
-      const orderDate = new Date(order.createdAt)
-      if (Number.isNaN(orderDate.getTime())) return false
-      
-      if (startDate) {
-        const start = new Date(startDate)
-        if (orderDate < start) return false
+app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
+  const user = users.find((u) => u.id === req.params.id)
+  if (!user) {
+    return res.status(404).json({ message: 'User not found.' })
+  }
+
+  if (user.id === ADMIN_USER_ID && req.body.email && normalizeEmail(req.body.email) !== normalizeEmail(user.email)) {
+    return res.status(403).json({ message: 'Cannot change primary admin email.' })
+  }
+
+  const { name, email, role, password, active } = req.body
+
+  if (name) user.name = String(name).trim()
+  if (email && user.id !== ADMIN_USER_ID) {
+    if (findUserByEmail(email) && normalizeEmail(email) !== normalizeEmail(user.email)) {
+      return res.status(409).json({ message: 'Email already in use.' })
+    }
+    user.email = email.toLowerCase()
+  }
+  if (role) user.role = role
+  if (password) user.passwordHash = await bcrypt.hash(password, 10)
+  if (active !== undefined) user.active = active
+  if (name) user.fullName = name
+
+  user.updatedAt = new Date().toISOString()
+  return res.json(sanitizeUser(user))
+})
+
+app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), (req, res) => {
+  if (req.params.id === ADMIN_USER_ID) {
+    return res.status(403).json({ message: 'Cannot delete primary admin account.' })
+  }
+  const index = users.findIndex((u) => u.id === req.params.id)
+  if (index === -1) {
+    return res.status(404).json({ message: 'User not found.' })
+  }
+  users.splice(index, 1)
+  return res.status(204).send()
+})
+
+// Business settings routes
+app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_req, res) => {
+  try {
+    return res.json(businessSettings)
+  } catch (error) {
+    console.error('[ERROR] /api/settings/business:', error)
+    return res.status(500).json({ message: 'Failed to fetch business settings', error: error.message })
+  }
+})
+
+app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, (req, res) => {
+  try {
+    const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'defaultOrderStatuses']
+    Object.entries(req.body).forEach(([key, value]) => {
+      if (allowedFields.includes(key) && value !== undefined) {
+        businessSettings[key] = value
       }
-      
-      if (endDate) {
-        const end = new Date(endDate)
-        end.setHours(23, 59, 59, 999) // Include entire end date
-        if (orderDate > end) return false
-      }
-      
-      return true
     })
+    return res.json(businessSettings)
+  } catch (error) {
+    console.error('[ERROR] /api/settings/business:', error)
+    return res.status(500).json({ message: 'Failed to update business settings', error: error.message })
   }
-  
-  // Ensure all orders have required fields before sending
-  const sanitizedOrders = filteredOrders.map((order) => ({
-    ...order,
-    createdAt: order.createdAt || new Date().toISOString(),
-    updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
-    total: order.total !== undefined && order.total !== null ? order.total : 0,
-  }))
-  res.json(sanitizedOrders)
-})
-
-app.get('/api/orders/:id', (req, res) => {
-  const order = findOrderById(req.params.id)
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-  const relatedReturns = returns
-    .filter((returnRequest) => returnRequest.orderId === order.id)
-    .map((returnRequest) => serializeReturn(returnRequest))
-  return res.json({
-    ...order,
-    returns: relatedReturns,
-  })
-})
-
-app.post('/api/orders', validateOrder, (req, res) => {
-  const { productName, customerName, email, phone, quantity, notes } = req.body
-
-  let submittedBy = null
-  const authHeader = req.headers.authorization || ''
-  const token = authHeader.split(' ')[1]
-
-  if (token) {
-    try {
-      const payload = jwt.verify(token, JWT_SECRET)
-      submittedBy = payload.userId ?? null
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn('Invalid token supplied on order submission.')
-    }
-  }
-
-  const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
-  const productPrice = product ? product.price : 0
-  const orderTotal = productPrice * quantity
-
-  const newOrder = {
-    id: crypto.randomUUID(),
-    productName,
-    customerName,
-    email,
-    phone: phone || '',
-    quantity,
-    status: 'Pending',
-    isPaid: false,
-    notes: notes || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    submittedBy,
-    total: orderTotal,
-  }
-
-  orders.unshift(newOrder)
-  attachOrderToCustomer(newOrder)
-  // eslint-disable-next-line no-console
-  console.info(`[orders] New order received: ${newOrder.id}`)
-
-  return res.status(201).json(newOrder)
-})
-
-app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) => {
-  const order = findOrderById(req.params.id)
-
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-
-  const allowedFields = ['status', 'isPaid', 'notes', 'quantity', 'phone']
-  Object.entries(req.body).forEach(([key, value]) => {
-    if (allowedFields.includes(key) && value !== undefined) {
-      order[key] = value
-    }
-  })
-
-  order.updatedAt = new Date().toISOString()
-  order.timeline =
-    order.timeline ?? []
-  order.timeline.push({
-    id: crypto.randomUUID(),
-    description: `Order updated (${Object.keys(req.body)
-      .filter((key) => allowedFields.includes(key))
-      .join(', ')})`,
-    timestamp: order.updatedAt,
-    actor: req.user?.name ?? 'Admin',
-  })
-
-  return res.json(order)
-})
-
-// Customer routes
-app.get('/api/customers', authenticateToken, (_req, res) => {
-  const payload = customers.map((customer) => serializeCustomer(customer))
-  return res.json(payload)
-})
-
-app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
-  const { name, email, phone } = req.body || {}
-
-  if (findCustomerByEmail(email)) {
-    return res.status(409).json({ message: 'A customer with this email already exists.' })
-  }
-
-  const newCustomer = {
-    id: crypto.randomUUID(),
-    name: String(name).trim(),
-    email: String(email).trim(),
-    phone: phone ? String(phone).trim() : 'Not provided',
-    createdAt: new Date().toISOString(),
-    orderIds: [],
-  }
-
-  customers.unshift(newCustomer)
-  return res.status(201).json(serializeCustomer(newCustomer))
-})
-
-app.get('/api/customers/:id', authenticateToken, (req, res) => {
-  const customer = findCustomerById(req.params.id)
-
-  if (!customer) {
-    return res.status(404).json({ message: 'Customer not found.' })
-  }
-
-  const ordersForCustomer = getOrdersForCustomer(customer)
-  return res.json({
-    ...serializeCustomer(customer),
-    orders: ordersForCustomer,
-    returns: returns
-      .filter((returnRequest) => returnRequest.customerId === customer.id)
-      .map((returnRequest) => serializeReturn(returnRequest)),
-  })
-})
-
-app.put('/api/customers/:id', authenticateToken, validateCustomer, (req, res) => {
-  const customer = findCustomerById(req.params.id)
-
-  if (!customer) {
-    return res.status(404).json({ message: 'Customer not found.' })
-  }
-
-  const { name, email, phone } = req.body || {}
-
-  if (email && normalizeEmail(email) !== normalizeEmail(customer.email)) {
-    if (findCustomerByEmail(email)) {
-      return res.status(409).json({ message: 'Another customer already uses this email.' })
-    }
-    customer.email = String(email).trim()
-  }
-
-  if (name) {
-    customer.name = String(name).trim()
-  }
-
-  if (phone !== undefined) {
-    customer.phone = phone ? String(phone).trim() : ''
-  }
-
-  return res.json(serializeCustomer(customer))
-})
-
-// Returns routes
-app.get('/api/returns', authenticateToken, (req, res) => {
-  let filteredReturns = [...returns]
-  
-  // Apply date filtering if provided
-  const startDate = req.query.startDate
-  const endDate = req.query.endDate
-  
-  if (startDate || endDate) {
-    filteredReturns = filteredReturns.filter((returnRequest) => {
-      if (!returnRequest.dateRequested) return false
-      const requestDate = new Date(returnRequest.dateRequested)
-      if (Number.isNaN(requestDate.getTime())) return false
-      
-      if (startDate) {
-        const start = new Date(startDate)
-        if (requestDate < start) return false
-      }
-      
-      if (endDate) {
-        const end = new Date(endDate)
-        end.setHours(23, 59, 59, 999)
-        if (requestDate > end) return false
-      }
-      
-      return true
-    })
-  }
-  
-  res.json(filteredReturns.map((returnRequest) => serializeReturn(returnRequest)))
-})
-
-app.get('/api/returns/:id', authenticateToken, (req, res) => {
-  const returnRequest = findReturnById(req.params.id)
-  if (!returnRequest) {
-    return res.status(404).json({ message: 'Return request not found.' })
-  }
-  return res.json(serializeReturn(returnRequest))
-})
-
-app.post('/api/returns', authenticateToken, validateReturn, (req, res) => {
-  const { orderId, customerId, reason, returnedQuantity, status } = req.body || {}
-
-  const order = findOrderById(orderId)
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-
-  const quantityNumber = Number(returnedQuantity)
-  if (Number.isNaN(quantityNumber) || quantityNumber <= 0) {
-    return res.status(400).json({ message: 'returnedQuantity must be a positive number.' })
-  }
-
-  if (quantityNumber > order.quantity) {
-    return res
-      .status(400)
-      .json({ message: 'returnedQuantity cannot exceed the original order quantity.' })
-  }
-
-  const newReturn = {
-    id: crypto.randomUUID(),
-    orderId,
-    customerId: customerId || order.customerId || null,
-    reason: String(reason).trim(),
-    returnedQuantity: quantityNumber,
-    dateRequested: new Date().toISOString(),
-    status: RETURN_STATUSES.includes(status) ? status : 'Submitted',
-    history: [],
-  }
-
-  ensureReturnCustomer(newReturn)
-  appendReturnHistory(
-    newReturn,
-    newReturn.status,
-    req.user?.name ?? 'System',
-    'Return request created.',
-  )
-  returns.unshift(newReturn)
-  linkReturnToOrder(newReturn)
-
-  // Add timeline entry to order
-  order.timeline = order.timeline || []
-  order.timeline.unshift({
-    id: crypto.randomUUID(),
-    description: 'Return requested',
-    timestamp: new Date().toISOString(),
-    actor: req.user?.name ?? 'System',
-  })
-
-  return res.status(201).json(serializeReturn(newReturn))
-})
-
-app.put('/api/returns/:id', authenticateToken, validateReturnUpdate, (req, res) => {
-  const returnRequest = returns.find((item) => item.id === req.params.id)
-
-  if (!returnRequest) {
-    return res.status(404).json({ message: 'Return request not found.' })
-  }
-
-  const { status, note } = req.body || {}
-
-  if (!status || !RETURN_STATUSES.includes(status)) {
-    return res.status(400).json({ message: `status must be one of: ${RETURN_STATUSES.join(', ')}` })
-  }
-
-  const previousStatus = returnRequest.status
-  if (status !== previousStatus) {
-    returnRequest.status = status
-    appendReturnHistory(
-      returnRequest,
-      status,
-      req.user?.name ?? 'System',
-      note ? String(note) : `Status changed to ${status}.`,
-    )
-
-    const order = findOrderById(returnRequest.orderId)
-    if (order) {
-      order.timeline = order.timeline || []
-      order.timeline.unshift({
-        id: crypto.randomUUID(),
-        description: `Return status updated to ${status}`,
-        timestamp: new Date().toISOString(),
-        actor: req.user?.name ?? 'System',
-      })
-      if (status === 'Refunded') {
-        order.status = 'Refunded'
-      }
-    }
-
-    if (status === 'Approved' || status === 'Refunded') {
-      adjustProductStockForReturn(returnRequest)
-    }
-  } else if (note) {
-    appendReturnHistory(
-      returnRequest,
-      status,
-      req.user?.name ?? 'System',
-      String(note),
-    )
-  }
-
-  ensureReturnCustomer(returnRequest)
-  linkReturnToOrder(returnRequest)
-
-  return res.json(serializeReturn(returnRequest))
-})
-
-// Metrics routes
-app.get('/api/metrics/overview', authenticateToken, (_req, res) => {
-  const totalOrders = orders.length
-  const pendingOrdersCount = orders.filter((order) => order.status === 'Pending').length
-  const totalProducts = products.length
-  const lowStockCount = products.filter((product) => product.lowStock).length
-  const pendingReturnsCount = returns.filter((returnRequest) => returnRequest.status === 'Submitted').length
-  
-  // Calculate new customers in last 7 days
-  const sevenDaysAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
-  const newCustomersLast7Days = customers.filter(
-    (customer) => new Date(customer.createdAt) >= sevenDaysAgo
-  ).length
-
-  // Calculate total revenue
-  const totalRevenue = orders.reduce((acc, order) => acc + (order.total ?? 0), 0)
-
-  res.json({
-    totalOrders,
-    pendingOrdersCount,
-    totalProducts,
-    lowStockCount,
-    pendingReturnsCount,
-    newCustomersLast7Days,
-    totalRevenue,
-  })
-})
-
-app.get('/api/metrics/low-stock-trend', authenticateToken, (req, res) => {
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
-  
-  // Calculate number of days
-  const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
-  const numDays = Math.min(Math.max(daysDiff, 1), 90) // Limit to 90 days
-  
-  const trendData = Array.from({ length: numDays }).map((_, index) => {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + index)
-    date.setHours(0, 0, 0, 0)
-    
-    const dateKey = date.toISOString().split('T')[0]
-    
-    // For demo purposes, simulate trend data
-    const baseCount = products.filter((p) => p.lowStock).length
-    const variation = Math.floor(Math.random() * 3) - 1
-    const count = Math.max(0, baseCount + variation)
-    
-    return {
-      date: dateKey,
-      dateLabel: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      lowStockCount: count,
-    }
-  })
-  
-  res.json(trendData)
-})
-
-// Sales over time endpoint
-app.get('/api/metrics/sales-over-time', authenticateToken, (req, res) => {
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
-  
-  // Group orders by day
-  const dailyData = {}
-  const currentDate = new Date(startDate)
-  
-  while (currentDate <= endDate) {
-    const dateKey = currentDate.toISOString().split('T')[0]
-    dailyData[dateKey] = { orders: 0, revenue: 0 }
-    currentDate.setDate(currentDate.getDate() + 1)
-  }
-  
-  orders.forEach((order) => {
-    if (!order.createdAt) return
-    const orderDate = new Date(order.createdAt)
-    if (orderDate < startDate || orderDate > endDate) return
-    
-    const dateKey = orderDate.toISOString().split('T')[0]
-    if (dailyData[dateKey]) {
-      dailyData[dateKey].orders += 1
-      dailyData[dateKey].revenue += order.total ?? 0
-    }
-  })
-  
-  const dataPoints = Object.entries(dailyData).map(([date, data]) => ({
-    date,
-    dateLabel: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    orders: data.orders,
-    revenue: data.revenue,
-  }))
-  
-  const totalOrders = dataPoints.reduce((sum, point) => sum + point.orders, 0)
-  const totalRevenue = dataPoints.reduce((sum, point) => sum + point.revenue, 0)
-  
-  res.json({
-    data: dataPoints,
-    summary: {
-      totalOrders,
-      totalRevenue,
-      averageOrdersPerDay: dataPoints.length > 0 ? (totalOrders / dataPoints.length).toFixed(1) : 0,
-      averageRevenuePerDay: dataPoints.length > 0 ? (totalRevenue / dataPoints.length).toFixed(2) : 0,
-    },
-  })
-})
-
-// Growth comparison endpoint
-app.get('/api/metrics/growth-comparison', authenticateToken, (req, res) => {
-  const period = req.query.period || 'month' // 'week' or 'month'
-  const basePeriod = req.query.basePeriod || 'previous' // 'previous' or 'year'
-  
-  const now = new Date()
-  let currentStart, currentEnd, previousStart, previousEnd
-  
-  if (period === 'week') {
-    // Current week (last 7 days)
-    currentEnd = new Date(now)
-    currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    
-    // Previous week (7 days before that)
-    previousEnd = new Date(currentStart)
-    previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000)
-  } else {
-    // Current month
-    currentEnd = new Date(now)
-    currentStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    
-    // Previous month
-    previousEnd = new Date(now.getFullYear(), now.getMonth(), 0)
-    previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  }
-  
-  const filterOrders = (start, end) => {
-    return orders.filter((order) => {
-      if (!order.createdAt) return false
-      const orderDate = new Date(order.createdAt)
-      return orderDate >= start && orderDate <= end
-    })
-  }
-  
-  const currentOrders = filterOrders(currentStart, currentEnd)
-  const previousOrders = filterOrders(previousStart, previousEnd)
-  
-  const currentCount = currentOrders.length
-  const previousCount = previousOrders.length
-  const currentRevenue = currentOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
-  const previousRevenue = previousOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
-  
-  const countChange = previousCount > 0 ? ((currentCount - previousCount) / previousCount * 100).toFixed(1) : currentCount > 0 ? '100.0' : '0.0'
-  const revenueChange = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue * 100).toFixed(1) : currentRevenue > 0 ? '100.0' : '0.0'
-  
-  res.json({
-    current: {
-      period: period === 'week' ? 'Last 7 days' : 'This month',
-      orders: currentCount,
-      revenue: currentRevenue,
-      startDate: currentStart.toISOString(),
-      endDate: currentEnd.toISOString(),
-    },
-    previous: {
-      period: period === 'week' ? 'Previous 7 days' : 'Last month',
-      orders: previousCount,
-      revenue: previousRevenue,
-      startDate: previousStart.toISOString(),
-      endDate: previousEnd.toISOString(),
-    },
-    change: {
-      ordersPercent: parseFloat(countChange),
-      revenuePercent: parseFloat(revenueChange),
-    },
-  })
 })
 
 // Product routes
-app.get('/api/products', (_req, res) => {
-  // Ensure all products have required fields before sending
-  const sanitizedProducts = products.map((product) => ({
-    ...product,
-    category: product.category || 'Uncategorized',
-    price: product.price !== undefined && product.price !== null ? product.price : 0,
-    createdAt: product.createdAt || new Date().toISOString(),
-  }))
-  res.json(sanitizedProducts)
-})
+app.get('/api/products', authenticateToken, (req, res) => {
+  const lowStockOnly = req.query.lowStock === 'true'
+  let filteredProducts = [...products]
 
-app.get('/api/products/low-stock', (_req, res) => {
-  // Ensure all products have required fields before sending
-  const sanitizedProducts = products
-    .filter((product) => product.lowStock)
-    .map((product) => ({
-      ...product,
-      category: product.category || 'Uncategorized',
-      price: product.price !== undefined && product.price !== null ? product.price : 0,
-      createdAt: product.createdAt || new Date().toISOString(),
-    }))
-  res.json(sanitizedProducts)
-})
-
-app.post('/api/products', authenticateToken, validateProduct, (req, res) => {
-  const {
-    name,
-    description = '',
-    price,
-    stockQuantity,
-    stock,
-    reorderThreshold,
-    status = 'active',
-    category,
-    imageUrl,
-  } = req.body
-
-  // Validation middleware handles basic validation, but we still need to handle numeric conversions
-  const quantityValue =
-    stockQuantity !== undefined ? Number(stockQuantity) : Number(stock ?? 0)
-
-  const thresholdValue =
-    reorderThreshold !== undefined ? Number(reorderThreshold) : Math.max(0, Math.floor(quantityValue / 2))
-  if (Number.isNaN(thresholdValue) || thresholdValue < 0) {
-    return res
-      .status(400)
-      .json({ message: 'reorderThreshold must be a positive number.' })
+  if (lowStockOnly) {
+    filteredProducts = filteredProducts.filter((p) => p.lowStock)
   }
+
+  return res.json(filteredProducts)
+})
+
+app.get('/api/products/low-stock', authenticateToken, (_req, res) => {
+  return res.json(products.filter((p) => p.lowStock))
+})
+
+app.get('/api/products/:id', authenticateToken, (req, res) => {
+  const product = findProductById(req.params.id)
+  if (!product) {
+    return res.status(404).json({ message: 'Product not found.' })
+  }
+  return res.json(product)
+})
+
+app.post('/api/products', authenticateToken, authorizeRole('admin'), validateProduct, (req, res) => {
+  const { name, description, price, stockQuantity, reorderThreshold, category, imageUrl, status } = req.body
 
   const newProduct = {
     id: crypto.randomUUID(),
-    name,
-    description,
+    name: String(name).trim(),
+    description: description ? String(description).trim() : '',
     price: Number(price),
-    stockQuantity: quantityValue,
-    reorderThreshold: thresholdValue,
+    stockQuantity: Number(stockQuantity),
+    reorderThreshold: Number(reorderThreshold),
     lowStock: false,
-    status,
-    category: category && category.trim() ? category.trim() : 'Uncategorized',
-    imageUrl: imageUrl || undefined,
+    status: status || 'active',
+    category: category ? String(category).trim() : undefined,
+    imageUrl: imageUrl ? String(imageUrl).trim() : undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }
 
   ensureLowStockFlag(newProduct)
-  products.push(newProduct)
+  products.unshift(newProduct)
   return res.status(201).json(newProduct)
 })
 
-app.put('/api/products/:id', authenticateToken, validateProduct, (req, res) => {
+app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validateProduct, (req, res) => {
   const product = findProductById(req.params.id)
-
   if (!product) {
     return res.status(404).json({ message: 'Product not found.' })
   }
 
-  const allowedFields = [
-    'name',
-    'description',
-    'price',
-    'stockQuantity',
-    'reorderThreshold',
-    'status',
-    'category',
-    'imageUrl',
-  ]
-
+  const allowedFields = ['name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'category', 'imageUrl', 'status']
   Object.entries(req.body).forEach(([key, value]) => {
-    if (!allowedFields.includes(key) || value === undefined) return
-    if (['price', 'stockQuantity', 'reorderThreshold'].includes(key)) {
-      const numeric = Number(value)
-      if (!Number.isNaN(numeric)) {
-        product[key] = numeric
-      }
-    } else {
+    if (allowedFields.includes(key) && value !== undefined) {
       product[key] = value
     }
   })
 
   ensureLowStockFlag(product)
   product.updatedAt = new Date().toISOString()
-
   return res.json(product)
 })
 
-app.put('/api/products/:id/mark-reordered', authenticateToken, (req, res) => {
-  const product = findProductById(req.params.id)
-
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found.' })
-  }
-
-  product.lowStock = false
-  product.updatedAt = new Date().toISOString()
-  product.lastReorderedAt = new Date().toISOString()
-
-  return res.json(product)
-})
-
-app.delete('/api/products/:id', authenticateToken, (req, res) => {
-  const index = products.findIndex((product) => product.id === req.params.id)
-
+app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), (req, res) => {
+  const index = products.findIndex((p) => p.id === req.params.id)
   if (index === -1) {
     return res.status(404).json({ message: 'Product not found.' })
   }
-
-  const [removedProduct] = products.splice(index, 1)
-  return res.json(removedProduct)
+  products.splice(index, 1)
+  return res.status(204).send()
 })
 
-// User management (admin only)
-app.get(
-  '/api/users',
-  authenticateToken,
-  authorizeRole('admin'),
-  (_req, res) => {
-    res.json(users.map(sanitizeUser))
-  },
-)
-
-app.post(
-  '/api/users',
-  authenticateToken,
-  authorizeRole('admin'),
-  validateUser,
-  async (req, res) => {
-    const { email, name, password, role, active } = req.body
-
-    if (findUserByEmail(email)) {
-      return res.status(409).json({ message: 'User with this email exists.' })
-    }
-
-    const passwordHash = await bcrypt.hash(password, 10)
-    const newUser = {
-      id: crypto.randomUUID(),
-      email: email.toLowerCase(),
-      name,
-      role,
-      passwordHash,
-      active: active !== undefined ? Boolean(active) : true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      profilePictureUrl: null,
-      fullName: name,
-      phone: null,
-      defaultDateRangeFilter: 'last7',
-      notificationPreferences: {
-        newOrders: true,
-        lowStock: true,
-        returnsPending: true,
-      },
-    }
-
-    users.push(newUser)
-
-    return res.status(201).json(sanitizeUser(newUser))
-  },
-)
-
-app.put(
-  '/api/users/:id',
-  authenticateToken,
-  authorizeRole('admin'),
-  validateUser,
-  async (req, res) => {
-    const targetUser = users.find((user) => user.id === req.params.id)
-
-    if (!targetUser) {
-      return res.status(404).json({ message: 'User not found.' })
-    }
-
-    const { role, name, active, password } = req.body
-
-    if (req.user?.userId === targetUser.id) {
-      if (role && role !== 'admin') {
-        return res
-          .status(400)
-          .json({ message: 'You cannot change your own role.' })
-      }
-      if (active === false) {
-        return res
-          .status(400)
-          .json({ message: 'You cannot deactivate your own account.' })
-      }
-    }
-
-    if (role) {
-      targetUser.role = role
-    }
-    if (name) {
-      targetUser.name = name
-    }
-    if (active !== undefined) {
-      targetUser.active = Boolean(active)
-    }
-    if (password) {
-      targetUser.passwordHash = await bcrypt.hash(password, 10)
-    }
-
-    targetUser.updatedAt = new Date().toISOString()
-
-    return res.json(sanitizeUser(targetUser))
-  },
-)
-
-app.delete(
-  '/api/users/:id',
-  authenticateToken,
-  authorizeRole('admin'),
-  (req, res) => {
-    const index = users.findIndex((user) => user.id === req.params.id)
-
-    if (index === -1) {
-      return res.status(404).json({ message: 'User not found.' })
-    }
-
-    if (req.user?.userId === req.params.id) {
-      return res
-        .status(400)
-        .json({ message: 'You cannot delete your own account.' })
-    }
-
-    const [removed] = users.splice(index, 1)
-    return res.json(sanitizeUser(removed))
-  },
-)
-
-// Current user profile endpoints
-app.get('/api/users/me', authenticateToken, (req, res) => {
-  // Ensure req.user exists (should be set by authenticateToken middleware)
-  if (!req.user || !req.user.userId) {
-    return res.status(401).json({ message: 'Invalid authentication token.' })
+app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin'), (req, res) => {
+  const product = findProductById(req.params.id)
+  if (!product) {
+    return res.status(404).json({ message: 'Product not found.' })
   }
-  
-  const user = users.find((u) => u.id === req.user.userId)
-  if (!user) {
-    return res.status(404).json({ message: 'User not found. Please try signing out and back in.' })
-  }
-  return res.json(sanitizeUser(user))
+  // Mark as reordered (in a real app, this would update a flag or create a purchase order)
+  product.updatedAt = new Date().toISOString()
+  return res.json(product)
 })
-
-app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
-  const user = users.find((u) => u.id === req.user?.userId)
-  if (!user) {
-    return res.status(404).json({ message: 'User not found.' })
-  }
-
-  const {
-    fullName,
-    phone,
-    profilePictureUrl,
-    defaultDateRangeFilter,
-    notificationPreferences,
-  } = req.body
-
-  if (fullName !== undefined) {
-    user.fullName = fullName || null
-  }
-  if (phone !== undefined) {
-    user.phone = phone || null
-  }
-  if (profilePictureUrl !== undefined) {
-    user.profilePictureUrl = profilePictureUrl || null
-  }
-  if (defaultDateRangeFilter !== undefined) {
-    user.defaultDateRangeFilter = defaultDateRangeFilter || 'last7'
-  }
-  if (notificationPreferences !== undefined) {
-    user.notificationPreferences = {
-      newOrders: notificationPreferences.newOrders !== undefined ? Boolean(notificationPreferences.newOrders) : (user.notificationPreferences?.newOrders ?? true),
-      lowStock: notificationPreferences.lowStock !== undefined ? Boolean(notificationPreferences.lowStock) : (user.notificationPreferences?.lowStock ?? true),
-      returnsPending: notificationPreferences.returnsPending !== undefined ? Boolean(notificationPreferences.returnsPending) : (user.notificationPreferences?.returnsPending ?? true),
-    }
-  }
-
-  user.updatedAt = new Date().toISOString()
-
-  return res.json(sanitizeUser(user))
-})
-
-// Business settings endpoints (admin only)
-app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_req, res) => {
-  return res.json(businessSettings)
-})
-
-app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, (req, res) => {
-  const { logoUrl, brandColor, defaultCurrency, defaultOrderStatuses } = req.body
-
-  if (logoUrl !== undefined) {
-    businessSettings.logoUrl = logoUrl || null
-  }
-  if (brandColor !== undefined) {
-    businessSettings.brandColor = brandColor || '#1976d2'
-  }
-  if (defaultCurrency !== undefined) {
-    businessSettings.defaultCurrency = defaultCurrency || 'USD'
-  }
-  if (defaultOrderStatuses !== undefined && Array.isArray(defaultOrderStatuses)) {
-    businessSettings.defaultOrderStatuses = defaultOrderStatuses
-  }
-
-  return res.json(businessSettings)
-})
-
 // Growth & Progress Reporting endpoints
 app.get('/api/reports/growth', authenticateToken, (req, res) => {
   const period = req.query.period || 'month' // 'week', 'month', 'quarter'

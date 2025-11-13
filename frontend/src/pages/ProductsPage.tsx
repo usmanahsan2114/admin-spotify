@@ -535,6 +535,8 @@ const ProductsPage = () => {
               sx={{ width: '100%' }}
             >
               <TextField
+                id="products-search"
+                name="products-search"
                 placeholder="Search by name or category"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -542,6 +544,8 @@ const ProductsPage = () => {
                   startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
                 }}
                 fullWidth
+                autoComplete="off"
+                aria-label="Search products by name or category"
               />
               <FormControlLabel
                 control={
@@ -716,10 +720,12 @@ const ProductsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="product-name"
                   label="Product name"
                   error={Boolean(errors.name)}
                   helperText={errors.name?.message}
                   required
+                  autoComplete="off"
                 />
               )}
             />
@@ -729,10 +735,12 @@ const ProductsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="product-description"
                   label="Description"
                   multiline
                   minRows={3}
                   placeholder="Tell your customers what makes this product special."
+                  autoComplete="off"
                 />
               )}
             />
@@ -742,12 +750,14 @@ const ProductsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="product-price"
                   label="Price"
                   type="number"
                   error={Boolean(errors.price)}
                   helperText={errors.price?.message}
                   inputProps={{ min: 0, step: 0.01 }}
                   required
+                  autoComplete="off"
                 />
               )}
             />
@@ -757,12 +767,14 @@ const ProductsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="product-stock-quantity"
                   label="Stock quantity"
                   type="number"
                   error={Boolean(errors.stockQuantity)}
                   helperText={errors.stockQuantity?.message}
                   inputProps={{ min: 0, step: 1 }}
                   required
+                  autoComplete="off"
                 />
               )}
             />
@@ -772,12 +784,14 @@ const ProductsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="product-reorder-threshold"
                   label="Reorder threshold"
                   type="number"
                   error={Boolean(errors.reorderThreshold)}
                   helperText={errors.reorderThreshold?.message}
                   inputProps={{ min: 0, step: 1 }}
                   required
+                  autoComplete="off"
                 />
               )}
             />
@@ -785,7 +799,7 @@ const ProductsPage = () => {
               name="category"
               control={control}
               render={({ field }) => (
-                <TextField {...field} label="Category" placeholder="Accessories, Apparel, etc." />
+                <TextField {...field} id="product-category" label="Category" placeholder="Accessories, Apparel, etc." autoComplete="off" />
               )}
             />
             <Controller
@@ -794,10 +808,13 @@ const ProductsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="product-image-url"
                   label="Image URL"
+                  type="url"
                   error={Boolean(errors.imageUrl)}
                   helperText={errors.imageUrl?.message}
                   placeholder="https://example.com/product.jpg"
+                  autoComplete="off"
                 />
               )}
             />
@@ -805,7 +822,7 @@ const ProductsPage = () => {
               name="status"
               control={control}
               render={({ field }) => (
-                <TextField {...field} label="Status" select>
+                <TextField {...field} id="product-status" label="Status" select autoComplete="off">
                   <MenuItem value="active">Active</MenuItem>
                   <MenuItem value="inactive">Inactive</MenuItem>
                 </TextField>

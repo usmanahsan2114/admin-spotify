@@ -318,6 +318,8 @@ const OrderDetailsPage = () => {
                   alignItems="flex-start"
                 >
                   <TextField
+                    id="order-quantity"
+                    name="quantity"
                     label="Quantity"
                     type="number"
                     inputProps={{ min: 1 }}
@@ -328,22 +330,30 @@ const OrderDetailsPage = () => {
                         setQuantity(value)
                       }
                     }}
+                    autoComplete="off"
                   />
                   <TextField
+                    id="order-contact-phone"
+                    name="contactPhone"
                     label="Contact phone"
+                    type="tel"
                     value={phone}
                     onChange={(event) => setPhone(event.target.value)}
                     fullWidth
+                    autoComplete="tel"
                   />
                 </Stack>
 
                 <TextField
+                  id="order-internal-notes"
+                  name="internalNotes"
                   label="Internal notes"
                   multiline
                   minRows={3}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   placeholder="Add instructions or a follow-up reminder for the team."
+                  autoComplete="off"
                 />
               </Stack>
             </CardContent>

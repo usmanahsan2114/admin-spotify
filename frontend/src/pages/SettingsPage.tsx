@@ -74,6 +74,7 @@ const ImageUpload = ({
   previewSize?: number
 }) => {
   const theme = useTheme()
+  const inputId = `image-upload-${label.toLowerCase().replace(/\s+/g, '-')}`
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -92,7 +93,7 @@ const ImageUpload = ({
 
   return (
     <Stack spacing={2}>
-      <FormLabel>{label}</FormLabel>
+      <FormLabel htmlFor={inputId}>{label}</FormLabel>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
         <Box
           sx={{
@@ -132,6 +133,7 @@ const ImageUpload = ({
           >
             {value ? 'Change Image' : 'Upload Image'}
             <input
+              id={inputId}
               type="file"
               hidden
               accept="image/*"
@@ -164,11 +166,14 @@ const ColorPicker = ({
   value: string
   onChange: (color: string) => void
 }) => {
+  const colorInputId = `color-picker-${label.toLowerCase().replace(/\s+/g, '-')}`
+  const textInputId = `color-text-${label.toLowerCase().replace(/\s+/g, '-')}`
   return (
     <FormControl fullWidth>
-      <FormLabel>{label}</FormLabel>
+      <FormLabel htmlFor={colorInputId}>{label}</FormLabel>
       <Stack direction="row" spacing={2} alignItems="center" mt={1}>
         <Input
+          id={colorInputId}
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -181,11 +186,13 @@ const ColorPicker = ({
           }}
         />
         <TextField
+          id={textInputId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="#1976d2"
           fullWidth
           size="small"
+          aria-label={`${label} text input`}
         />
       </Stack>
     </FormControl>
@@ -371,19 +378,25 @@ const SettingsPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
+                    id="profile-full-name"
                     label="Full Name"
                     fullWidth
                     size="small"
+                    autoComplete="name"
                   />
                 )}
               />
               <TextField
+                id="profile-email"
+                name="email"
                 label="Email"
+                type="email"
                 value={currentUser?.email || ''}
                 fullWidth
                 size="small"
                 disabled
                 helperText="Email cannot be changed"
+                autoComplete="email"
               />
               <Controller
                 name="phone"
@@ -391,10 +404,12 @@ const SettingsPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
+                    id="profile-phone"
                     label="Phone Number"
                     fullWidth
                     size="small"
                     type="tel"
+                    autoComplete="tel"
                   />
                 )}
               />
@@ -403,8 +418,8 @@ const SettingsPage = () => {
                 control={profileControl}
                 render={({ field }) => (
                   <FormControl fullWidth size="small">
-                    <InputLabel>Default Date Range Filter</InputLabel>
-                    <Select {...field} label="Default Date Range Filter">
+                    <InputLabel id="profile-date-range-label">Default Date Range Filter</InputLabel>
+                    <Select {...field} id="profile-date-range" label="Default Date Range Filter" labelId="profile-date-range-label" autoComplete="off">
                       <MenuItem value="last7">Last 7 days</MenuItem>
                       <MenuItem value="thisMonth">This month</MenuItem>
                       <MenuItem value="lastMonth">Last month</MenuItem>
@@ -529,8 +544,8 @@ const SettingsPage = () => {
                 control={businessControl}
                 render={({ field }) => (
                   <FormControl fullWidth size="small">
-                    <InputLabel>Default Currency</InputLabel>
-                    <Select {...field} label="Default Currency">
+                    <InputLabel id="business-currency-label">Default Currency</InputLabel>
+                    <Select {...field} id="business-currency" label="Default Currency" labelId="business-currency-label" autoComplete="off">
                       <MenuItem value="USD">USD ($)</MenuItem>
                       <MenuItem value="EUR">EUR (€)</MenuItem>
                       <MenuItem value="GBP">GBP (£)</MenuItem>

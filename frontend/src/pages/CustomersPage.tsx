@@ -304,6 +304,8 @@ const CustomersPage = () => {
             sx={{ width: '100%' }}
           >
             <TextField
+              id="customers-search"
+              name="customers-search"
               placeholder="Search by name or email"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -311,6 +313,8 @@ const CustomersPage = () => {
                 startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
               }}
               fullWidth
+              autoComplete="off"
+              aria-label="Search customers by name or email"
             />
           </Stack>
         </CardContent>
@@ -396,10 +400,12 @@ const CustomersPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="customer-name"
                   label="Full name"
                   required
                   error={Boolean(errors.name)}
                   helperText={errors.name?.message}
+                  autoComplete="name"
                 />
               )}
             />
@@ -409,11 +415,13 @@ const CustomersPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="customer-email"
                   label="Email"
                   type="email"
                   required
                   error={Boolean(errors.email)}
                   helperText={errors.email?.message}
+                  autoComplete="email"
                 />
               )}
             />
@@ -423,10 +431,13 @@ const CustomersPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="customer-phone"
                   label="Phone"
+                  type="tel"
                   placeholder="+1-555-0100"
                   error={Boolean(errors.phone)}
                   helperText={errors.phone?.message}
+                  autoComplete="tel"
                 />
               )}
             />

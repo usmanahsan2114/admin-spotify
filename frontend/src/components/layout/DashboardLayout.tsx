@@ -262,7 +262,17 @@ const DashboardLayout = () => {
   )
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        position: 'relative',
+        width: '100%',
+        bgcolor: 'background.default',
+        background: (theme) =>
+          theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+      }}
+    >
       <SkipLink />
       <AppBar
         position="fixed"
@@ -378,7 +388,16 @@ const DashboardLayout = () => {
         </Drawer>
       </Box>
 
-      <Main open={isDesktop}>
+      <Main
+        open={isDesktop}
+        sx={{
+          flexGrow: 1,
+          width: '100%',
+          bgcolor: 'background.default',
+          background: (theme) =>
+            theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+        }}
+      >
         <Toolbar />
         <Box
           id="main-content"
@@ -391,6 +410,7 @@ const DashboardLayout = () => {
             gap: { xs: 2, sm: 2.5, md: 3 },
             py: { xs: 1, sm: 2, md: 3, lg: 4 },
             px: { xs: 0.5, sm: 1 },
+            bgcolor: 'transparent',
           }}
         >
           <Outlet />

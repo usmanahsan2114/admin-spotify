@@ -267,6 +267,18 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Eliminated 429 errors during development, cleaner codebase (removed 2000+ lines of duplicate code), improved server reliability, better development experience.
 
+## Step 25 – Settings Page Fixes & UI Improvements
+
+**2025-11-13 - Settings Page Fixes & UI Improvements:**
+
+- ✅ Fixed Settings page 400 errors: Added missing `/api/users/me` GET and PUT endpoints to backend with proper authentication and validation. Added missing `/api/settings/business` GET and PUT endpoints with admin-only access. Fixed validation middleware to allow null/empty values for optional fields (profilePictureUrl, logoUrl) using `optional({ nullable: true, checkFalsy: true })` and custom validation functions. This resolves the 400 Bad Request errors when saving profile or business settings.
+- ✅ Added missing backend routes: Implemented complete `/api/users` routes (GET, POST, PUT, DELETE) and `/api/products` routes (GET, POST, PUT, DELETE, POST /reorder) that were referenced by frontend but missing from backend. Added `sendCsv` helper function for CSV export functionality.
+- ✅ Fixed dark theme background colors: Updated `index.css` to remove hardcoded dark background colors that conflicted with MUI theme. Added explicit background colors to DashboardLayout, LoginPage, SignupPage, and NotFoundPage to ensure consistent dark mode backgrounds on all pages, especially mobile view. All pages now properly inherit theme background colors.
+- ✅ Fixed desktop alignment: Updated LoginPage and SignupPage to be left-aligned on desktop (using `alignItems: { xs: 'center', md: 'flex-start' }`) while remaining centered on mobile. All other pages remain centered via DashboardLayout's `mx: 'auto'` container. This provides better UX: login/signup forms are easier to access on desktop, while dashboard content is centered for readability.
+- ✅ Code cleanup: Verified no unused imports or redundant code. All components are properly used, all routes are defined, and the codebase is clean and maintainable.
+
+**Impact**: Fixed critical Settings page functionality, improved dark mode consistency across all devices, better desktop UX for login/signup pages, complete backend API coverage, cleaner codebase.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.

@@ -139,27 +139,42 @@ const validateUser = [
  * Validation rules for user profile update
  */
 const validateUserProfile = [
-  body('fullName').optional().trim(),
-  body('phone').optional().trim(),
-  body('profilePictureUrl').optional().isURL().withMessage('Profile picture URL must be valid'),
+  body('fullName').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('phone').optional({ nullable: true, checkFalsy: true }).trim(),
+  body('profilePictureUrl')
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true
+      // Basic URL validation
+      try {
+        new URL(value)
+        return true
+      } catch {
+        return false
+      }
+    })
+    .withMessage('Profile picture URL must be valid'),
   body('defaultDateRangeFilter')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isIn(['last7', 'thisMonth', 'lastMonth', 'custom'])
     .withMessage('Invalid date range filter'),
   body('notificationPreferences')
-    .optional()
-    .isObject()
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (value === null || value === undefined) return true
+      return typeof value === 'object' && !Array.isArray(value)
+    })
     .withMessage('Notification preferences must be an object'),
   body('notificationPreferences.newOrders')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isBoolean()
     .withMessage('newOrders must be boolean'),
   body('notificationPreferences.lowStock')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isBoolean()
     .withMessage('lowStock must be boolean'),
   body('notificationPreferences.returnsPending')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isBoolean()
     .withMessage('returnsPending must be boolean'),
   handleValidationErrors,
@@ -169,14 +184,29 @@ const validateUserProfile = [
  * Validation rules for business settings
  */
 const validateBusinessSettings = [
-  body('logoUrl').optional().isURL().withMessage('Logo URL must be valid'),
-  body('brandColor').optional().matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Brand color must be a valid hex color'),
+  body('logoUrl')
+    .optional({ nullable: true, checkFalsy: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true
+      // Basic URL validation
+      try {
+        new URL(value)
+        return true
+      } catch {
+        return false
+      }
+    })
+    .withMessage('Logo URL must be valid'),
+  body('brandColor')
+    .optional({ nullable: true, checkFalsy: true })
+    .matches(/^#[0-9A-Fa-f]{6}$/)
+    .withMessage('Brand color must be a valid hex color'),
   body('defaultCurrency')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isIn(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'])
     .withMessage('Invalid currency'),
   body('defaultOrderStatuses')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isArray()
     .withMessage('Default order statuses must be an array'),
   handleValidationErrors,

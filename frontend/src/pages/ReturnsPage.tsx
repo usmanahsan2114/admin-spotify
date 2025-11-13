@@ -10,8 +10,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
   MenuItem,
+  Select,
   Snackbar,
   Stack,
   TextField,
@@ -380,6 +383,8 @@ const ReturnsPage = () => {
               alignItems={{ xs: 'stretch', md: 'center' }}
             >
               <TextField
+                id="returns-search"
+                name="returns-search"
                 placeholder="Search by return ID, order ID, or customer"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -387,25 +392,34 @@ const ReturnsPage = () => {
                   startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
                 }}
                 fullWidth
+                autoComplete="off"
+                aria-label="Search returns by return ID, order ID, or customer"
               />
-              <TextField
-                select
-                label="Filter by status"
-                value={statusFilter}
-                onChange={(event) =>
-                  setStatusFilter(event.target.value as ReturnStatus | 'All')
-                }
+              <FormControl
                 size="small"
                 fullWidth={isSmall}
                 sx={{ minWidth: isSmall ? undefined : 200 }}
               >
-                <MenuItem value="All">All statuses</MenuItem>
-                {RETURN_STATUSES.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
-              </TextField>
+                <InputLabel id="returns-status-filter-label">Filter by status</InputLabel>
+                <Select
+                  id="returns-status-filter"
+                  name="returns-status-filter"
+                  labelId="returns-status-filter-label"
+                  label="Filter by status"
+                  value={statusFilter}
+                  onChange={(event) =>
+                    setStatusFilter(event.target.value as ReturnStatus | 'All')
+                  }
+                  autoComplete="off"
+                >
+                  <MenuItem value="All">All statuses</MenuItem>
+                  {RETURN_STATUSES.map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {status}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Stack>
           </Stack>
         </CardContent>
@@ -489,6 +503,8 @@ const ReturnsPage = () => {
               loading={loading}
               getRowId={(row) => row.id}
               disableRowSelectionOnClick
+              disableColumnFilter
+              disableColumnMenu
               density={isSmall ? 'compact' : 'standard'}
               initialState={{
                 pagination: { paginationModel: { pageSize: 10 } },
@@ -549,11 +565,13 @@ const ReturnsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="return-create-order"
                   select
                   label="Order"
                   required
                   error={Boolean(createErrors.orderId)}
                   helperText={createErrors.orderId?.message}
+                  autoComplete="off"
                 >
                   {orderOptions.map((option) => (
                     <MenuItem key={option.id} value={option.id}>
@@ -569,12 +587,14 @@ const ReturnsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="return-create-quantity"
                   label="Returned quantity"
                   type="number"
                   required
                   error={Boolean(createErrors.returnedQuantity)}
                   helperText={createErrors.returnedQuantity?.message}
                   inputProps={{ min: 1, step: 1 }}
+                  autoComplete="off"
                 />
               )}
             />
@@ -584,6 +604,7 @@ const ReturnsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="return-create-reason"
                   label="Reason"
                   required
                   multiline
@@ -591,6 +612,7 @@ const ReturnsPage = () => {
                   error={Boolean(createErrors.reason)}
                   helperText={createErrors.reason?.message}
                   placeholder="Describe why the customer is requesting a return."
+                  autoComplete="off"
                 />
               )}
             />
@@ -641,7 +663,7 @@ const ReturnsPage = () => {
               name="status"
               control={editControl}
               render={({ field }) => (
-                <TextField {...field} select label="Status">
+                <TextField {...field} id="return-status" select label="Status" autoComplete="off">
                   {RETURN_STATUSES.map((status) => (
                     <MenuItem key={status} value={status}>
                       {status}
@@ -656,10 +678,12 @@ const ReturnsPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="return-note"
                   label="Internal note"
                   multiline
                   minRows={3}
                   placeholder="Optional note about this status update."
+                  autoComplete="off"
                 />
               )}
             />

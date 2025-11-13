@@ -179,6 +179,8 @@ const InventoryAlertsPage = () => {
               columns={columns}
               loading={loading}
               disableRowSelectionOnClick
+              disableColumnFilter
+              disableColumnMenu
               density={isSmall ? 'compact' : 'standard'}
               columnVisibilityModel={
                 isSmall

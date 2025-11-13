@@ -144,6 +144,8 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   </Button>
                 </ButtonGroup>
                 <TextField
+                  id="date-filter-start-mobile"
+                  name="date-filter-start-mobile"
                   label="Start Date"
                   type="date"
                   size="small"
@@ -151,8 +153,11 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   value={startDateInput}
                   onChange={(e) => setStartDateInput(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  autoComplete="off"
                 />
                 <TextField
+                  id="date-filter-end-mobile"
+                  name="date-filter-end-mobile"
                   label="End Date"
                   type="date"
                   size="small"
@@ -160,6 +165,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   value={endDateInput}
                   onChange={(e) => setEndDateInput(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  autoComplete="off"
                 />
                 <Button variant="contained" onClick={handleCustomRangeApply} fullWidth>
                   Apply Custom Range
@@ -192,6 +198,8 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
             <Collapse in={showCustomRange}>
               <Stack direction="row" spacing={1}>
                 <TextField
+                  id="date-filter-start"
+                  name="date-filter-start"
                   label="Start Date"
                   type="date"
                   size="small"
@@ -199,8 +207,11 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   value={startDateInput}
                   onChange={(e) => setStartDateInput(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  autoComplete="off"
                 />
                 <TextField
+                  id="date-filter-end"
+                  name="date-filter-end"
                   label="End Date"
                   type="date"
                   size="small"
@@ -208,6 +219,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   value={endDateInput}
                   onChange={(e) => setEndDateInput(e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  autoComplete="off"
                 />
                 <Button variant="contained" onClick={handleCustomRangeApply} sx={{ minWidth: 100 }}>
                   Apply

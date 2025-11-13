@@ -144,39 +144,55 @@ const OrderTestForm = () => {
             )}
 
             <TextField
+              id="order-product-name"
+              name="productName"
               label="Product Name"
               value={formData.productName}
               onChange={handleChange('productName')}
               required
               fullWidth
+              autoComplete="off"
             />
             <TextField
+              id="order-customer-name"
+              name="customerName"
               label="Customer Name"
               value={formData.customerName}
               onChange={handleChange('customerName')}
               required
               fullWidth
+              autoComplete="name"
             />
             <TextField
+              id="order-email"
+              name="email"
               label="Email"
               type="email"
               value={formData.email}
               onChange={handleChange('email')}
               required
               fullWidth
+              autoComplete="email"
             />
             <TextField
+              id="order-phone"
+              name="phone"
               label="Phone"
+              type="tel"
               value={formData.phone}
               onChange={handleChange('phone')}
               fullWidth
+              autoComplete="tel"
             />
             <TextField
+              id="order-quantity"
+              name="quantity"
               select
               label="Quantity"
               value={formData.quantity}
               onChange={handleChange('quantity')}
               required
+              autoComplete="off"
             >
               {[...Array(10)].map((_, index) => {
                 const optionValue = (index + 1).toString()
@@ -188,12 +204,15 @@ const OrderTestForm = () => {
               })}
             </TextField>
             <TextField
+              id="order-notes"
+              name="notes"
               label="Comments"
               value={formData.notes}
               multiline
               minRows={3}
               onChange={handleChange('notes')}
               fullWidth
+              autoComplete="off"
             />
 
             <Box display="flex" justifyContent="flex-end" gap={2}>

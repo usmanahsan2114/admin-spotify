@@ -55,15 +55,20 @@ const SignupPage = () => {
       component="main"
       display="flex"
       flexDirection="column"
-      alignItems="center"
+      alignItems={{ xs: 'center', md: 'flex-start' }}
       justifyContent="center"
       minHeight="100vh"
       bgcolor="background.default"
-      px={2}
+      px={{ xs: 2, md: 4 }}
       py={6}
       gap={4}
+      sx={{
+        width: '100%',
+        background: (theme) =>
+          theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+      }}
     >
-      <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6 }}>
+      <Card sx={{ maxWidth: 440, width: '100%', boxShadow: 6, mx: { xs: 'auto', md: 0 } }}>
         <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
             <Box textAlign="center">

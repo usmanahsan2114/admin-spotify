@@ -466,10 +466,12 @@ const UsersPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="user-name"
                   label="Full name"
                   error={Boolean(errors.name)}
                   helperText={errors.name?.message}
                   required
+                  autoComplete="name"
                 />
               )}
             />
@@ -479,7 +481,9 @@ const UsersPage = () => {
               render={({ field }) => (
                 <TextField
                   {...field}
+                  id="user-email"
                   label="Email address"
+                  type="email"
                   error={Boolean(errors.email)}
                   helperText={
                     selectedUser && field.value.toLowerCase() === currentAdminEmail
@@ -488,6 +492,7 @@ const UsersPage = () => {
                   }
                   required
                   disabled={Boolean(selectedUser)}
+                  autoComplete="email"
                 />
               )}
             />
@@ -495,7 +500,7 @@ const UsersPage = () => {
               name="role"
               control={control}
               render={({ field }) => (
-                <TextField {...field} select label="Role" required>
+                <TextField {...field} id="user-role" select label="Role" required autoComplete="off">
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="staff">Staff</MenuItem>
                 </TextField>

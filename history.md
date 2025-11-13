@@ -1,3 +1,6 @@
+## 2025-11-13
+- Settings Page Fixes & UI Improvements: Fixed Settings page 400 errors by adding missing `/api/users/me` GET and PUT endpoints and `/api/settings/business` GET and PUT endpoints. Fixed validation middleware to properly handle optional/nullable fields. Added complete `/api/users` and `/api/products` routes. Fixed dark theme background colors across all pages (especially mobile view). Fixed desktop alignment: login/signup pages left-aligned on desktop, dashboard pages centered. Verified codebase for unused/redundant code—all clean and maintainable.
+
 ## 2025-11-12
 - Initialized monorepo structure with Vite frontend & Express backend.
 - Implemented JWT-secured CRUD for orders/products/users with in-memory seeds.
