@@ -204,6 +204,7 @@ const SettingsPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [tabValue, setTabValue] = useState(0)
+  const [expandedAccordion, setExpandedAccordion] = useState<string | false>(false)
 
   const {
     control: profileControl,
@@ -575,7 +576,7 @@ const SettingsPage = () => {
 
       {isMobile ? (
         <Stack spacing={2}>
-          <Accordion expanded={tabValue === 0} onChange={() => setTabValue(tabValue === 0 ? -1 : 0)}>
+          <Accordion expanded={expandedAccordion === 'profile'} onChange={(_, isExpanded) => setExpandedAccordion(isExpanded ? 'profile' : false)}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <PersonIcon />
@@ -584,7 +585,7 @@ const SettingsPage = () => {
             </AccordionSummary>
             <AccordionDetails>{profileContent}</AccordionDetails>
           </Accordion>
-          <Accordion expanded={tabValue === 1} onChange={() => setTabValue(tabValue === 1 ? -1 : 1)}>
+          <Accordion expanded={expandedAccordion === 'preferences'} onChange={(_, isExpanded) => setExpandedAccordion(isExpanded ? 'preferences' : false)}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Stack direction="row" spacing={1} alignItems="center">
                 <SettingsIcon />
@@ -594,7 +595,7 @@ const SettingsPage = () => {
             <AccordionDetails>{preferencesContent}</AccordionDetails>
           </Accordion>
           {authUser?.role === 'admin' && (
-            <Accordion expanded={tabValue === 2} onChange={() => setTabValue(tabValue === 2 ? -1 : 2)}>
+            <Accordion expanded={expandedAccordion === 'business'} onChange={(_, isExpanded) => setExpandedAccordion(isExpanded ? 'business' : false)}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Stack direction="row" spacing={1} alignItems="center">
                   <BusinessIcon />

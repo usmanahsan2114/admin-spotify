@@ -1812,6 +1812,15 @@ const users = [
     active: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    profilePictureUrl: null,
+    fullName: 'Store Admin',
+    phone: null,
+    defaultDateRangeFilter: 'last7',
+    notificationPreferences: {
+      newOrders: true,
+      lowStock: true,
+      returnsPending: true,
+    },
   },
   {
     id: crypto.randomUUID(),
@@ -1854,6 +1863,14 @@ const users = [
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
   },
 ]
+
+// Business settings store
+let businessSettings = {
+  logoUrl: null,
+  brandColor: '#1976d2',
+  defaultCurrency: 'USD',
+  defaultOrderStatuses: ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed', 'Refunded'],
+}
 
 // Utility helpers
 const sanitizeUser = ({ passwordHash, ...rest }) => rest
@@ -1976,6 +1993,17 @@ customers.forEach((customer) => {
 users.forEach((user) => {
   if (!user.createdAt) user.createdAt = new Date().toISOString()
   if (!user.updatedAt) user.updatedAt = user.createdAt
+  if (user.profilePictureUrl === undefined) user.profilePictureUrl = null
+  if (user.fullName === undefined) user.fullName = user.name
+  if (user.phone === undefined) user.phone = null
+  if (user.defaultDateRangeFilter === undefined) user.defaultDateRangeFilter = 'last7'
+  if (!user.notificationPreferences) {
+    user.notificationPreferences = {
+      newOrders: true,
+      lowStock: true,
+      returnsPending: true,
+    }
+  }
 })
 
 const returns = [
@@ -2526,6 +2554,15 @@ app.post('/api/signup', async (req, res) => {
     active: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    profilePictureUrl: null,
+    fullName: name,
+    phone: null,
+    defaultDateRangeFilter: 'last7',
+    notificationPreferences: {
+      newOrders: true,
+      lowStock: true,
+      returnsPending: true,
+    },
   }
 
   users.push(newUser)
@@ -2543,9 +2580,36 @@ app.post('/api/signup', async (req, res) => {
 })
 
 // Order routes
-app.get('/api/orders', (_req, res) => {
+app.get('/api/orders', (req, res) => {
+  let filteredOrders = [...orders]
+  
+  // Apply date filtering if provided
+  const startDate = req.query.startDate
+  const endDate = req.query.endDate
+  
+  if (startDate || endDate) {
+    filteredOrders = filteredOrders.filter((order) => {
+      if (!order.createdAt) return false
+      const orderDate = new Date(order.createdAt)
+      if (Number.isNaN(orderDate.getTime())) return false
+      
+      if (startDate) {
+        const start = new Date(startDate)
+        if (orderDate < start) return false
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999) // Include entire end date
+        if (orderDate > end) return false
+      }
+      
+      return true
+    })
+  }
+  
   // Ensure all orders have required fields before sending
-  const sanitizedOrders = orders.map((order) => ({
+  const sanitizedOrders = filteredOrders.map((order) => ({
     ...order,
     createdAt: order.createdAt || new Date().toISOString(),
     updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
@@ -2746,8 +2810,35 @@ const adjustProductStockForReturn = (returnRequest) => {
   return product
 }
 
-app.get('/api/returns', authenticateToken, (_req, res) => {
-  res.json(returns.map((returnRequest) => serializeReturn(returnRequest)))
+app.get('/api/returns', authenticateToken, (req, res) => {
+  let filteredReturns = [...returns]
+  
+  // Apply date filtering if provided
+  const startDate = req.query.startDate
+  const endDate = req.query.endDate
+  
+  if (startDate || endDate) {
+    filteredReturns = filteredReturns.filter((returnRequest) => {
+      if (!returnRequest.dateRequested) return false
+      const requestDate = new Date(returnRequest.dateRequested)
+      if (Number.isNaN(requestDate.getTime())) return false
+      
+      if (startDate) {
+        const start = new Date(startDate)
+        if (requestDate < start) return false
+      }
+      
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999)
+        if (requestDate > end) return false
+      }
+      
+      return true
+    })
+  }
+  
+  res.json(filteredReturns.map((returnRequest) => serializeReturn(returnRequest)))
 })
 
 app.get('/api/returns/:id', authenticateToken, (req, res) => {
@@ -2899,22 +2990,24 @@ app.get('/api/metrics/overview', authenticateToken, (_req, res) => {
   })
 })
 
-app.get('/api/metrics/low-stock-trend', authenticateToken, (_req, res) => {
-  const today = new Date()
-  const trendData = Array.from({ length: 7 }).map((_, index) => {
-    const date = new Date(today)
-    date.setDate(date.getDate() - (6 - index))
+app.get('/api/metrics/low-stock-trend', authenticateToken, (req, res) => {
+  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
+  
+  // Calculate number of days
+  const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+  const numDays = Math.min(Math.max(daysDiff, 1), 90) // Limit to 90 days
+  
+  const trendData = Array.from({ length: numDays }).map((_, index) => {
+    const date = new Date(startDate)
+    date.setDate(date.getDate() + index)
     date.setHours(0, 0, 0, 0)
     
-    // Count products that were low stock on this date
-    // For simplicity, we'll use current low stock status
-    // In a real system, you'd track historical stock levels
     const dateKey = date.toISOString().split('T')[0]
     
-    // For demo purposes, we'll simulate trend data based on current low stock count
-    // In production, you'd query historical inventory snapshots
+    // For demo purposes, simulate trend data
     const baseCount = products.filter((p) => p.lowStock).length
-    const variation = Math.floor(Math.random() * 3) - 1 // -1, 0, or 1
+    const variation = Math.floor(Math.random() * 3) - 1
     const count = Math.max(0, baseCount + variation)
     
     return {
@@ -2925,6 +3018,121 @@ app.get('/api/metrics/low-stock-trend', authenticateToken, (_req, res) => {
   })
   
   res.json(trendData)
+})
+
+// Sales over time endpoint
+app.get('/api/metrics/sales-over-time', authenticateToken, (req, res) => {
+  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
+  
+  // Group orders by day
+  const dailyData = {}
+  const currentDate = new Date(startDate)
+  
+  while (currentDate <= endDate) {
+    const dateKey = currentDate.toISOString().split('T')[0]
+    dailyData[dateKey] = { orders: 0, revenue: 0 }
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+  
+  orders.forEach((order) => {
+    if (!order.createdAt) return
+    const orderDate = new Date(order.createdAt)
+    if (orderDate < startDate || orderDate > endDate) return
+    
+    const dateKey = orderDate.toISOString().split('T')[0]
+    if (dailyData[dateKey]) {
+      dailyData[dateKey].orders += 1
+      dailyData[dateKey].revenue += order.total ?? 0
+    }
+  })
+  
+  const dataPoints = Object.entries(dailyData).map(([date, data]) => ({
+    date,
+    dateLabel: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    orders: data.orders,
+    revenue: data.revenue,
+  }))
+  
+  const totalOrders = dataPoints.reduce((sum, point) => sum + point.orders, 0)
+  const totalRevenue = dataPoints.reduce((sum, point) => sum + point.revenue, 0)
+  
+  res.json({
+    data: dataPoints,
+    summary: {
+      totalOrders,
+      totalRevenue,
+      averageOrdersPerDay: dataPoints.length > 0 ? (totalOrders / dataPoints.length).toFixed(1) : 0,
+      averageRevenuePerDay: dataPoints.length > 0 ? (totalRevenue / dataPoints.length).toFixed(2) : 0,
+    },
+  })
+})
+
+// Growth comparison endpoint
+app.get('/api/metrics/growth-comparison', authenticateToken, (req, res) => {
+  const period = req.query.period || 'month' // 'week' or 'month'
+  const basePeriod = req.query.basePeriod || 'previous' // 'previous' or 'year'
+  
+  const now = new Date()
+  let currentStart, currentEnd, previousStart, previousEnd
+  
+  if (period === 'week') {
+    // Current week (last 7 days)
+    currentEnd = new Date(now)
+    currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    
+    // Previous week (7 days before that)
+    previousEnd = new Date(currentStart)
+    previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+  } else {
+    // Current month
+    currentEnd = new Date(now)
+    currentStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    // Previous month
+    previousEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+    previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  }
+  
+  const filterOrders = (start, end) => {
+    return orders.filter((order) => {
+      if (!order.createdAt) return false
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= start && orderDate <= end
+    })
+  }
+  
+  const currentOrders = filterOrders(currentStart, currentEnd)
+  const previousOrders = filterOrders(previousStart, previousEnd)
+  
+  const currentCount = currentOrders.length
+  const previousCount = previousOrders.length
+  const currentRevenue = currentOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+  const previousRevenue = previousOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+  
+  const countChange = previousCount > 0 ? ((currentCount - previousCount) / previousCount * 100).toFixed(1) : currentCount > 0 ? '100.0' : '0.0'
+  const revenueChange = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue * 100).toFixed(1) : currentRevenue > 0 ? '100.0' : '0.0'
+  
+  res.json({
+    current: {
+      period: period === 'week' ? 'Last 7 days' : 'This month',
+      orders: currentCount,
+      revenue: currentRevenue,
+      startDate: currentStart.toISOString(),
+      endDate: currentEnd.toISOString(),
+    },
+    previous: {
+      period: period === 'week' ? 'Previous 7 days' : 'Last month',
+      orders: previousCount,
+      revenue: previousRevenue,
+      startDate: previousStart.toISOString(),
+      endDate: previousEnd.toISOString(),
+    },
+    change: {
+      ordersPercent: parseFloat(countChange),
+      revenuePercent: parseFloat(revenueChange),
+    },
+  })
 })
 
 // Product routes
@@ -3107,6 +3315,15 @@ app.post(
       active: active !== undefined ? Boolean(active) : true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      profilePictureUrl: null,
+      fullName: name,
+      phone: null,
+      defaultDateRangeFilter: 'last7',
+      notificationPreferences: {
+        newOrders: true,
+        lowStock: true,
+        returnsPending: true,
+      },
     }
 
     users.push(newUser)
@@ -3181,6 +3398,78 @@ app.delete(
     return res.json(sanitizeUser(removed))
   },
 )
+
+// Current user profile endpoints
+app.get('/api/users/me', authenticateToken, (req, res) => {
+  const user = users.find((u) => u.id === req.user?.userId)
+  if (!user) {
+    return res.status(404).json({ message: 'User not found.' })
+  }
+  return res.json(sanitizeUser(user))
+})
+
+app.put('/api/users/me', authenticateToken, (req, res) => {
+  const user = users.find((u) => u.id === req.user?.userId)
+  if (!user) {
+    return res.status(404).json({ message: 'User not found.' })
+  }
+
+  const {
+    fullName,
+    phone,
+    profilePictureUrl,
+    defaultDateRangeFilter,
+    notificationPreferences,
+  } = req.body
+
+  if (fullName !== undefined) {
+    user.fullName = fullName || null
+  }
+  if (phone !== undefined) {
+    user.phone = phone || null
+  }
+  if (profilePictureUrl !== undefined) {
+    user.profilePictureUrl = profilePictureUrl || null
+  }
+  if (defaultDateRangeFilter !== undefined) {
+    user.defaultDateRangeFilter = defaultDateRangeFilter || 'last7'
+  }
+  if (notificationPreferences !== undefined) {
+    user.notificationPreferences = {
+      newOrders: notificationPreferences.newOrders !== undefined ? Boolean(notificationPreferences.newOrders) : (user.notificationPreferences?.newOrders ?? true),
+      lowStock: notificationPreferences.lowStock !== undefined ? Boolean(notificationPreferences.lowStock) : (user.notificationPreferences?.lowStock ?? true),
+      returnsPending: notificationPreferences.returnsPending !== undefined ? Boolean(notificationPreferences.returnsPending) : (user.notificationPreferences?.returnsPending ?? true),
+    }
+  }
+
+  user.updatedAt = new Date().toISOString()
+
+  return res.json(sanitizeUser(user))
+})
+
+// Business settings endpoints (admin only)
+app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_req, res) => {
+  return res.json(businessSettings)
+})
+
+app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), (req, res) => {
+  const { logoUrl, brandColor, defaultCurrency, defaultOrderStatuses } = req.body
+
+  if (logoUrl !== undefined) {
+    businessSettings.logoUrl = logoUrl || null
+  }
+  if (brandColor !== undefined) {
+    businessSettings.brandColor = brandColor || '#1976d2'
+  }
+  if (defaultCurrency !== undefined) {
+    businessSettings.defaultCurrency = defaultCurrency || 'USD'
+  }
+  if (defaultOrderStatuses !== undefined && Array.isArray(defaultOrderStatuses)) {
+    businessSettings.defaultOrderStatuses = defaultOrderStatuses
+  }
+
+  return res.json(businessSettings)
+})
 
 app.get('/api/export/orders', authenticateToken, (_req, res) => {
   const headers = [

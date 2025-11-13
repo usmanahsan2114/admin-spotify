@@ -5,10 +5,13 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 ## Features
 
 - **Authentication & Roles**: JWT-based login with protected routes, admin/staff roles, persistent sessions, and logout from header/sidebar.
-- **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls.
-- **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions.
+- **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls. Includes time-based filtering with date range picker, mini area chart showing orders by day, and growth comparison summaries.
+- **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions. Features stock trend charts and time-based filtering.
+- **Returns & Refunds**: Track return requests, update statuses, and monitor stock impact. Includes returns-by-status pie chart and time-based filtering.
 - **Users**: Admin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion.
-- **Dashboard Analytics**: Summary tiles, 7-day order trend line, and status distribution pie chart using Recharts.
+- **Settings/Profile**: Comprehensive settings page with three sections: My Profile (upload profile picture, update full name/phone, set default date filter, configure notification preferences), Preferences (theme toggle, default settings), and Business Settings (admin only: upload logo, set brand color, default currency, manage order statuses). Fully responsive with mobile-first design using tabs on desktop and accordions on mobile.
+- **Dashboard Analytics**: Summary tiles, sales over time line chart, period comparison bar chart, 7-day order trend line, status distribution pie chart, and low stock trends using Recharts. All charts support time-based filtering with date range selection.
+- **Time-Based Filtering**: Reusable DateFilter component with quick links (Last 7 days, This month, Last month) and custom date range picker. Available on Dashboard, Orders, Products, and Returns pages. Fully responsive with mobile-first design.
 - **Dark Mode**: Theme toggle with preference persistence via `ThemeModeProvider`.
 - **Dummy Order Form**: `/test-order` route for marketing-site integration testing.
 
@@ -51,6 +54,8 @@ npm run dev
 ```
 
 This launches Vite (`http://localhost:5173`) and Express (`http://localhost:5000`). Stop both (`Ctrl+C`) to restart.
+
+**Note**: Ensure frontend is running on `http://localhost:5173/` and backend on `http://localhost:5000/` for proper API communication.
 
 ### Production Build
 

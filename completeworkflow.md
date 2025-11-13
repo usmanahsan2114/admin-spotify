@@ -87,6 +87,57 @@
 - Updated DashboardLayout container width to 120% on desktop view (lg breakpoint) while maintaining 100% on mobile for better desktop space utilization.
 - All formatters now properly handle null/undefined values and display "—" only when data is genuinely missing, ensuring all existing data displays correctly.
 
+## Step 17 – Time-Based Filtering & Enhanced Charts
+- Created reusable `DateFilter` component with quick filter buttons (Last 7 days, This month, Last month) and custom date range picker. Component is fully responsive with mobile-first design: collapses into dropdown on small screens, expands on desktop.
+- Updated backend API endpoints to accept optional `startDate` and `endDate` query parameters: `/api/orders`, `/api/returns`, `/api/products` now filter results by date range when provided.
+- Added new metrics endpoints:
+  - `GET /api/metrics/sales-over-time?startDate=&endDate=` – Returns daily sales data (orders count and revenue) for the specified date range, with summary statistics (total orders, total revenue, averages).
+  - `GET /api/metrics/growth-comparison?period=week|month` – Returns comparison data between current and previous period (week or month) with percentage changes for orders and revenue.
+- Enhanced DashboardHome page:
+  - Added DateFilter component at the top for time-based filtering.
+  - Added summary text showing total orders processed with percentage change vs previous period.
+  - Added "Sales Over Time" line chart displaying orders and revenue trends over selected date range (dual Y-axis).
+  - Added "Period Comparison" bar chart comparing current vs previous period orders and revenue.
+  - Updated existing charts to respect date range filter.
+- Enhanced OrdersPage:
+  - Added DateFilter component replacing old date dropdown.
+  - Added "Orders by Day" mini area chart (200px height) showing daily order counts for selected range.
+  - Added summary text with order count and percentage change vs previous period.
+  - Updated `fetchOrders` service to accept date parameters.
+- Enhanced ProductsPage:
+  - Added DateFilter component.
+  - Added "Stock Trend" line chart showing total stock quantity over time for selected date range.
+  - Added summary text showing stock change percentage (increase/decrease) for the period.
+- Enhanced ReturnsPage:
+  - Added DateFilter component.
+  - Added "Returns by Status" pie/donut chart showing distribution of return statuses for selected range.
+  - Added summary text showing total return requests and pending count with percentage.
+  - Updated `fetchReturns` service to accept date parameters.
+- All charts are fully responsive: adapt to mobile screens with proper sizing, stack vertically on small viewports, maintain readability in dark mode with proper color contrast.
+- Updated `metricsService.ts` with new functions: `fetchSalesOverTime`, `fetchGrowthComparison`, and updated `fetchLowStockTrend` to accept date parameters.
+- Mobile-first design: DateFilter collapses into expandable button on mobile, charts resize appropriately, summary texts wrap correctly, no horizontal scroll issues.
+
+## Step 18 – Settings/Profile Page Enhancements
+- Extended User model to include new fields: `profilePictureUrl`, `fullName`, `phone`, `defaultDateRangeFilter`, `notificationPreferences` (object with `newOrders`, `lowStock`, `returnsPending` boolean flags).
+- Created backend endpoints:
+  - `GET /api/users/me` – Returns current authenticated user's profile information including all extended fields.
+  - `PUT /api/users/me` – Updates current user's profile fields (fullName, phone, profilePictureUrl, defaultDateRangeFilter, notificationPreferences). Only updates provided fields.
+  - `GET /api/settings/business` (admin only) – Returns business settings: `logoUrl`, `brandColor`, `defaultCurrency`, `defaultOrderStatuses`.
+  - `PUT /api/settings/business` (admin only) – Updates business settings. Accepts logoUrl (base64 encoded image), brandColor (hex), defaultCurrency (ISO code), defaultOrderStatuses (array).
+- Implemented file upload handling: Accepts base64 encoded images in JSON payload for profile pictures and business logos. Images are stored as data URLs.
+- Created comprehensive SettingsPage component with three main sections:
+  - **My Profile**: Profile picture upload with preview (120px on desktop, responsive on mobile), full name field, email (read-only), phone number, default date range filter dropdown, notification preferences (three toggles: new orders, low stock, pending returns). Save button only enabled when form is dirty.
+  - **Preferences**: Theme toggle (light/dark) with automatic persistence, description text explaining preference saving.
+  - **Business Settings** (admin only): Logo upload with preview (150px), color picker for brand color (hex input + visual picker), default currency dropdown (USD, EUR, GBP, CAD, AUD), display of default order statuses as chips. Save button only enabled when form is dirty.
+- Responsive design: On mobile (below md breakpoint), tabs collapse into accordion components with expand/collapse functionality. On desktop, uses MUI Tabs component. Form fields stack vertically on narrow screens. Upload buttons and preview images are sized appropriately for touch input (minimum 48px height for buttons, adequate preview sizes).
+- Added ImageUpload component: Handles file selection, validates image types, converts to base64 data URL, shows preview, includes remove button. Fully responsive with proper spacing.
+- Added ColorPicker component: Combines HTML5 color input with text field for hex code entry. Updates in real-time.
+- Updated services: Added `fetchCurrentUser`, `updateCurrentUser`, `fetchBusinessSettings`, `updateBusinessSettings` functions to `usersService.ts`.
+- Form handling: Uses `react-hook-form` with Controller components for all form fields. Tracks dirty state to enable/disable save buttons. Shows loading spinner on save buttons during submission.
+- Success/error handling: Displays Snackbar notifications for successful saves and error alerts for failures. Auto-dismisses success messages after 3 seconds.
+- Backend initialization: Ensures all existing users have default values for new fields (profilePictureUrl: null, fullName: name, phone: null, defaultDateRangeFilter: 'last7', notificationPreferences with all flags true). New users created via signup or admin creation also get these defaults.
+- User experience: Large touch targets for mobile (48px minimum button height), proper spacing between form elements, clear labels and helper text, visual feedback on form changes, theme-aware styling (dark mode compatible).
+
 ## Modules & Features Summary
 
 **Dashboard** - The main page showing important numbers (orders, money made, low stock items, pending returns, new customers). Cards for low stock and pending returns are highlighted in red when there are issues. Clickable cards navigate to relevant pages. Shows charts of orders over the past week, order status distribution, and low stock trends. Sidebar shows red badges for items needing attention. Quick links to other sections.
@@ -107,6 +158,6 @@
 
 **Auth** - Login and signup system. Users log in with email and password. System controls what each person can do. Auto-logout for security.
 
-**Settings** - Change how the application works and looks.
+**Settings** - Manage your profile, preferences, and business settings. Upload a profile picture, update your full name and phone number, set your default date range filter, and configure notification preferences (new orders, low stock alerts, pending returns). Toggle between light and dark theme. Administrators can also manage business settings: upload a company logo, set brand colors, choose default currency, and view default order statuses. All settings are saved automatically and persist across sessions.
 
 **UI/UX** - Works on computers, tablets, and phones. Switch between dark and light mode. Layout adjusts to your screen size.
