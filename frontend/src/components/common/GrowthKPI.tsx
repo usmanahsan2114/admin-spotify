@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Box, Card, CardContent, Stack, Typography, useTheme } from '@mui/material'
+import { Card, CardContent, Stack, Typography, useTheme } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import RemoveIcon from '@mui/icons-material/Remove'
