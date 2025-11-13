@@ -114,7 +114,14 @@ docs/
 - **Constants**: Centralized constants file for maintainability
 - **Mobile Responsiveness**: Enhanced touch targets (48px minimum), improved spacing, responsive typography
 
-See `IMPROVEMENTS.md` for detailed recommendations including Tier 2 (planned) and Tier 3 (future) improvements.
+### ✅ Tier 2 Improvements (Completed)
+- **Async State Hook**: Created `useAsyncState` hook for consistent loading/error/data state management
+- **Input Validation**: Backend validation middleware using express-validator for all POST/PUT endpoints
+- **Accessibility**: Added ARIA labels to all IconButtons, SkipLink component for keyboard navigation, main content ID
+- **Code Splitting**: Route-based lazy loading with React.lazy and Suspense for improved initial load performance
+- **Mobile UX**: Further enhanced touch targets, spacing, and responsive behavior across all pages
+
+See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) improvements.
 
 ## Future Enhancements
 

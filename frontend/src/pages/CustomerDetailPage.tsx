@@ -252,7 +252,7 @@ const CustomerDetailPage = () => {
     <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Stack direction="row" alignItems="center" spacing={1}>
         <Tooltip title="Back to customers">
-          <IconButton onClick={() => navigate('/customers')}>
+          <IconButton onClick={() => navigate('/customers')} aria-label="Back to customers">
             <ArrowBackIcon />
           </IconButton>
         </Tooltip>
@@ -287,7 +287,7 @@ const CustomerDetailPage = () => {
 
             <Stack direction="row" spacing={1}>
               <Tooltip title="Refresh">
-                <IconButton onClick={loadCustomer}>
+                <IconButton onClick={loadCustomer} aria-label="Refresh customer details">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>

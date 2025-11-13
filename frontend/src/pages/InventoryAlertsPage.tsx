@@ -155,7 +155,7 @@ const InventoryAlertsPage = () => {
             </Box>
             <Stack direction="row" spacing={1}>
               <Tooltip title="Reload alerts">
-                <IconButton onClick={loadAlerts} color="primary">
+                <IconButton onClick={loadAlerts} color="primary" aria-label="Refresh inventory alerts">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>

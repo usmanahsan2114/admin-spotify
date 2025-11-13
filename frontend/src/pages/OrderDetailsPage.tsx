@@ -245,7 +245,7 @@ const OrderDetailsPage = () => {
             </Box>
             <Stack direction="row" spacing={1}>
               <Tooltip title="Reload order">
-                <IconButton onClick={loadOrder}>
+                <IconButton onClick={loadOrder} aria-label="Reload order">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>

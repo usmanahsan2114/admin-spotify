@@ -212,8 +212,29 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Reduced code duplication by ~200+ lines, improved maintainability, better mobile UX, consistent error handling, enhanced accessibility.
 
-### Future Improvements (Tier 2 & 3)
+## Step 21 – Tier 2 Code Quality Improvements
+- Created `useAsyncState` hook: Custom hook for managing async operations with loading, error, and data states. Reduces boilerplate code, integrates with `useApiErrorHandler` for consistent error handling. Returns `{ data, loading, error, execute, reset, setData, setError }`.
+- Added input validation middleware: Created `backend/middleware/validation.js` with express-validator rules for all POST/PUT endpoints:
+  - `validateLogin`, `validateSignup` for authentication
+  - `validateOrder`, `validateOrderUpdate` for orders
+  - `validateCustomer` for customer CRUD
+  - `validateReturn`, `validateReturnUpdate` for returns
+  - `validateProduct` for product CRUD
+  - `validateUser`, `validateUserProfile` for user management
+  - `validateBusinessSettings` for business settings
+- Improved accessibility:
+  - Added `aria-label` attributes to all IconButtons across all pages (OrdersPage, ProductsPage, CustomersPage, ReturnsPage, UsersPage, InventoryAlertsPage, OrderDetailsPage, ReturnDetailPage, CustomerDetailPage)
+  - Created `SkipLink` component: Allows keyboard users to skip to main content (WCAG 2.1 compliance)
+  - Added `id="main-content"` to main content container for skip link navigation
+- Implemented code splitting: Route-based lazy loading using React.lazy and Suspense:
+  - All page components lazy loaded (DashboardHome, OrdersPage, ProductsPage, CustomersPage, ReturnsPage, UsersPage, SettingsPage, etc.)
+  - Loading fallback component for consistent loading states
+  - Reduces initial bundle size, improves Time to Interactive (TTI)
+- Enhanced mobile responsiveness: Further improvements to touch targets, spacing, and responsive typography across all components.
+
+**Impact**: Better performance (smaller initial bundle), improved accessibility (WCAG 2.1 compliance), better security (input validation), reduced boilerplate code.
+
+### Future Improvements (Tier 3)
 
 See `IMPROVEMENTS.md` for detailed recommendations including:
-- Tier 2: Loading/error state hooks, input validation middleware, accessibility improvements, code splitting
 - Tier 3: Retry logic, rate limiting, comprehensive testing, monitoring, performance optimizations

@@ -316,7 +316,7 @@ const OrdersPage = () => {
               }}
             >
               <Tooltip title="Reload orders">
-                <IconButton onClick={loadOrders} color="primary">
+                <IconButton onClick={loadOrders} color="primary" aria-label="Refresh orders">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>

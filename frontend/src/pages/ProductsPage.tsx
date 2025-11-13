@@ -491,7 +491,7 @@ const ProductsPage = () => {
               }}
             >
               <Tooltip title="Reload products">
-                <IconButton onClick={loadProducts} color="primary">
+                <IconButton onClick={loadProducts} color="primary" aria-label="Refresh products">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>

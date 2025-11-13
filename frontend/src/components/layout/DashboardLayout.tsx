@@ -36,6 +36,7 @@ import type { Theme } from '@mui/material/styles'
 import { ThemeModeContext } from '../../providers/ThemeModeProvider'
 import { useAuth } from '../../context/AuthContext'
 import SiteAttribution from '../common/SiteAttribution'
+import { SkipLink } from '../common/SkipLink'
 import { fetchReturns } from '../../services/returnsService'
 import { fetchMetricsOverview } from '../../services/metricsService'
 import { DRAWER_WIDTH, TOUCH_TARGET_MIN_SIZE } from '../../constants'
@@ -261,7 +262,8 @@ const DashboardLayout = () => {
   )
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', position: 'relative' }}>
+      <SkipLink />
       <AppBar
         position="fixed"
         color="inherit"
@@ -379,6 +381,7 @@ const DashboardLayout = () => {
       <Main open={isDesktop}>
         <Toolbar />
         <Box
+          id="main-content"
           sx={{
             maxWidth: '1200px',
             mx: 'auto',

@@ -4,6 +4,19 @@ const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
+const {
+  validateLogin,
+  validateSignup,
+  validateOrder,
+  validateOrderUpdate,
+  validateCustomer,
+  validateReturn,
+  validateReturnUpdate,
+  validateProduct,
+  validateUser,
+  validateUserProfile,
+  validateBusinessSettings,
+} = require('./middleware/validation')
 
 const PORT = process.env.PORT || 5000
 const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
@@ -2499,12 +2512,8 @@ app.get('/', (_req, res) => {
   res.status(200).send('API running')
 })
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', validateLogin, async (req, res) => {
   const { email, password } = req.body
-
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required.' })
-  }
 
   const user = findUserByEmail(email)
 
@@ -2530,14 +2539,8 @@ app.post('/api/login', async (req, res) => {
   })
 })
 
-app.post('/api/signup', async (req, res) => {
+app.post('/api/signup', validateSignup, async (req, res) => {
   const { email, password, name, role } = req.body
-
-  if (!email || !password || !name) {
-    return res
-      .status(400)
-      .json({ message: 'name, email, and password are required to sign up.' })
-  }
 
   if (findUserByEmail(email)) {
     return res.status(409).json({ message: 'An account with that email already exists.' })
@@ -2632,15 +2635,8 @@ app.get('/api/orders/:id', (req, res) => {
   })
 })
 
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', validateOrder, (req, res) => {
   const { productName, customerName, email, phone, quantity, notes } = req.body
-
-  if (!productName || !customerName || !email || !quantity) {
-    return res.status(400).json({
-      message:
-        'productName, customerName, email, and quantity are required fields.',
-    })
-  }
 
   let submittedBy = null
   const authHeader = req.headers.authorization || ''
@@ -2684,7 +2680,7 @@ app.post('/api/orders', (req, res) => {
   return res.status(201).json(newOrder)
 })
 
-app.put('/api/orders/:id', authenticateToken, (req, res) => {
+app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) => {
   const order = findOrderById(req.params.id)
 
   if (!order) {
@@ -2719,12 +2715,8 @@ app.get('/api/customers', authenticateToken, (_req, res) => {
   return res.json(payload)
 })
 
-app.post('/api/customers', authenticateToken, (req, res) => {
+app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
   const { name, email, phone } = req.body || {}
-
-  if (!name || !email) {
-    return res.status(400).json({ message: 'name and email are required.' })
-  }
 
   if (findCustomerByEmail(email)) {
     return res.status(409).json({ message: 'A customer with this email already exists.' })
@@ -2760,7 +2752,7 @@ app.get('/api/customers/:id', authenticateToken, (req, res) => {
   })
 })
 
-app.put('/api/customers/:id', authenticateToken, (req, res) => {
+app.put('/api/customers/:id', authenticateToken, validateCustomer, (req, res) => {
   const customer = findCustomerById(req.params.id)
 
   if (!customer) {
@@ -2849,14 +2841,8 @@ app.get('/api/returns/:id', authenticateToken, (req, res) => {
   return res.json(serializeReturn(returnRequest))
 })
 
-app.post('/api/returns', authenticateToken, (req, res) => {
+app.post('/api/returns', authenticateToken, validateReturn, (req, res) => {
   const { orderId, customerId, reason, returnedQuantity, status } = req.body || {}
-
-  if (!orderId || !reason || returnedQuantity === undefined) {
-    return res
-      .status(400)
-      .json({ message: 'orderId, reason, and returnedQuantity are required.' })
-  }
 
   const order = findOrderById(orderId)
   if (!order) {
@@ -2907,7 +2893,7 @@ app.post('/api/returns', authenticateToken, (req, res) => {
   return res.status(201).json(serializeReturn(newReturn))
 })
 
-app.put('/api/returns/:id', authenticateToken, (req, res) => {
+app.put('/api/returns/:id', authenticateToken, validateReturnUpdate, (req, res) => {
   const returnRequest = returns.find((item) => item.id === req.params.id)
 
   if (!returnRequest) {
@@ -3160,7 +3146,7 @@ app.get('/api/products/low-stock', (_req, res) => {
   res.json(sanitizedProducts)
 })
 
-app.post('/api/products', authenticateToken, (req, res) => {
+app.post('/api/products', authenticateToken, validateProduct, (req, res) => {
   const {
     name,
     description = '',
@@ -3173,21 +3159,9 @@ app.post('/api/products', authenticateToken, (req, res) => {
     imageUrl,
   } = req.body
 
-  if (!name || price === undefined) {
-    return res
-      .status(400)
-      .json({ message: 'name and price are required fields.' })
-  }
-
-  if (Number.isNaN(Number(price))) {
-    return res.status(400).json({ message: 'price must be a number.' })
-  }
-
+  // Validation middleware handles basic validation, but we still need to handle numeric conversions
   const quantityValue =
     stockQuantity !== undefined ? Number(stockQuantity) : Number(stock ?? 0)
-  if (Number.isNaN(quantityValue) || quantityValue < 0) {
-    return res.status(400).json({ message: 'stockQuantity must be a positive number.' })
-  }
 
   const thresholdValue =
     reorderThreshold !== undefined ? Number(reorderThreshold) : Math.max(0, Math.floor(quantityValue / 2))
@@ -3217,7 +3191,7 @@ app.post('/api/products', authenticateToken, (req, res) => {
   return res.status(201).json(newProduct)
 })
 
-app.put('/api/products/:id', authenticateToken, (req, res) => {
+app.put('/api/products/:id', authenticateToken, validateProduct, (req, res) => {
   const product = findProductById(req.params.id)
 
   if (!product) {
@@ -3292,14 +3266,9 @@ app.post(
   '/api/users',
   authenticateToken,
   authorizeRole('admin'),
+  validateUser,
   async (req, res) => {
     const { email, name, password, role, active } = req.body
-
-    if (!email || !name || !password || !role) {
-      return res
-        .status(400)
-        .json({ message: 'email, name, password, and role are required.' })
-    }
 
     if (findUserByEmail(email)) {
       return res.status(409).json({ message: 'User with this email exists.' })
@@ -3336,6 +3305,7 @@ app.put(
   '/api/users/:id',
   authenticateToken,
   authorizeRole('admin'),
+  validateUser,
   async (req, res) => {
     const targetUser = users.find((user) => user.id === req.params.id)
 
@@ -3408,7 +3378,7 @@ app.get('/api/users/me', authenticateToken, (req, res) => {
   return res.json(sanitizeUser(user))
 })
 
-app.put('/api/users/me', authenticateToken, (req, res) => {
+app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
   const user = users.find((u) => u.id === req.user?.userId)
   if (!user) {
     return res.status(404).json({ message: 'User not found.' })
@@ -3452,7 +3422,7 @@ app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (_r
   return res.json(businessSettings)
 })
 
-app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, (req, res) => {
   const { logoUrl, brandColor, defaultCurrency, defaultOrderStatuses } = req.body
 
   if (logoUrl !== undefined) {

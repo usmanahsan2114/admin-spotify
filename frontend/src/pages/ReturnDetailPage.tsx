@@ -201,7 +201,7 @@ const ReturnDetailPage = () => {
             </Box>
             <Stack direction="row" spacing={1}>
               <Tooltip title="Reload return">
-                <IconButton onClick={loadReturn}>
+                <IconButton onClick={loadReturn} aria-label="Refresh return details">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>

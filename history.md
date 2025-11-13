@@ -66,8 +66,16 @@
 
 **Impact**: Reduced code duplication by ~200+ lines, improved maintainability, better mobile UX, consistent error handling, enhanced accessibility.
 
-### Future Improvements (Tier 2 & 3)
-- Tier 2: Loading/error state hooks, input validation middleware, accessibility improvements, code splitting
+**2025-11-13 - Tier 2 Code Quality Improvements:**
+- ✅ Created `useAsyncState` hook: Custom hook for managing async operations with loading, error, and data states. Reduces boilerplate code, integrates with `useApiErrorHandler`.
+- ✅ Added input validation middleware: Created `backend/middleware/validation.js` with express-validator rules for all POST/PUT endpoints (login, signup, orders, customers, returns, products, users, business settings). Provides consistent validation, better security, clearer error messages.
+- ✅ Improved accessibility: Added `aria-label` attributes to all IconButtons across all pages. Created `SkipLink` component for keyboard navigation (WCAG 2.1 compliance). Added `id="main-content"` to main content container.
+- ✅ Implemented code splitting: Route-based lazy loading using React.lazy and Suspense for all page components. Reduces initial bundle size, improves Time to Interactive (TTI). Loading fallback component for consistent loading states.
+- ✅ Enhanced mobile responsiveness: Further improvements to touch targets, spacing, and responsive typography.
+
+**Impact**: Better performance (smaller initial bundle), improved accessibility (WCAG 2.1 compliance), better security (input validation), reduced boilerplate code.
+
+### Future Improvements (Tier 3)
 - Tier 3: Retry logic, rate limiting, comprehensive testing, monitoring, performance optimizations
 
 **See `IMPROVEMENTS.md` for detailed recommendations, prioritized implementation order, and code examples.**

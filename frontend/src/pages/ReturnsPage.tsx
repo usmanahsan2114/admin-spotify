@@ -357,7 +357,7 @@ const ReturnsPage = () => {
               }}
             >
               <Tooltip title="Reload returns">
-                <IconButton onClick={loadData} color="primary">
+                <IconButton onClick={loadData} color="primary" aria-label="Refresh returns">
                   <RefreshIcon />
                 </IconButton>
               </Tooltip>
