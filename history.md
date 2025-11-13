@@ -95,3 +95,10 @@
 **Impact**: Improved reliability (retry logic), better security (rate limiting), testable codebase (testing infrastructure), better observability (error tracking), improved performance (memoization).
 
 **See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.**
+
+**2025-11-13 - Rate Limiting & Server Cleanup:**
+- ✅ Fixed 429 (Too Many Requests) errors: Modified rate limiting to be more lenient in development mode (`isDevelopment ? 1000 : 100` for general routes, `isDevelopment ? 50 : 5` for auth routes). This addresses React StrictMode's double rendering in development which was triggering rate limits prematurely.
+- ✅ Cleaned up server.js: Removed over 2000 lines of duplicate/leftover code including broken route definitions, duplicate function declarations (`appendReturnHistory`, `adjustProductStockForReturn`), and orphaned order data fragments. Fixed syntax errors and ensured all routes are properly defined.
+- ✅ Server management: Ensured frontend runs on port 5173 and backend on port 5000, with proper process management to prevent multiple instances.
+
+**Impact**: Eliminated 429 errors during development, cleaner codebase, improved server reliability, better development experience.

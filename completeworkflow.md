@@ -253,6 +253,20 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Improved reliability (retry logic), better security (rate limiting), testable codebase (testing infrastructure), better observability (error tracking), improved performance (memoization).
 
+## Step 24 – Rate Limiting & Server Cleanup
+
+**2025-11-13 - Rate Limiting & Server Cleanup:**
+
+- ✅ Fixed 429 (Too Many Requests) errors: Modified rate limiting in `backend/server.js` to be more lenient in development mode. Changed `max: 100` to `max: isDevelopment ? 1000 : 100` for general API routes and `max: 5` to `max: isDevelopment ? 50 : 5` for auth routes. This addresses React StrictMode's double rendering in development which was triggering rate limits prematurely.
+- ✅ Cleaned up server.js: Removed over 2000 lines of duplicate/leftover code including:
+  - Broken `/api/reports/growth` route definition (line 867) with orphaned order data
+  - Duplicate function declarations (`appendReturnHistory` at lines 545 and 1140, `adjustProductStockForReturn` at lines 545 and 1129)
+  - Orphaned order data fragments between broken routes and correct routes
+  - Fixed syntax errors and ensured all routes are properly defined
+- ✅ Server management: Ensured frontend runs on port 5173 and backend on port 5000, with proper process management to prevent multiple instances.
+
+**Impact**: Eliminated 429 errors during development, cleaner codebase (removed 2000+ lines of duplicate code), improved server reliability, better development experience.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.
