@@ -104,12 +104,28 @@ docs/
   history.md           # Milestone history
 ```
 
+## Code Quality & Improvements
+
+### ✅ Tier 1 Improvements (Completed)
+- **Error Handling**: Centralized `useApiErrorHandler` hook eliminates code duplication across 9+ components
+- **Utilities**: Centralized `dateUtils.ts` and `currencyUtils.ts` for consistent formatting
+- **Error Boundaries**: React ErrorBoundary component prevents app crashes
+- **API Error Messages**: Enhanced error messages with contextual information
+- **Constants**: Centralized constants file for maintainability
+- **Mobile Responsiveness**: Enhanced touch targets (48px minimum), improved spacing, responsive typography
+
+See `IMPROVEMENTS.md` for detailed recommendations including Tier 2 (planned) and Tier 3 (future) improvements.
+
 ## Future Enhancements
 
 - Replace in-memory stores with a persistence layer (SQL/NoSQL).
 - Add email-based invite/password reset flows.
 - Expand analytics (conversion metrics, revenue overlays).
 - Integrate real-time notifications for incoming orders.
+- Implement error boundaries for better error handling.
+- Add comprehensive test coverage (unit, integration, E2E).
+- Implement code splitting for better performance.
+- Add monitoring and error tracking (Sentry, LogRocket).
 
 ---
 

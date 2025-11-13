@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
-import dayjs from 'dayjs'
-import relativeTime from 'dayjs/plugin/relativeTime'
+import { useApiErrorHandler } from '../hooks/useApiErrorHandler'
+import { formatDate, formatRelativeTime } from '../utils/dateUtils'
+import { formatCurrency } from '../utils/currencyUtils'
 import {
   Alert,
   Box,
@@ -27,9 +28,6 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import { fetchOrderById, updateOrder } from '../services/ordersService'
 import type { Order, OrderStatus } from '../types/order'
 import type { ReturnStatus } from '../types/return'
-import { useAuth } from '../context/AuthContext'
-
-dayjs.extend(relativeTime)
 
 const statusOptions: OrderStatus[] = [
   'Pending',
@@ -65,18 +63,10 @@ const getStatusColor = (status: OrderStatus) => {
   }
 }
 
-const formatCurrency = (value?: number) =>
-  value === undefined
-    ? '—'
-    : new Intl.NumberFormat(undefined, {
-        style: 'currency',
-        currency: 'USD',
-      }).format(value)
-
 const OrderDetailsPage = () => {
   const { orderId } = useParams()
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const handleError = useApiErrorHandler()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
@@ -89,22 +79,6 @@ const OrderDetailsPage = () => {
   const [isPaid, setIsPaid] = useState(false)
   const [quantity, setQuantity] = useState<number>(1)
   const [phone, setPhone] = useState('')
-
-  const resolveError = useCallback(
-    (err: unknown, fallback: string) => {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'status' in err &&
-        (err as { status?: number }).status === 401
-      ) {
-        logout()
-        return 'Your session has expired. Please sign in again.'
-      }
-      return err instanceof Error ? err.message : fallback
-    },
-    [logout],
-  )
 
   const loadOrder = async () => {
     if (!orderId) return
@@ -119,7 +93,7 @@ const OrderDetailsPage = () => {
       setQuantity(data.quantity)
       setPhone(data.phone ?? '')
     } catch (err) {
-      setError(resolveError(err, 'Unable to load order details.'))
+      setError(handleError(err, 'Unable to load order details.'))
     } finally {
       setLoading(false)
     }
@@ -172,7 +146,7 @@ const OrderDetailsPage = () => {
       setPhone(updated.phone ?? '')
       setSuccessMessage('Order updated successfully.')
     } catch (err) {
-      setError(resolveError(err, 'Unable to update order.'))
+      setError(handleError(err, 'Unable to update order.'))
     } finally {
       setSaving(false)
     }
@@ -260,11 +234,11 @@ const OrderDetailsPage = () => {
                   size="small"
                 />
                 <Typography color="text.secondary">
-                  Placed {dayjs(order.createdAt).format('MMM D, YYYY h:mm A')}
+                  Placed {formatDate(order.createdAt, 'datetime')}
                 </Typography>
                 {order.updatedAt && (
                   <Typography color="text.secondary">
-                    · Updated {dayjs(order.updatedAt).fromNow()}
+                    · Updated {formatRelativeTime(order.updatedAt)}
                   </Typography>
                 )}
               </Stack>
@@ -454,7 +428,7 @@ const OrderDetailsPage = () => {
                         />
                       </Stack>
                       <Typography variant="body2" color="text.secondary" mt={0.5}>
-                        Requested {dayjs(returnRequest.dateRequested).format('MMM D, YYYY h:mm A')}
+                        Requested {formatDate(returnRequest.dateRequested, 'datetime')}
                       </Typography>
                       <Typography variant="body2" mt={1}>
                         <strong>Quantity:</strong> {returnRequest.returnedQuantity}
@@ -510,10 +484,7 @@ const OrderDetailsPage = () => {
                           {entry.description}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {dayjs(entry.timestamp).format(
-                            'MMM D, YYYY h:mm A',
-                          )}{' '}
-                          · {entry.actor ?? 'System'}
+                          {formatDate(entry.timestamp, 'datetime')} · {entry.actor ?? 'System'}
                         </Typography>
                       </Box>
                     ))}

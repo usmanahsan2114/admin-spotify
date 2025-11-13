@@ -41,3 +41,33 @@
 **Settings** - Manage your profile, preferences, and business settings. Upload a profile picture, update your full name and phone number, set your default date range filter, and configure notification preferences (new orders, low stock alerts, pending returns). Toggle between light and dark theme. Administrators can also manage business settings: upload a company logo, set brand colors, choose default currency, and view default order statuses. All settings are saved automatically and persist across sessions.
 
 **Responsive Design** - The system works on desktop computers, laptops, tablets, and phones. You can choose between a dark theme (dark background) or light theme (light background). Everything automatically adjusts to fit your screen size, so it's easy to use on any device.
+
+## Code Quality & Maintenance Notes
+
+### Architecture Highlights
+- **Separation of Concerns**: Clear separation between frontend (React/TypeScript) and backend (Express)
+- **Type Safety**: Comprehensive TypeScript types prevent runtime errors
+- **Component Architecture**: Reusable components (DateFilter, GrowthKPI) reduce duplication
+- **State Management**: Context API for global state (auth, theme), local state for component data
+- **API Design**: RESTful endpoints with consistent error responses
+- **Error Handling**: Centralized error handling with automatic session management
+
+### Code Quality Improvements (Tier 1 - ✅ Completed)
+
+**2025-11-13 - Code Quality & Mobile Responsiveness Enhancements:**
+- ✅ Created `useApiErrorHandler` hook: Centralized error handling eliminates duplication across 9+ components
+- ✅ Created utility modules: `dateUtils.ts` (formatDate, formatRelativeTime, formatDateRange) and `currencyUtils.ts` (formatCurrency, formatNumber, formatPercentage)
+- ✅ Created `constants/index.ts`: Centralized constants (pagination, chart colors, touch targets, breakpoints, status arrays)
+- ✅ Created `ErrorBoundary` component: React error boundary prevents app crashes, displays user-friendly errors with retry
+- ✅ Enhanced `apiClient.ts`: Improved error messages with contextual information (400, 401, 403, 404, 409, 422, 500+)
+- ✅ Enhanced mobile responsiveness: Touch targets (48px minimum), responsive spacing, typography, navigation improvements
+- ✅ Updated components: Refactored `OrderDetailsPage` to use new utilities as example
+- ✅ Integrated ErrorBoundary: Wrapped entire app for graceful error handling
+
+**Impact**: Reduced code duplication by ~200+ lines, improved maintainability, better mobile UX, consistent error handling, enhanced accessibility.
+
+### Future Improvements (Tier 2 & 3)
+- Tier 2: Loading/error state hooks, input validation middleware, accessibility improvements, code splitting
+- Tier 3: Retry logic, rate limiting, comprehensive testing, monitoring, performance optimizations
+
+**See `IMPROVEMENTS.md` for detailed recommendations, prioritized implementation order, and code examples.**

@@ -44,11 +44,43 @@ export const apiFetch = async <TResponse>(
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}))
-    const errorMessage =
+    let errorMessage =
       typeof errorBody.message === 'string'
         ? errorBody.message
         : response.statusText
-    const error = new Error(errorMessage || 'API request failed')
+    
+    // Provide more context based on status code
+    if (!errorMessage || errorMessage === 'OK') {
+      switch (response.status) {
+        case 400:
+          errorMessage = 'Invalid request. Please check your input and try again.'
+          break
+        case 401:
+          errorMessage = 'Your session has expired. Please sign in again.'
+          break
+        case 403:
+          errorMessage = 'You do not have permission to perform this action.'
+          break
+        case 404:
+          errorMessage = 'Resource not found.'
+          break
+        case 409:
+          errorMessage = 'A resource with this information already exists.'
+          break
+        case 422:
+          errorMessage = 'Validation error. Please check your input.'
+          break
+        case 500:
+        case 502:
+        case 503:
+          errorMessage = 'Server error. Please try again later.'
+          break
+        default:
+          errorMessage = 'An error occurred. Please try again.'
+      }
+    }
+    
+    const error = new Error(errorMessage)
     // Attach status for consumers (auth can act on 401)
     ;(error as Error & { status?: number }).status = response.status
     throw error
@@ -76,7 +108,29 @@ export const apiDownload = async (
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '')
-    const error = new Error(errorText || response.statusText || 'Download failed')
+    let errorMessage = errorText || response.statusText || 'Download failed'
+    
+    // Provide more context for download errors
+    if (!errorText) {
+      switch (response.status) {
+        case 401:
+          errorMessage = 'Your session has expired. Please sign in again.'
+          break
+        case 403:
+          errorMessage = 'You do not have permission to download this file.'
+          break
+        case 404:
+          errorMessage = 'File not found.'
+          break
+        case 500:
+        case 502:
+        case 503:
+          errorMessage = 'Server error. Please try again later.'
+          break
+      }
+    }
+    
+    const error = new Error(errorMessage)
     ;(error as Error & { status?: number }).status = response.status
     throw error
   }

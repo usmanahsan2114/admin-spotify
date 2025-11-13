@@ -38,8 +38,9 @@ import { useAuth } from '../../context/AuthContext'
 import SiteAttribution from '../common/SiteAttribution'
 import { fetchReturns } from '../../services/returnsService'
 import { fetchMetricsOverview } from '../../services/metricsService'
+import { DRAWER_WIDTH, TOUCH_TARGET_MIN_SIZE } from '../../constants'
 
-const drawerWidth = 264
+const drawerWidth = DRAWER_WIDTH
 
 type NavItem = {
   label: string
@@ -65,7 +66,7 @@ const Main = styled('main', {
 })<{ open?: boolean }>(({ theme, open }) => ({
   flexGrow: 1,
   minWidth: 0,
-  padding: theme.spacing(3, 2),
+  padding: theme.spacing(2, 1.5),
   transition: theme.transitions.create(['margin', 'width', 'padding'], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
@@ -73,6 +74,9 @@ const Main = styled('main', {
   backgroundColor: theme.palette.background.default,
   minHeight: '100vh',
   [theme.breakpoints.up('sm')]: {
+    padding: theme.spacing(3, 2),
+  },
+  [theme.breakpoints.up('md')]: {
     padding: theme.spacing(4),
   },
   [theme.breakpoints.up('lg')]: {
@@ -175,13 +179,17 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
                 borderRadius: 2,
                 mx: 1,
                 my: 0.5,
+                minHeight: { xs: TOUCH_TARGET_MIN_SIZE, sm: 40 },
+                py: { xs: 1.5, sm: 1 },
               }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemIcon sx={{ minWidth: { xs: 48, sm: 40 } }}>{item.icon}</ListItemIcon>
               <ListItemText
                 primary={
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <span>{item.label}</span>
+                  <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                    <Typography variant="body1" sx={{ fontSize: { xs: '0.95rem', sm: '0.875rem' } }}>
+                      {item.label}
+                    </Typography>
                     {item.badge ? (
                       <Chip
                         size="small"
@@ -189,9 +197,9 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
                         color={item.badgeColor || 'error'}
                         sx={{ 
                           fontWeight: 600, 
-                          height: 20,
-                          minWidth: 20,
-                          fontSize: '0.7rem',
+                          height: { xs: 22, sm: 20 },
+                          minWidth: { xs: 22, sm: 20 },
+                          fontSize: { xs: '0.75rem', sm: '0.7rem' },
                         }}
                       />
                     ) : null}
@@ -209,16 +217,25 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
             sx={{
               borderRadius: 2,
               color: 'text.secondary',
+              minHeight: { xs: TOUCH_TARGET_MIN_SIZE, sm: 48 },
+              py: { xs: 1.5, sm: 1 },
               '&:hover': { backgroundColor: 'action.hover' },
             }}
           >
-            <ListItemIcon>
+            <ListItemIcon sx={{ minWidth: { xs: 48, sm: 40 } }}>
               <LogoutIcon fontSize="small" />
             </ListItemIcon>
             <ListItemText
-              primary="Log out"
-              secondary={user?.email ?? undefined}
-              secondaryTypographyProps={{ variant: 'caption' }}
+              primary={
+                <Typography variant="body1" sx={{ fontSize: { xs: '0.95rem', sm: '0.875rem' } }}>
+                  Log out
+                </Typography>
+              }
+              secondary={user?.email ? (
+                <Typography variant="caption" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                  {user.email}
+                </Typography>
+              ) : undefined}
             />
           </ListItemButton>
         </Tooltip>
@@ -260,28 +277,77 @@ const DashboardLayout = () => {
         }}
       >
         <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={{ xs: 1, sm: 2 }}>
             {!isDesktop && (
-              <IconButton color="inherit" onClick={handleDrawerToggle}>
+              <IconButton
+                color="inherit"
+                onClick={handleDrawerToggle}
+                sx={{
+                  minWidth: TOUCH_TARGET_MIN_SIZE,
+                  minHeight: TOUCH_TARGET_MIN_SIZE,
+                }}
+                aria-label="Toggle navigation menu"
+              >
                 <MenuIcon />
               </IconButton>
             )}
-            <Typography variant="h6" fontWeight={600}>
+            <Typography
+              variant="h6"
+              fontWeight={600}
+              sx={{
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
               Shopify Admin Dashboard
+            </Typography>
+            <Typography
+              variant="h6"
+              fontWeight={600}
+              sx={{
+                fontSize: '1rem',
+                display: { xs: 'block', sm: 'none' },
+              }}
+            >
+              Dashboard
             </Typography>
           </Box>
 
-          <Box display="flex" alignItems="center" gap={1.5}>
+          <Box display="flex" alignItems="center" gap={{ xs: 0.5, sm: 1.5 }}>
             <Tooltip title="Toggle dark mode">
-              <IconButton color="inherit" onClick={toggleMode} size="large">
+              <IconButton
+                color="inherit"
+                onClick={toggleMode}
+                size="large"
+                sx={{
+                  minWidth: { xs: TOUCH_TARGET_MIN_SIZE, sm: 40 },
+                  minHeight: { xs: TOUCH_TARGET_MIN_SIZE, sm: 40 },
+                }}
+                aria-label="Toggle dark mode"
+              >
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
               </IconButton>
             </Tooltip>
-            <Avatar sx={{ bgcolor: 'primary.main', width: 36, height: 36 }}>
+            <Avatar
+              sx={{
+                bgcolor: 'primary.main',
+                width: { xs: 32, sm: 36 },
+                height: { xs: 32, sm: 36 },
+                fontSize: { xs: '0.875rem', sm: '1rem' },
+              }}
+            >
               {user?.name?.charAt(0).toUpperCase() ?? 'U'}
             </Avatar>
             <Tooltip title="Log out">
-              <IconButton color="inherit" onClick={logout}>
+              <IconButton
+                color="inherit"
+                onClick={logout}
+                sx={{
+                  minWidth: { xs: TOUCH_TARGET_MIN_SIZE, sm: 40 },
+                  minHeight: { xs: TOUCH_TARGET_MIN_SIZE, sm: 40 },
+                }}
+                aria-label="Log out"
+              >
                 <LogoutIcon />
               </IconButton>
             </Tooltip>
@@ -319,8 +385,9 @@ const DashboardLayout = () => {
             width: { xs: '100%', lg: '120%' },
             display: 'flex',
             flexDirection: 'column',
-            gap: 3,
-            py: { xs: 2, sm: 3, md: 4 },
+            gap: { xs: 2, sm: 2.5, md: 3 },
+            py: { xs: 1, sm: 2, md: 3, lg: 4 },
+            px: { xs: 0.5, sm: 1 },
           }}
         >
           <Outlet />

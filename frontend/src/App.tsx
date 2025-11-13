@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Box, CircularProgress } from '@mui/material'
 import type { ReactElement } from 'react'
 import DashboardLayout from './components/layout/DashboardLayout'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 import {
   DashboardHome,
   OrderDetailsPage,
@@ -45,11 +46,12 @@ const PrivateRoute = ({ children }: { children: ReactElement }) => {
 }
 
 const App = () => (
-  <Routes>
-    <Route path="/test-order" element={<OrderTestForm />} />
-    <Route path="/login" element={<LoginPage />} />
-    <Route path="/signup" element={<SignupPage />} />
-    <Route element={<DashboardLayout />}>
+  <ErrorBoundary>
+    <Routes>
+      <Route path="/test-order" element={<OrderTestForm />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route element={<DashboardLayout />}>
       <Route
         index
         element={
@@ -138,9 +140,10 @@ const App = () => (
           </PrivateRoute>
         }
       />
-    </Route>
-    <Route path="*" element={<NotFoundPage />} />
-  </Routes>
-  )
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  </ErrorBoundary>
+)
 
 export default App
