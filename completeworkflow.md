@@ -663,6 +663,69 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Cleaner codebase, reduced confusion, improved maintainability, accurate documentation. All markdown files now reflect current project state (35% migration, production features, latest changes).
 
+## Step 32 – Complete Database Migration (Part 1: Database & Endpoint Migration)
+
+**Objective**: Finalize database migration by migrating all remaining API endpoints from in-memory arrays to Sequelize ORM with MySQL database, ensuring data persistence, proper relational links, transaction support, and complete removal of stub logic.
+
+**Implementation**:
+
+1. **Endpoint Migration**:
+   - ✅ Migrated all Order endpoints: GET `/api/orders`, GET `/api/orders/:id`, PUT `/api/orders/:id`, GET `/api/orders/search/by-contact`
+   - ✅ Migrated all Product endpoints: GET `/api/products`, GET `/api/products/public`, GET `/api/products/:id`, POST `/api/products`, PUT `/api/products/:id`, DELETE `/api/products/:id`, GET `/api/products/low-stock`
+   - ✅ Migrated all Customer endpoints: GET `/api/customers`, POST `/api/customers`, GET `/api/customers/:id`, PUT `/api/customers/:id`, GET `/api/customers/me/orders`
+   - ✅ Migrated all Return endpoints: GET `/api/returns`, GET `/api/returns/:id`, POST `/api/returns`, PUT `/api/returns/:id`
+   - ✅ Migrated all Metrics endpoints: GET `/api/metrics/overview`, GET `/api/metrics/low-stock-trend`, GET `/api/metrics/sales-over-time`, GET `/api/metrics/growth-comparison`
+   - ✅ Migrated all Reports endpoints: GET `/api/reports/growth`, GET `/api/reports/trends`
+   - ✅ Migrated all Export endpoints: GET `/api/export/orders`, GET `/api/export/products`, GET `/api/export/customers`
+   - ✅ Migrated Import endpoint: POST `/api/import/products`
+   - ✅ Migrated Settings endpoints: GET/PUT `/api/settings/business`, GET `/api/settings/business/public`
+   - ✅ Migrated User endpoints: GET `/api/users`, GET `/api/users/me`, PUT `/api/users/me`
+
+2. **Helper Functions Migration**:
+   - ✅ Updated `findCustomerByContact` to use Sequelize queries with proper JSON field handling
+   - ✅ Updated `mergeCustomerInfo` to handle JSON fields (alternativeEmails, alternativeNames, alternativeAddresses)
+   - ✅ Updated `getOrdersForCustomer` to use Sequelize Order.findAll with proper where clauses
+   - ✅ Updated `serializeCustomer` to be async and use Sequelize queries
+   - ✅ Removed unused `attachOrderToCustomer` function (order-to-customer linking handled in POST `/api/orders`)
+
+3. **Transaction Support**:
+   - ✅ Added transaction support for return approval (updates product stock and order status atomically)
+   - ✅ Added transaction support for customer merging (transfers orders, updates customer data atomically)
+   - ✅ Added transaction support for order updates with timeline entries
+
+4. **Data Validation**:
+   - ✅ All endpoints use express-validator middleware for input validation
+   - ✅ Sequelize model validations ensure data integrity
+   - ✅ Proper error handling for validation failures
+
+5. **Code Cleanup**:
+   - ✅ Removed all in-memory array operations (`orders.push`, `products.unshift`, `customers.unshift`, etc.)
+   - ✅ Removed deprecated `filterByStore` function (replaced by Sequelize where clauses)
+   - ✅ Removed deprecated `businessSettings` in-memory object (replaced by Setting model)
+   - ✅ Removed legacy customer authentication endpoints (`/api/customers/signup`, `/api/customers/login`) - Customer model doesn't have passwordHash field and these endpoints used in-memory arrays
+
+6. **Database Health Check**:
+   - ✅ Enhanced `/api/health` endpoint to include database connection status and latency
+   - ✅ Database connection checked on server startup
+   - ✅ Proper error handling for database connection failures
+
+**Technical Decisions**:
+- All endpoints are now async and use Sequelize queries
+- All queries filter by `storeId` for proper data isolation
+- JSON fields (alternativeEmails, alternativeNames, etc.) handled properly with Sequelize
+- Transactions ensure data consistency for complex operations
+- In-memory arrays completely removed - all data persists in database
+
+**Impact**: 
+- **100% database migration complete** - All endpoints now use persistent database storage
+- Data persists across server restarts
+- Proper relational links between models (Order belongsTo Customer, Product hasMany Orders, etc.)
+- Transaction support ensures data consistency
+- Production-ready data persistence layer
+- Foundation established for scaling and production deployment
+
+**Migration Status**: ✅ **100% Complete** - All API endpoints migrated to Sequelize ORM with MySQL database.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.

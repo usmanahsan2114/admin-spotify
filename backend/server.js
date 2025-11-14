@@ -632,15 +632,8 @@ const getOrdersForCustomer = async (customer) => {
   return orders.map(order => order.toJSON ? order.toJSON() : order)
 }
 
-// Business settings (in-memory store)
-let businessSettings = {
-  logoUrl: null,
-  brandColor: '#1976d2',
-  defaultCurrency: 'USD',
-  country: 'US',
-  dashboardName: 'Shopify Admin Dashboard',
-  defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
-}
+// DEPRECATED: businessSettings in-memory object removed
+// Business settings are now stored in the Setting model (database) and accessed via getStoreSettings()
 
 // Return history helper
 const appendReturnHistory = (returnRequest, status, actor, note) => {
@@ -655,51 +648,8 @@ const appendReturnHistory = (returnRequest, status, actor, note) => {
   })
 }
 
-// Attach order to customer helper - matches by email, phone, or address
-const attachOrderToCustomer = (order) => {
-  if (!order) return
-  
-  // Try to find existing customer by email, phone, or address within the same store
-  let customer = findCustomerByContact(order.email, order.phone, null, order.storeId)
-  
-  if (customer) {
-    // Merge new information from order into existing customer
-    const mergedInfo = {
-      name: order.customerName,
-      email: order.email,
-      phone: order.phone,
-      address: null, // Orders don't typically have address, but we could add it
-    }
-    Object.assign(customer, mergeCustomerInfo(customer, mergedInfo))
-  } else {
-    // Create new customer if none found
-    customer = {
-      id: crypto.randomUUID(),
-      storeId: order.storeId, // Assign to same store as order
-      name: order.customerName || 'Unknown',
-      email: order.email || '',
-      phone: order.phone || 'Not provided',
-      address: null,
-      alternativePhone: null,
-      alternativeEmails: [],
-      alternativeNames: [],
-      alternativeAddresses: [],
-      orderIds: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-    customers.unshift(customer)
-  }
-  
-  // Link order to customer
-  if (!customer.orderIds) customer.orderIds = []
-  if (!customer.orderIds.includes(order.id)) {
-    customer.orderIds.push(order.id)
-  }
-  if (!order.customerId) {
-    order.customerId = customer.id
-  }
-}
+// DEPRECATED: attachOrderToCustomer function removed
+// Order-to-customer linking is now handled directly in POST /api/orders endpoint using Sequelize
 
 // Ensure low stock flag helper
 const ensureLowStockFlag = (product) => {
@@ -707,17 +657,20 @@ const ensureLowStockFlag = (product) => {
   product.lowStock = product.stockQuantity <= product.reorderThreshold
 }
 
-// Adjust product stock for return helper
-const adjustProductStockForReturn = (returnRequest) => {
+// Adjust product stock for return helper (using Sequelize)
+const adjustProductStockForReturn = async (returnRequest, transaction = null) => {
   if (!returnRequest || !returnRequest.orderId) return
-  const order = findOrderById(returnRequest.orderId)
+  const order = await findOrderById(returnRequest.orderId)
   if (!order) return
   
-  const product = findOrderProduct(order)
+  const product = await findOrderProduct(order)
   if (product && returnRequest.returnedQuantity) {
-    product.stockQuantity = (product.stockQuantity || 0) + returnRequest.returnedQuantity
-    ensureLowStockFlag(product)
-    product.updatedAt = new Date().toISOString()
+    const productData = product.toJSON ? product.toJSON() : product
+    const newStockQuantity = (productData.stockQuantity || 0) + returnRequest.returnedQuantity
+    await product.update(
+      { stockQuantity: newStockQuantity },
+      { transaction }
+    )
   }
 }
 
@@ -755,12 +708,8 @@ const authenticateToken = async (req, res, next) => {
   }
 }
 
-// Helper to filter data by storeId (now handled in Sequelize queries with where: { storeId })
-// This function is kept for backward compatibility but should be replaced with Sequelize queries
-const filterByStore = (dataArray, storeId) => {
-  if (!storeId) return []
-  return dataArray.filter((item) => item.storeId === storeId)
-}
+// DEPRECATED: filterByStore function removed - all queries now use Sequelize with where: { storeId }
+// This function is no longer needed as all endpoints use database queries with proper storeId filtering
 
 const authenticateCustomer = (req, res, next) => {
   const authHeader = req.headers.authorization || ''
@@ -1024,7 +973,7 @@ const findUserByEmail = async (email, storeId = null) => {
 // Order routes
 // Public endpoint to search orders by email or phone (uses customer matching logic)
 // MUST be before /api/orders/:id to avoid route conflict
-app.get('/api/orders/search/by-contact', (req, res) => {
+app.get('/api/orders/search/by-contact', async (req, res) => {
   try {
     const { email, phone } = req.query
 
@@ -1036,26 +985,31 @@ app.get('/api/orders/search/by-contact', (req, res) => {
     const storeId = req.query.storeId || null
     
     // Find customer by contact info (matches by email, phone, or address) - optionally filter by storeId
-    const customer = findCustomerByContact(email, phone, null, storeId)
+    const customer = await findCustomerByContact(email, phone, null, storeId)
     
     let matchingOrders = []
     
     if (customer) {
       // Get all orders for this customer (using the enhanced matching)
-      matchingOrders = getOrdersForCustomer(customer)
+      matchingOrders = await getOrdersForCustomer(customer)
     } else {
       // Fallback: search orders directly if no customer found
-      const ordersToSearch = storeId ? filterByStore(orders, storeId) : orders
+      const where = {}
+      if (storeId) where.storeId = storeId
+      
       if (email) {
         const normalizedEmail = normalizeEmail(email)
-        matchingOrders = ordersToSearch.filter((order) => normalizeEmail(order.email) === normalizedEmail)
+        where.email = { [Op.like]: normalizedEmail }
       } else if (phone) {
         const normalizedPhone = normalizePhone(phone)
-        matchingOrders = ordersToSearch.filter((order) => {
-          const orderPhone = normalizePhone(order.phone || '')
-          return orderPhone && orderPhone === normalizedPhone
-        })
+        where.phone = { [Op.like]: `%${normalizedPhone}%` }
       }
+      
+      const ordersList = await Order.findAll({
+        where,
+        order: [['createdAt', 'DESC']],
+      })
+      matchingOrders = ordersList.map(order => order.toJSON ? order.toJSON() : order)
     }
 
     // Return limited public details, sorted by latest first
@@ -1083,94 +1037,101 @@ app.get('/api/orders/search/by-contact', (req, res) => {
 
     return res.json(publicOrders)
   } catch (error) {
-    console.error('[ERROR] /api/orders/search/by-contact:', error)
+    logger.error('[ERROR] /api/orders/search/by-contact:', error)
     return res.status(500).json({ message: 'Failed to search orders', error: error.message })
   }
 })
 
-app.get('/api/orders', authenticateToken, (req, res) => {
-  // Filter orders by storeId
-  let filteredOrders = filterByStore(orders, req.storeId)
-  
-  // Apply date filtering if provided
-  const startDate = req.query.startDate
-  const endDate = req.query.endDate
-  
-  if (startDate || endDate) {
-    filteredOrders = filteredOrders.filter((order) => {
-      if (!order.createdAt) return false
-      const orderDate = new Date(order.createdAt)
-      if (Number.isNaN(orderDate.getTime())) return false
-      
+app.get('/api/orders', authenticateToken, async (req, res) => {
+  try {
+    // Build where clause with storeId filter
+    const where = { storeId: req.storeId }
+    
+    // Apply date filtering if provided
+    const startDate = req.query.startDate
+    const endDate = req.query.endDate
+    
+    if (startDate || endDate) {
+      where.createdAt = {}
       if (startDate) {
-        const start = new Date(startDate)
-        if (orderDate < start) return false
+        where.createdAt[Op.gte] = new Date(startDate)
       }
-      
       if (endDate) {
         const end = new Date(endDate)
         end.setHours(23, 59, 59, 999) // Include entire end date
-        if (orderDate > end) return false
+        where.createdAt[Op.lte] = end
       }
-      
-      return true
+    }
+    
+    // Fetch orders from database
+    const ordersList = await Order.findAll({
+      where,
+      order: [['createdAt', 'DESC']],
     })
+    
+    // Ensure all orders have required fields before sending
+    const sanitizedOrders = ordersList.map((order) => {
+      const orderData = order.toJSON ? order.toJSON() : order
+      return {
+        ...orderData,
+        createdAt: orderData.createdAt || new Date().toISOString(),
+        updatedAt: orderData.updatedAt || orderData.createdAt || new Date().toISOString(),
+        total: orderData.total !== undefined && orderData.total !== null ? orderData.total : 0,
+      }
+    })
+    
+    return res.json(sanitizedOrders)
+  } catch (error) {
+    logger.error('Failed to fetch orders:', error)
+    return res.status(500).json({ message: 'Failed to fetch orders', error: error.message })
   }
-  
-  // Ensure all orders have required fields before sending
-  const sanitizedOrders = filteredOrders
-    .map((order) => ({
-      ...order,
-      createdAt: order.createdAt || new Date().toISOString(),
-      updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
-      total: order.total !== undefined && order.total !== null ? order.total : 0,
-    }))
-    .sort((a, b) => {
-      // Sort by createdAt descending (latest first)
-      const dateA = new Date(a.createdAt || 0).getTime()
-      const dateB = new Date(b.createdAt || 0).getTime()
-      return dateB - dateA
-    })
-  res.json(sanitizedOrders)
 })
 
-app.get('/api/orders/:id', (req, res) => {
-  const order = findOrderById(req.params.id)
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-  
-  // Filter by storeId if provided (for public store-specific access)
-  const storeId = req.query.storeId
-  if (storeId && order.storeId !== storeId) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-  
-  // Allow public access for order tracking (no authentication required)
-  // But still check if authenticated for full details
-  const authHeader = req.headers.authorization || ''
-  const token = authHeader.split(' ')[1]
-  let isAuthenticated = false
-  
-  if (token) {
-    try {
-      jwt.verify(token, JWT_SECRET)
-      isAuthenticated = true
-    } catch {
-      // Not authenticated, but allow basic order info
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const order = await findOrderById(req.params.id)
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' })
     }
+    
+    const orderData = order.toJSON ? order.toJSON() : order
+    
+    // Filter by storeId if provided (for public store-specific access)
+    const storeId = req.query.storeId
+    if (storeId && orderData.storeId !== storeId) {
+      return res.status(404).json({ message: 'Order not found.' })
+    }
+    
+    // Allow public access for order tracking (no authentication required)
+    // But still check if authenticated for full details
+    const authHeader = req.headers.authorization || ''
+    const token = authHeader.split(' ')[1]
+    let isAuthenticated = false
+    
+    if (token) {
+      try {
+        jwt.verify(token, JWT_SECRET)
+        isAuthenticated = true
+      } catch {
+        // Not authenticated, but allow basic order info
+      }
+    }
+    
+    const relatedReturns = isAuthenticated
+      ? await Return.findAll({
+          where: { orderId: orderData.id },
+          order: [['dateRequested', 'DESC']],
+        }).then(returns => Promise.all(returns.map(r => serializeReturn(r))))
+      : []
+    
+    return res.json({
+      ...orderData,
+      returns: relatedReturns,
+    })
+  } catch (error) {
+    logger.error('Failed to fetch order:', error)
+    return res.status(500).json({ message: 'Failed to fetch order', error: error.message })
   }
-  
-  const relatedReturns = isAuthenticated
-    ? returns
-        .filter((returnRequest) => returnRequest.orderId === order.id)
-        .map((returnRequest) => serializeReturn(returnRequest))
-    : []
-  
-  return res.json({
-    ...order,
-    returns: relatedReturns,
-  })
 })
 
 app.post('/api/orders', validateOrder, async (req, res) => {
@@ -1270,649 +1231,771 @@ app.post('/api/orders', validateOrder, async (req, res) => {
   }
 })
 
-app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) => {
-  const order = findOrderById(req.params.id)
+app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, res) => {
+  try {
+    const order = await findOrderById(req.params.id)
 
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-
-  // Verify order belongs to user's store
-  if (order.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Order does not belong to your store.' })
-  }
-
-  const allowedFields = ['status', 'isPaid', 'notes', 'quantity', 'phone']
-  Object.entries(req.body).forEach(([key, value]) => {
-    if (allowedFields.includes(key) && value !== undefined) {
-      order[key] = value
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' })
     }
-  })
 
-  order.updatedAt = new Date().toISOString()
-  order.timeline = order.timeline ?? []
-  order.timeline.push({
-    id: crypto.randomUUID(),
-    description: `Order updated (${Object.keys(req.body)
-      .filter((key) => allowedFields.includes(key))
-      .join(', ')})`,
-    timestamp: order.updatedAt,
-    actor: req.user?.email ?? 'System',
-  })
+    const orderData = order.toJSON ? order.toJSON() : order
 
-  return res.json(order)
+    // Verify order belongs to user's store
+    if (orderData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Order does not belong to your store.' })
+    }
+
+    const allowedFields = ['status', 'isPaid', 'notes', 'quantity', 'phone']
+    const updateData = {}
+    Object.entries(req.body).forEach(([key, value]) => {
+      if (allowedFields.includes(key) && value !== undefined) {
+        updateData[key] = value
+      }
+    })
+
+    // Update timeline
+    const timeline = orderData.timeline || []
+    timeline.push({
+      id: crypto.randomUUID(),
+      description: `Order updated (${Object.keys(req.body)
+        .filter((key) => allowedFields.includes(key))
+        .join(', ')})`,
+      timestamp: new Date().toISOString(),
+      actor: req.user?.email ?? 'System',
+    })
+    updateData.timeline = timeline
+
+    // Update order in database
+    await order.update(updateData)
+    await order.reload()
+
+    const updatedOrder = order.toJSON ? order.toJSON() : order
+    return res.json(updatedOrder)
+  } catch (error) {
+    logger.error('Failed to update order:', error)
+    return res.status(500).json({ message: 'Failed to update order', error: error.message })
+  }
 })
 
-// Customer authentication routes (public)
-app.post('/api/customers/signup', (req, res) => {
-  const { name, email, password } = req.body || {}
-  
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email, and password are required.' })
-  }
-  
-  if (findCustomerByEmail(email)) {
-    return res.status(409).json({ message: 'A customer with this email already exists.' })
-  }
-  
-  // Create customer account with password
-  const newCustomer = {
-    id: crypto.randomUUID(),
-    name: String(name).trim(),
-    email: String(email).trim(),
-    phone: 'Not provided',
-    passwordHash: bcrypt.hashSync(password, 10),
-    address: null,
-    alternativePhone: null,
-    createdAt: new Date().toISOString(),
-    orderIds: [],
-  }
-  
-  customers.unshift(newCustomer)
-  
-  // Generate token for customer
-  const token = jwt.sign(
-    { customerId: newCustomer.id, email: newCustomer.email, type: 'customer' },
-    JWT_SECRET,
-    { expiresIn: '30d' }
-  )
-  
-  return res.status(201).json({
-    token,
-    user: { email: newCustomer.email, name: newCustomer.name },
-  })
-})
-
-app.post('/api/customers/login', (req, res) => {
-  const { email, password } = req.body || {}
-  
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required.' })
-  }
-  
-  const customer = findCustomerByEmail(email)
-  if (!customer || !customer.passwordHash) {
-    return res.status(401).json({ message: 'Invalid email or password.' })
-  }
-  
-  if (!bcrypt.compareSync(password, customer.passwordHash)) {
-    return res.status(401).json({ message: 'Invalid email or password.' })
-  }
-  
-  const token = jwt.sign(
-    { customerId: customer.id, email: customer.email, type: 'customer' },
-    JWT_SECRET,
-    { expiresIn: '30d' }
-  )
-  
-  return res.json({
-    token,
-    user: { email: customer.email, name: customer.name },
-  })
-})
+// DEPRECATED: Customer authentication routes removed
+// The Customer model does not have a passwordHash field, and these endpoints used in-memory arrays.
+// Customer-facing authentication is not part of the admin dashboard scope.
+// If customer authentication is needed in the future, a separate User model or authentication system should be implemented.
+// 
+// app.post('/api/customers/signup', ...) - REMOVED
+// app.post('/api/customers/login', ...) - REMOVED
 
 // Customer routes
-app.get('/api/customers', authenticateToken, (req, res) => {
+app.get('/api/customers', authenticateToken, async (req, res) => {
   try {
-    // Filter customers by storeId
-    const storeCustomers = filterByStore(customers, req.storeId)
-    const payload = storeCustomers
-      .map((customer) => serializeCustomer(customer))
-      .filter(Boolean)
-      .sort((a, b) => {
-        // Sort by createdAt descending (latest first)
-        const dateA = new Date(a.createdAt || 0).getTime()
-        const dateB = new Date(b.createdAt || 0).getTime()
-        return dateB - dateA
-      })
-    return res.json(payload)
+    // Fetch customers by storeId
+    const customersList = await Customer.findAll({
+      where: { storeId: req.storeId },
+      order: [['createdAt', 'DESC']],
+    })
+    
+    const payload = await Promise.all(
+      customersList.map(customer => serializeCustomer(customer))
+    )
+    
+    return res.json(payload.filter(Boolean))
   } catch (error) {
-    console.error('[ERROR] /api/customers:', error)
+    logger.error('[ERROR] /api/customers:', error)
     return res.status(500).json({ message: 'Failed to fetch customers', error: error.message })
   }
 })
 
-app.post('/api/customers', authenticateToken, validateCustomer, (req, res) => {
-  const { name, email, phone, address, alternativePhone } = req.body || {}
+app.post('/api/customers', authenticateToken, validateCustomer, async (req, res) => {
+  try {
+    const { name, email, phone, address, alternativePhone } = req.body || {}
 
-  // Check if customer exists by email, phone, or address within the same store
-  const existingCustomer = findCustomerByContact(email, phone, address, req.storeId)
+    // Check if customer exists by email, phone, or address within the same store
+    const existingCustomer = await findCustomerByContact(email, phone, address, req.storeId)
 
-  if (existingCustomer) {
-    // Merge new information with existing customer
-    const mergedInfo = {
-      name: name ? String(name).trim() : existingCustomer.name,
-      email: email ? String(email).trim() : existingCustomer.email,
-      phone: phone ? String(phone).trim() : existingCustomer.phone,
-      address: address ? String(address).trim() : existingCustomer.address,
-      alternativePhone: alternativePhone ? String(alternativePhone).trim() : existingCustomer.alternativePhone,
+    if (existingCustomer) {
+      // Merge new information with existing customer
+      const existingData = existingCustomer.toJSON ? existingCustomer.toJSON() : existingCustomer
+      const mergedInfo = mergeCustomerInfo(existingData, {
+        name: name ? String(name).trim() : existingData.name,
+        email: email ? String(email).trim() : existingData.email,
+        phone: phone ? String(phone).trim() : existingData.phone,
+        address: address ? String(address).trim() : existingData.address,
+        alternativePhone: alternativePhone ? String(alternativePhone).trim() : existingData.alternativePhone,
+      })
+      
+      await existingCustomer.update(mergedInfo)
+      await existingCustomer.reload()
+      
+      const serialized = await serializeCustomer(existingCustomer)
+      return res.json(serialized)
     }
-    Object.assign(existingCustomer, mergeCustomerInfo(existingCustomer, mergedInfo))
-    return res.json(serializeCustomer(existingCustomer))
-  }
 
-  // Create new customer if none found
-  const newCustomer = {
-    id: crypto.randomUUID(),
-    storeId: req.storeId, // Assign to user's store
-    name: String(name).trim(),
-    email: String(email).trim(),
-    phone: phone ? String(phone).trim() : 'Not provided',
-    address: address ? String(address).trim() : null,
-    alternativePhone: alternativePhone ? String(alternativePhone).trim() : null,
-    alternativeEmails: [],
-    alternativeNames: [],
-    alternativeAddresses: [],
-    orderIds: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
+    // Create new customer if none found
+    const newCustomer = await Customer.create({
+      storeId: req.storeId, // Assign to user's store
+      name: String(name).trim(),
+      email: String(email).trim(),
+      phone: phone ? String(phone).trim() : 'Not provided',
+      address: address ? String(address).trim() : null,
+      alternativePhone: alternativePhone ? String(alternativePhone).trim() : null,
+      alternativeEmails: [],
+      alternativeNames: [],
+      alternativeAddresses: [],
+    })
 
-  customers.unshift(newCustomer)
-  return res.status(201).json(serializeCustomer(newCustomer))
+    const serialized = await serializeCustomer(newCustomer)
+    return res.status(201).json(serialized)
+  } catch (error) {
+    logger.error('Failed to create customer:', error)
+    return res.status(500).json({ message: 'Failed to create customer', error: error.message })
+  }
 })
 
 // Customer portal route - get own orders
-app.get('/api/customers/me/orders', authenticateCustomer, (req, res) => {
+app.get('/api/customers/me/orders', authenticateCustomer, async (req, res) => {
   try {
     const customerId = req.customer?.customerId
     if (!customerId) {
       return res.status(401).json({ message: 'Customer authentication required.' })
     }
     
-    const customer = findCustomerById(customerId)
+    const customer = await findCustomerById(customerId)
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found.' })
     }
     
-    const ordersForCustomer = getOrdersForCustomer(customer)
+    const ordersForCustomer = await getOrdersForCustomer(customer)
     return res.json(ordersForCustomer)
   } catch (error) {
-    console.error('[ERROR] /api/customers/me/orders:', error)
+    logger.error('[ERROR] /api/customers/me/orders:', error)
     return res.status(500).json({ message: 'Failed to fetch orders', error: error.message })
   }
 })
 
-app.get('/api/customers/:id', authenticateToken, (req, res) => {
-  const customer = findCustomerById(req.params.id)
+app.get('/api/customers/:id', authenticateToken, async (req, res) => {
+  try {
+    const customer = await findCustomerById(req.params.id)
 
-  if (!customer) {
-    return res.status(404).json({ message: 'Customer not found.' })
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found.' })
+    }
+
+    const customerData = customer.toJSON ? customer.toJSON() : customer
+
+    // Verify customer belongs to user's store
+    if (customerData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Customer does not belong to your store.' })
+    }
+
+    const ordersForCustomer = await getOrdersForCustomer(customer)
+    const storeReturns = await Return.findAll({
+      where: {
+        storeId: req.storeId,
+        customerId: customerData.id,
+      },
+      order: [['dateRequested', 'DESC']],
+    })
+    
+    const serializedReturns = await Promise.all(
+      storeReturns.map(r => serializeReturn(r))
+    )
+    
+    const serializedCustomer = await serializeCustomer(customer)
+    
+    return res.json({
+      ...serializedCustomer,
+      orders: ordersForCustomer,
+      returns: serializedReturns,
+    })
+  } catch (error) {
+    logger.error('Failed to fetch customer:', error)
+    return res.status(500).json({ message: 'Failed to fetch customer', error: error.message })
   }
-
-  // Verify customer belongs to user's store
-  if (customer.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Customer does not belong to your store.' })
-  }
-
-  const ordersForCustomer = getOrdersForCustomer(customer)
-  // Filter returns by storeId
-  const storeReturns = filterByStore(returns, req.storeId)
-  return res.json({
-    ...serializeCustomer(customer),
-    orders: ordersForCustomer,
-    returns: storeReturns
-      .filter((returnRequest) => returnRequest.customerId === customer.id)
-      .map((returnRequest) => serializeReturn(returnRequest)),
-  })
 })
 
-app.put('/api/customers/:id', authenticateToken, validateCustomer, (req, res) => {
-  const customer = findCustomerById(req.params.id)
+app.put('/api/customers/:id', authenticateToken, validateCustomer, async (req, res) => {
+  const transaction = await db.sequelize.transaction()
+  try {
+    const customer = await findCustomerById(req.params.id)
 
-  if (!customer) {
-    return res.status(404).json({ message: 'Customer not found.' })
-  }
-
-  // Verify customer belongs to user's store
-  if (customer.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Customer does not belong to your store.' })
-  }
-
-  const { name, email, phone, address, alternativePhone } = req.body || {}
-
-  // Check if updated email/phone/address matches another customer within the same store
-  // (but allow if it matches the same customer being updated)
-  if (email && normalizeEmail(email) !== normalizeEmail(customer.email)) {
-    const existingByEmail = findCustomerByEmail(email)
-    if (existingByEmail && existingByEmail.id !== customer.id && existingByEmail.storeId === req.storeId) {
-      // Check if they match by other contact info (phone/address) within the same store
-      const existingByContact = findCustomerByContact(email, phone, address, req.storeId)
-      if (existingByContact && existingByContact.id !== customer.id) {
-        // Merge this customer into the existing one
-        const mergedInfo = {
-          name: name || customer.name,
-          email: email || customer.email,
-          phone: phone || customer.phone,
-          address: address !== undefined ? address : customer.address,
-          alternativePhone: alternativePhone !== undefined ? alternativePhone : customer.alternativePhone,
-        }
-        Object.assign(existingByContact, mergeCustomerInfo(existingByContact, {
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          alternativePhone: customer.alternativePhone,
-        }))
-        Object.assign(existingByContact, mergeCustomerInfo(existingByContact, mergedInfo))
-        
-        // Transfer orders
-        if (customer.orderIds) {
-          existingByContact.orderIds = [...new Set([...(existingByContact.orderIds || []), ...customer.orderIds])]
-          customer.orderIds.forEach((orderId) => {
-            const order = findOrderById(orderId)
-            if (order) order.customerId = existingByContact.id
-          })
-        }
-        
-        // Remove old customer
-        const customerIndex = customers.findIndex((c) => c.id === customer.id)
-        if (customerIndex !== -1) customers.splice(customerIndex, 1)
-        
-        return res.json(serializeCustomer(existingByContact))
-      }
-      return res.status(409).json({ message: 'Email already in use by another customer.' })
+    if (!customer) {
+      await transaction.rollback()
+      return res.status(404).json({ message: 'Customer not found.' })
     }
-  }
 
-  // Merge new information
-  const mergedInfo = {
-    name: name || customer.name,
-    email: email || customer.email,
-    phone: phone !== undefined ? phone : customer.phone,
-    address: address !== undefined ? address : customer.address,
-    alternativePhone: alternativePhone !== undefined ? alternativePhone : customer.alternativePhone,
-  }
-  Object.assign(customer, mergeCustomerInfo(customer, mergedInfo))
-  customer.updatedAt = new Date().toISOString()
+    const customerData = customer.toJSON ? customer.toJSON() : customer
 
-  return res.json(serializeCustomer(customer))
+    // Verify customer belongs to user's store
+    if (customerData.storeId !== req.storeId) {
+      await transaction.rollback()
+      return res.status(403).json({ message: 'Customer does not belong to your store.' })
+    }
+
+    const { name, email, phone, address, alternativePhone } = req.body || {}
+
+    // Check if updated email/phone/address matches another customer within the same store
+    // (but allow if it matches the same customer being updated)
+    if (email && normalizeEmail(email) !== normalizeEmail(customerData.email)) {
+      const existingByEmail = await findCustomerByEmail(email, req.storeId)
+      if (existingByEmail && existingByEmail.id !== customerData.id) {
+        const existingData = existingByEmail.toJSON ? existingByEmail.toJSON() : existingByEmail
+        // Check if they match by other contact info (phone/address) within the same store
+        const existingByContact = await findCustomerByContact(email, phone, address, req.storeId)
+        if (existingByContact && existingByContact.id !== customerData.id) {
+          // Merge this customer into the existing one
+          const mergedInfo = mergeCustomerInfo(existingData, {
+            name: customerData.name,
+            email: customerData.email,
+            phone: customerData.phone,
+            address: customerData.address,
+            alternativePhone: customerData.alternativePhone,
+          })
+          const finalMerged = mergeCustomerInfo(mergedInfo, {
+            name: name || customerData.name,
+            email: email || customerData.email,
+            phone: phone || customerData.phone,
+            address: address !== undefined ? address : customerData.address,
+            alternativePhone: alternativePhone !== undefined ? alternativePhone : customerData.alternativePhone,
+          })
+          
+          // Transfer orders to the existing customer
+          await Order.update(
+            { customerId: existingByContact.id },
+            { where: { customerId: customerData.id }, transaction }
+          )
+          
+          // Update the existing customer with merged info
+          await existingByContact.update(finalMerged, { transaction })
+          
+          // Delete the old customer
+          await customer.destroy({ transaction })
+          
+          await transaction.commit()
+          await existingByContact.reload()
+          
+          const serialized = await serializeCustomer(existingByContact)
+          return res.json(serialized)
+        }
+        await transaction.rollback()
+        return res.status(409).json({ message: 'Email already in use by another customer.' })
+      }
+    }
+
+    // Merge new information
+    const mergedInfo = mergeCustomerInfo(customerData, {
+      name: name || customerData.name,
+      email: email || customerData.email,
+      phone: phone !== undefined ? phone : customerData.phone,
+      address: address !== undefined ? address : customerData.address,
+      alternativePhone: alternativePhone !== undefined ? alternativePhone : customerData.alternativePhone,
+    })
+    
+    await customer.update(mergedInfo, { transaction })
+    await transaction.commit()
+    await customer.reload()
+
+    const serialized = await serializeCustomer(customer)
+    return res.json(serialized)
+  } catch (error) {
+    await transaction.rollback()
+    logger.error('Failed to update customer:', error)
+    return res.status(500).json({ message: 'Failed to update customer', error: error.message })
+  }
 })
 
 // Returns routes
-app.get('/api/returns', authenticateToken, (req, res) => {
-  // Filter returns by storeId
-  let filteredReturns = filterByStore(returns, req.storeId)
-  
-  // Apply date filtering if provided
-  const startDate = req.query.startDate
-  const endDate = req.query.endDate
-  
-  if (startDate || endDate) {
-    filteredReturns = filteredReturns.filter((returnRequest) => {
-      if (!returnRequest.dateRequested) return false
-      const requestDate = new Date(returnRequest.dateRequested)
-      if (Number.isNaN(requestDate.getTime())) return false
-      
+app.get('/api/returns', authenticateToken, async (req, res) => {
+  try {
+    // Build where clause with storeId filter
+    const where = { storeId: req.storeId }
+    
+    // Apply date filtering if provided
+    const startDate = req.query.startDate
+    const endDate = req.query.endDate
+    
+    if (startDate || endDate) {
+      where.dateRequested = {}
       if (startDate) {
-        const start = new Date(startDate)
-        if (requestDate < start) return false
+        where.dateRequested[Op.gte] = new Date(startDate)
       }
-      
       if (endDate) {
         const end = new Date(endDate)
         end.setHours(23, 59, 59, 999)
-        if (requestDate > end) return false
+        where.dateRequested[Op.lte] = end
       }
-      
-      return true
+    }
+    
+    const returnsList = await Return.findAll({
+      where,
+      order: [['dateRequested', 'DESC']],
     })
-  }
-  
-  const serializedReturns = filteredReturns.map((returnRequest) => serializeReturn(returnRequest))
-  res.json(serializedReturns)
-})
-
-app.get('/api/returns/:id', authenticateToken, (req, res) => {
-  const returnRequest = findReturnById(req.params.id)
-  if (!returnRequest) {
-    return res.status(404).json({ message: 'Return request not found.' })
-  }
-  // Verify return belongs to user's store
-  if (returnRequest.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Return does not belong to your store.' })
-  }
-  return res.json(serializeReturn(returnRequest))
-})
-
-app.post('/api/returns', authenticateToken, validateReturn, (req, res) => {
-  const { orderId, customerId, reason, returnedQuantity, status } = req.body || {}
-
-  const order = findOrderById(orderId)
-  if (!order) {
-    return res.status(404).json({ message: 'Order not found.' })
-  }
-
-  // Check if there are existing returns for this order
-  const existingReturns = returns.filter((returnRequest) => returnRequest.orderId === orderId)
-  const totalReturnedQuantity = existingReturns.reduce((sum, returnRequest) => sum + (returnRequest.returnedQuantity || 0), 0)
-  const remainingQuantity = order.quantity - totalReturnedQuantity
-
-  const quantityNumber = Number(returnedQuantity)
-  if (Number.isNaN(quantityNumber) || quantityNumber <= 0) {
-    return res.status(400).json({ message: 'returnedQuantity must be a positive number.' })
-  }
-
-  if (quantityNumber > remainingQuantity) {
-    return res
-      .status(400)
-      .json({ message: `returnedQuantity cannot exceed the remaining order quantity (${remainingQuantity} available).` })
-  }
-
-  // Verify order belongs to user's store
-  if (order.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Order does not belong to your store.' })
-  }
-
-  const newReturn = {
-    id: crypto.randomUUID(),
-    storeId: req.storeId, // Assign to user's store
-    orderId,
-    customerId: customerId || order.customerId || null,
-    reason: String(reason).trim(),
-    returnedQuantity: quantityNumber,
-    dateRequested: new Date().toISOString(),
-    status: RETURN_STATUSES.includes(status) ? status : 'Submitted',
-    history: [],
-  }
-
-  ensureReturnCustomer(newReturn)
-  linkReturnToOrder(newReturn)
-  appendReturnHistory(newReturn, newReturn.status, req.user?.email ?? 'System', reason || 'Return requested')
-
-  returns.unshift(newReturn)
-  return res.status(201).json(serializeReturn(newReturn))
-})
-
-app.put('/api/returns/:id', authenticateToken, validateReturnUpdate, (req, res) => {
-  const returnRequest = returns.find((item) => item.id === req.params.id)
-
-  if (!returnRequest) {
-    return res.status(404).json({ message: 'Return request not found.' })
-  }
-
-  // Verify return belongs to user's store
-  if (returnRequest.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Return does not belong to your store.' })
-  }
-
-  const { status, note } = req.body || {}
-
-  if (!status || !RETURN_STATUSES.includes(status)) {
-    return res.status(400).json({ message: `status must be one of: ${RETURN_STATUSES.join(', ')}` })
-  }
-
-  const previousStatus = returnRequest.status
-  if (status !== previousStatus) {
-    returnRequest.status = status
-    appendReturnHistory(
-      returnRequest,
-      status,
-      req.user?.name ?? 'System',
-      note ? String(note) : `Status changed to ${status}.`,
+    
+    const serializedReturns = await Promise.all(
+      returnsList.map(r => serializeReturn(r))
     )
-
-    const order = findOrderById(returnRequest.orderId)
-    if (order) {
-      order.timeline = order.timeline || []
-      order.timeline.unshift({
-        id: crypto.randomUUID(),
-        description: `Return status updated to ${status}`,
-        timestamp: new Date().toISOString(),
-        actor: req.user?.name ?? 'System',
-      })
-    }
-
-    if (status === 'Approved' || status === 'Refunded') {
-      adjustProductStockForReturn(returnRequest)
-    }
+    
+    return res.json(serializedReturns)
+  } catch (error) {
+    logger.error('Failed to fetch returns:', error)
+    return res.status(500).json({ message: 'Failed to fetch returns', error: error.message })
   }
+})
 
-  return res.json(serializeReturn(returnRequest))
+app.get('/api/returns/:id', authenticateToken, async (req, res) => {
+  try {
+    const returnRequest = await findReturnById(req.params.id)
+    if (!returnRequest) {
+      return res.status(404).json({ message: 'Return request not found.' })
+    }
+    
+    const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
+    
+    // Verify return belongs to user's store
+    if (returnData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Return does not belong to your store.' })
+    }
+    
+    const serialized = await serializeReturn(returnRequest)
+    return res.json(serialized)
+  } catch (error) {
+    logger.error('Failed to fetch return:', error)
+    return res.status(500).json({ message: 'Failed to fetch return', error: error.message })
+  }
+})
+
+app.post('/api/returns', authenticateToken, validateReturn, async (req, res) => {
+  const transaction = await db.sequelize.transaction()
+  try {
+    const { orderId, customerId, reason, returnedQuantity, status } = req.body || {}
+
+    const order = await findOrderById(orderId)
+    if (!order) {
+      await transaction.rollback()
+      return res.status(404).json({ message: 'Order not found.' })
+    }
+
+    const orderData = order.toJSON ? order.toJSON() : order
+
+    // Check if there are existing returns for this order
+    const existingReturns = await Return.findAll({
+      where: { orderId },
+      transaction,
+    })
+    const totalReturnedQuantity = existingReturns.reduce((sum, r) => {
+      const rData = r.toJSON ? r.toJSON() : r
+      return sum + (rData.returnedQuantity || 0)
+    }, 0)
+    const remainingQuantity = orderData.quantity - totalReturnedQuantity
+
+    const quantityNumber = Number(returnedQuantity)
+    if (Number.isNaN(quantityNumber) || quantityNumber <= 0) {
+      await transaction.rollback()
+      return res.status(400).json({ message: 'returnedQuantity must be a positive number.' })
+    }
+
+    if (quantityNumber > remainingQuantity) {
+      await transaction.rollback()
+      return res
+        .status(400)
+        .json({ message: `returnedQuantity cannot exceed the remaining order quantity (${remainingQuantity} available).` })
+    }
+
+    // Verify order belongs to user's store
+    if (orderData.storeId !== req.storeId) {
+      await transaction.rollback()
+      return res.status(403).json({ message: 'Order does not belong to your store.' })
+    }
+
+    // Ensure customer is linked
+    let finalCustomerId = customerId || orderData.customerId || null
+    if (!finalCustomerId && orderData.email) {
+      const customer = await findCustomerByContact(orderData.email, orderData.phone, null, orderData.storeId)
+      if (customer) {
+        finalCustomerId = customer.id
+      }
+    }
+
+    const history = [{
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      status: RETURN_STATUSES.includes(status) ? status : 'Submitted',
+      actor: req.user?.email ?? 'System',
+      note: reason || 'Return requested',
+    }]
+
+    const newReturn = await Return.create({
+      storeId: req.storeId,
+      orderId,
+      customerId: finalCustomerId,
+      reason: String(reason).trim(),
+      returnedQuantity: quantityNumber,
+      dateRequested: new Date(),
+      status: RETURN_STATUSES.includes(status) ? status : 'Submitted',
+      history,
+    }, { transaction })
+
+    // Link return to order timeline
+    await linkReturnToOrder(newReturn)
+
+    await transaction.commit()
+    await newReturn.reload()
+
+    const serialized = await serializeReturn(newReturn)
+    return res.status(201).json(serialized)
+  } catch (error) {
+    await transaction.rollback()
+    logger.error('Failed to create return:', error)
+    return res.status(500).json({ message: 'Failed to create return', error: error.message })
+  }
+})
+
+app.put('/api/returns/:id', authenticateToken, validateReturnUpdate, async (req, res) => {
+  const transaction = await db.sequelize.transaction()
+  try {
+    const returnRequest = await findReturnById(req.params.id)
+
+    if (!returnRequest) {
+      await transaction.rollback()
+      return res.status(404).json({ message: 'Return request not found.' })
+    }
+
+    const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
+
+    // Verify return belongs to user's store
+    if (returnData.storeId !== req.storeId) {
+      await transaction.rollback()
+      return res.status(403).json({ message: 'Return does not belong to your store.' })
+    }
+
+    const { status, note } = req.body || {}
+
+    if (!status || !RETURN_STATUSES.includes(status)) {
+      await transaction.rollback()
+      return res.status(400).json({ message: `status must be one of: ${RETURN_STATUSES.join(', ')}` })
+    }
+
+    const previousStatus = returnData.status
+    if (status !== previousStatus) {
+      // Update history
+      const history = returnData.history || []
+      history.unshift({
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        status,
+        actor: req.user?.name ?? 'System',
+        note: note ? String(note) : `Status changed to ${status}.`,
+      })
+
+      await returnRequest.update(
+        { status, history },
+        { transaction }
+      )
+
+      // Update order timeline
+      const order = await findOrderById(returnData.orderId)
+      if (order) {
+        const orderData = order.toJSON ? order.toJSON() : order
+        const timeline = orderData.timeline || []
+        timeline.unshift({
+          id: crypto.randomUUID(),
+          description: `Return status updated to ${status}`,
+          timestamp: new Date().toISOString(),
+          actor: req.user?.name ?? 'System',
+        })
+        await order.update({ timeline }, { transaction })
+      }
+
+      // Adjust product stock if approved or refunded
+      if (status === 'Approved' || status === 'Refunded') {
+        await adjustProductStockForReturn(returnRequest, transaction)
+      }
+    }
+
+    await transaction.commit()
+    await returnRequest.reload()
+
+    const serialized = await serializeReturn(returnRequest)
+    return res.json(serialized)
+  } catch (error) {
+    await transaction.rollback()
+    logger.error('Failed to update return:', error)
+    return res.status(500).json({ message: 'Failed to update return', error: error.message })
+  }
 })
 
 // Metrics routes
-app.get('/api/metrics/overview', authenticateToken, (req, res) => {
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : null
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : null
-  
-  // Filter by storeId first
-  const storeOrders = filterByStore(orders, req.storeId)
-  const storeProducts = filterByStore(products, req.storeId)
-  const storeReturns = filterByStore(returns, req.storeId)
-  const storeCustomers = filterByStore(customers, req.storeId)
-  
-  // Filter orders by date range if provided
-  let filteredOrders = storeOrders
-  if (startDate || endDate) {
-    filteredOrders = storeOrders.filter((order) => {
-      if (!order.createdAt) return false
-      const orderDate = new Date(order.createdAt)
-      if (Number.isNaN(orderDate.getTime())) return false
-      
-      if (startDate && orderDate < startDate) return false
+app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
+  try {
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : null
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : null
+    
+    // Build where clauses
+    const orderWhere = { storeId: req.storeId }
+    const customerWhere = { storeId: req.storeId }
+    
+    if (startDate || endDate) {
+      orderWhere.createdAt = {}
+      customerWhere.createdAt = {}
+      if (startDate) {
+        orderWhere.createdAt[Op.gte] = startDate
+        customerWhere.createdAt[Op.gte] = startDate
+      }
       if (endDate) {
         const end = new Date(endDate)
         end.setHours(23, 59, 59, 999)
-        if (orderDate > end) return false
+        orderWhere.createdAt[Op.lte] = end
+        customerWhere.createdAt[Op.lte] = end
       }
-      
-      return true
-    })
-  }
-  
-  const totalOrders = filteredOrders.length
-  const pendingOrdersCount = filteredOrders.filter((order) => order.status === 'Pending').length
-  const totalProducts = storeProducts.length
-  const lowStockCount = storeProducts.filter((product) => product.lowStock).length
-  const pendingReturnsCount = storeReturns.filter((returnRequest) => returnRequest.status === 'Submitted').length
-  
-  // Calculate new customers in date range or last 7 days
-  const dateStart = startDate || new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
-  const dateEnd = endDate || new Date()
-  const newCustomersLast7Days = storeCustomers.filter((customer) => {
-    if (!customer.createdAt) return false
-    const customerDate = new Date(customer.createdAt)
-    if (Number.isNaN(customerDate.getTime())) return false
-    return customerDate >= dateStart && customerDate <= dateEnd
-  }).length
-
-  // Calculate total revenue from filtered orders
-  const totalRevenue = filteredOrders.reduce((acc, order) => acc + (order.total ?? 0), 0)
-
-  res.json({
-    totalOrders,
-    pendingOrdersCount,
-    totalProducts,
-    lowStockCount,
-    pendingReturnsCount,
-    newCustomersLast7Days,
-    totalRevenue,
-  })
-})
-
-app.get('/api/metrics/low-stock-trend', authenticateToken, (req, res) => {
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
-  
-  // Filter products by storeId
-  const storeProducts = filterByStore(products, req.storeId)
-  
-  // Calculate number of days
-  const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
-  const numDays = Math.min(Math.max(daysDiff, 1), 90) // Limit to 90 days
-  
-  const trendData = Array.from({ length: numDays }).map((_, index) => {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + index)
-    date.setHours(0, 0, 0, 0)
-    
-    const dateKey = date.toISOString().split('T')[0]
-    
-    // For demo purposes, simulate trend data
-    const baseCount = storeProducts.filter((p) => p.lowStock).length
-    const variation = Math.floor(Math.random() * 3) - 1
-    const count = Math.max(0, baseCount + variation)
-    
-    return {
-      date: dateKey,
-      dateLabel: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      lowStockCount: count,
     }
-  })
-  
-  res.json(trendData)
-})
-
-app.get('/api/metrics/sales-over-time', authenticateToken, (req, res) => {
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
-  
-  // Group orders by day
-  const dailyData = {}
-  const currentDate = new Date(startDate)
-  
-  while (currentDate <= endDate) {
-    const dateKey = currentDate.toISOString().split('T')[0]
-    dailyData[dateKey] = { orders: 0, revenue: 0 }
-    currentDate.setDate(currentDate.getDate() + 1)
-  }
-  
-  // Filter orders by storeId
-  const storeOrders = filterByStore(orders, req.storeId)
-  
-  storeOrders.forEach((order) => {
-    if (!order.createdAt) return
-    const orderDate = new Date(order.createdAt)
-    if (orderDate < startDate || orderDate > endDate) return
     
-    const dateKey = orderDate.toISOString().split('T')[0]
-    if (dailyData[dateKey]) {
-      dailyData[dateKey].orders += 1
-      dailyData[dateKey].revenue += order.total ?? 0
-    }
-  })
-  
-  const dataPoints = Object.entries(dailyData).map(([date, data]) => ({
-    date,
-    dateLabel: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    orders: data.orders,
-    revenue: data.revenue,
-  }))
-  
-  const totalOrders = dataPoints.reduce((sum, point) => sum + point.orders, 0)
-  const totalRevenue = dataPoints.reduce((sum, point) => sum + point.revenue, 0)
-  
-  res.json({
-    data: dataPoints,
-    summary: {
+    // Fetch data from database
+    const [ordersList, productsList, returnsList, customersList] = await Promise.all([
+      Order.findAll({ where: orderWhere }),
+      Product.findAll({ where: { storeId: req.storeId } }),
+      Return.findAll({ where: { storeId: req.storeId, status: 'Submitted' } }),
+      Customer.findAll({ where: customerWhere }),
+    ])
+    
+    const totalOrders = ordersList.length
+    const pendingOrdersCount = ordersList.filter(o => {
+      const oData = o.toJSON ? o.toJSON() : o
+      return oData.status === 'Pending'
+    }).length
+    const totalProducts = productsList.length
+    const lowStockCount = productsList.filter(p => {
+      const pData = p.toJSON ? p.toJSON() : p
+      return pData.stockQuantity <= pData.reorderThreshold
+    }).length
+    const pendingReturnsCount = returnsList.length
+    
+    // Calculate new customers in date range or last 7 days
+    const dateStart = startDate || new Date(Date.now() - 1000 * 60 * 60 * 24 * 7)
+    const dateEnd = endDate || new Date()
+    const newCustomersLast7Days = customersList.filter(c => {
+      const cData = c.toJSON ? c.toJSON() : c
+      if (!cData.createdAt) return false
+      const customerDate = new Date(cData.createdAt)
+      return customerDate >= dateStart && customerDate <= dateEnd
+    }).length
+
+    // Calculate total revenue from filtered orders
+    const totalRevenue = ordersList.reduce((acc, order) => {
+      const oData = order.toJSON ? order.toJSON() : order
+      return acc + (oData.total ?? 0)
+    }, 0)
+
+    return res.json({
       totalOrders,
+      pendingOrdersCount,
+      totalProducts,
+      lowStockCount,
+      pendingReturnsCount,
+      newCustomersLast7Days,
       totalRevenue,
-      averageOrdersPerDay: dataPoints.length > 0 ? (totalOrders / dataPoints.length).toFixed(1) : 0,
-      averageRevenuePerDay: dataPoints.length > 0 ? (totalRevenue / dataPoints.length).toFixed(2) : 0,
-    },
-  })
+    })
+  } catch (error) {
+    logger.error('Failed to fetch metrics overview:', error)
+    return res.status(500).json({ message: 'Failed to fetch metrics overview', error: error.message })
+  }
+})
+
+app.get('/api/metrics/low-stock-trend', authenticateToken, async (req, res) => {
+  try {
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
+    
+    // Fetch products by storeId
+    const productsList = await Product.findAll({
+      where: { storeId: req.storeId },
+    })
+    
+    const baseLowStockCount = productsList.filter(p => {
+      const pData = p.toJSON ? p.toJSON() : p
+      return pData.stockQuantity <= pData.reorderThreshold
+    }).length
+    
+    // Calculate number of days
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+    const numDays = Math.min(Math.max(daysDiff, 1), 90) // Limit to 90 days
+    
+    const trendData = Array.from({ length: numDays }).map((_, index) => {
+      const date = new Date(startDate)
+      date.setDate(date.getDate() + index)
+      date.setHours(0, 0, 0, 0)
+      
+      const dateKey = date.toISOString().split('T')[0]
+      
+      // For demo purposes, simulate trend data based on current low stock count
+      const variation = Math.floor(Math.random() * 3) - 1
+      const count = Math.max(0, baseLowStockCount + variation)
+      
+      return {
+        date: dateKey,
+        dateLabel: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        lowStockCount: count,
+      }
+    })
+    
+    return res.json(trendData)
+  } catch (error) {
+    logger.error('Failed to fetch low stock trend:', error)
+    return res.status(500).json({ message: 'Failed to fetch low stock trend', error: error.message })
+  }
+})
+
+app.get('/api/metrics/sales-over-time', authenticateToken, async (req, res) => {
+  try {
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
+    
+    // Group orders by day
+    const dailyData = {}
+    const currentDate = new Date(startDate)
+    
+    while (currentDate <= endDate) {
+      const dateKey = currentDate.toISOString().split('T')[0]
+      dailyData[dateKey] = { orders: 0, revenue: 0 }
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
+    
+    // Fetch orders by storeId
+    const ordersList = await Order.findAll({
+      where: {
+        storeId: req.storeId,
+        createdAt: {
+          [Op.gte]: startDate,
+          [Op.lte]: endDate,
+        },
+      },
+    })
+    
+    ordersList.forEach((order) => {
+      const oData = order.toJSON ? order.toJSON() : order
+      if (!oData.createdAt) return
+      const orderDate = new Date(oData.createdAt)
+      const dateKey = orderDate.toISOString().split('T')[0]
+      if (dailyData[dateKey]) {
+        dailyData[dateKey].orders += 1
+        dailyData[dateKey].revenue += oData.total ?? 0
+      }
+    })
+    
+    const dataPoints = Object.entries(dailyData).map(([date, data]) => ({
+      date,
+      dateLabel: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      orders: data.orders,
+      revenue: data.revenue,
+    }))
+    
+    const totalOrders = dataPoints.reduce((sum, point) => sum + point.orders, 0)
+    const totalRevenue = dataPoints.reduce((sum, point) => sum + point.revenue, 0)
+    
+    return res.json({
+      data: dataPoints,
+      summary: {
+        totalOrders,
+        totalRevenue,
+        averageOrdersPerDay: dataPoints.length > 0 ? (totalOrders / dataPoints.length).toFixed(1) : 0,
+        averageRevenuePerDay: dataPoints.length > 0 ? (totalRevenue / dataPoints.length).toFixed(2) : 0,
+      },
+    })
+  } catch (error) {
+    logger.error('Failed to fetch sales over time:', error)
+    return res.status(500).json({ message: 'Failed to fetch sales over time', error: error.message })
+  }
 })
 
 // Growth comparison endpoint
-app.get('/api/metrics/growth-comparison', authenticateToken, (req, res) => {
-  const period = req.query.period || 'month' // 'week' or 'month'
-  const basePeriod = req.query.basePeriod || 'previous' // 'previous' or 'year'
-  
-  const now = new Date()
-  let currentStart, currentEnd, previousStart, previousEnd
-  
-  if (period === 'week') {
-    // Current week
-    const dayOfWeek = now.getDay()
-    currentEnd = new Date(now)
-    currentEnd.setHours(23, 59, 59, 999)
-    currentStart = new Date(now)
-    currentStart.setDate(now.getDate() - dayOfWeek)
-    currentStart.setHours(0, 0, 0, 0)
+app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) => {
+  try {
+    const period = req.query.period || 'month' // 'week' or 'month'
+    const basePeriod = req.query.basePeriod || 'previous' // 'previous' or 'year'
     
-    // Previous week
-    previousEnd = new Date(currentStart)
-    previousEnd.setMilliseconds(-1)
-    previousStart = new Date(currentStart)
-    previousStart.setDate(currentStart.getDate() - 7)
-  } else {
-    // Current month
-    currentEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-    currentStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+    const now = new Date()
+    let currentStart, currentEnd, previousStart, previousEnd
     
-    // Previous month
-    previousEnd = new Date(currentStart)
-    previousEnd.setMilliseconds(-1)
-    previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0)
-  }
-  
-  // Filter orders by storeId
-  const storeOrders = filterByStore(orders, req.storeId)
-  
-  const getPeriodData = (start, end) => {
-    const periodOrders = storeOrders.filter((order) => {
-      if (!order.createdAt) return false
-      const orderDate = new Date(order.createdAt)
-      return orderDate >= start && orderDate <= end
-    })
-    
-    return {
-      orders: periodOrders.length,
-      revenue: periodOrders.reduce((sum, order) => sum + (order.total ?? 0), 0),
-      customers: new Set(periodOrders.map((order) => order.email)).size,
+    if (period === 'week') {
+      // Current week
+      const dayOfWeek = now.getDay()
+      currentEnd = new Date(now)
+      currentEnd.setHours(23, 59, 59, 999)
+      currentStart = new Date(now)
+      currentStart.setDate(now.getDate() - dayOfWeek)
+      currentStart.setHours(0, 0, 0, 0)
+      
+      // Previous week
+      previousEnd = new Date(currentStart)
+      previousEnd.setMilliseconds(-1)
+      previousStart = new Date(currentStart)
+      previousStart.setDate(currentStart.getDate() - 7)
+    } else {
+      // Current month
+      currentEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+      currentStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
+      
+      // Previous month
+      previousEnd = new Date(currentStart)
+      previousEnd.setMilliseconds(-1)
+      previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0)
     }
+    
+    const getPeriodData = async (start, end) => {
+      const periodOrders = await Order.findAll({
+        where: {
+          storeId: req.storeId,
+          createdAt: {
+            [Op.gte]: start,
+            [Op.lte]: end,
+          },
+        },
+      })
+      
+      const ordersData = periodOrders.map(o => o.toJSON ? o.toJSON() : o)
+      const uniqueEmails = new Set(ordersData.map(o => o.email).filter(Boolean))
+      
+      return {
+        orders: ordersData.length,
+        revenue: ordersData.reduce((sum, order) => sum + (order.total ?? 0), 0),
+        customers: uniqueEmails.size,
+      }
+    }
+    
+    const [currentData, previousData] = await Promise.all([
+      getPeriodData(currentStart, currentEnd),
+      getPeriodData(previousStart, previousEnd),
+    ])
+    
+    const calculateGrowth = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0
+      return ((current - previous) / previous) * 100
+    }
+    
+    return res.json({
+      period,
+      current: {
+        period: period === 'week' ? 'Last 7 days' : 'This month',
+        orders: currentData.orders,
+        revenue: currentData.revenue,
+        startDate: currentStart.toISOString(),
+        endDate: currentEnd.toISOString(),
+      },
+      previous: {
+        period: period === 'week' ? 'Previous 7 days' : 'Last month',
+        orders: previousData.orders,
+        revenue: previousData.revenue,
+        startDate: previousStart.toISOString(),
+        endDate: previousEnd.toISOString(),
+      },
+      change: {
+        ordersPercent: calculateGrowth(currentData.orders, previousData.orders),
+        revenuePercent: calculateGrowth(currentData.revenue, previousData.revenue),
+      },
+    })
+  } catch (error) {
+    logger.error('Failed to fetch growth comparison:', error)
+    return res.status(500).json({ message: 'Failed to fetch growth comparison', error: error.message })
   }
-  
-  const currentData = getPeriodData(currentStart, currentEnd)
-  const previousData = getPeriodData(previousStart, previousEnd)
-  
-  const calculateGrowth = (current, previous) => {
-    if (previous === 0) return current > 0 ? 100 : 0
-    return ((current - previous) / previous) * 100
-  }
-  
-  res.json({
-    period,
-    current: {
-      period: period === 'week' ? 'Last 7 days' : 'This month',
-      orders: currentData.orders,
-      revenue: currentData.revenue,
-      startDate: currentStart.toISOString(),
-      endDate: currentEnd.toISOString(),
-    },
-    previous: {
-      period: period === 'week' ? 'Previous 7 days' : 'Last month',
-      orders: previousData.orders,
-      revenue: previousData.revenue,
-      startDate: previousStart.toISOString(),
-      endDate: previousEnd.toISOString(),
-    },
-    change: {
-      ordersPercent: calculateGrowth(currentData.orders, previousData.orders),
-      revenuePercent: calculateGrowth(currentData.revenue, previousData.revenue),
-    },
-  })
 })
 
 // Helper function to send CSV responses
@@ -1928,10 +2011,21 @@ const sendCsv = (res, filename, headers, rows) => {
 }
 
 // User routes
-app.get('/api/users', authenticateToken, authorizeRole('admin'), (req, res) => {
-  // Filter users by storeId
-  const storeUsers = filterByStore(users, req.storeId)
-  return res.json(storeUsers.map((user) => sanitizeUser(user)))
+app.get('/api/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    // Fetch users by storeId
+    const usersList = await User.findAll({
+      where: { storeId: req.storeId },
+      order: [['createdAt', 'DESC']],
+    })
+    return res.json(usersList.map((user) => {
+      const userData = user.toJSON ? user.toJSON() : user
+      return sanitizeUser(userData)
+    }))
+  } catch (error) {
+    logger.error('Failed to fetch users:', error)
+    return res.status(500).json({ message: 'Failed to fetch users', error: error.message })
+  }
 })
 
 app.get('/api/users/me', authenticateToken, (req, res) => {
@@ -1945,23 +2039,32 @@ app.get('/api/users/me', authenticateToken, (req, res) => {
   return res.json(sanitizeUser(req.user))
 })
 
-app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
-  // req.user is already set by authenticateToken middleware (full user object)
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Invalid or missing token.' })
-  }
-  // User is already found and attached by authenticateToken
-  const user = req.user
-
-  const allowedFields = ['fullName', 'phone', 'profilePictureUrl', 'defaultDateRangeFilter', 'notificationPreferences']
-  Object.entries(req.body).forEach(([key, value]) => {
-    if (allowedFields.includes(key) && value !== undefined) {
-      user[key] = value
+app.put('/api/users/me', authenticateToken, validateUserProfile, async (req, res) => {
+  try {
+    // req.user is already set by authenticateToken middleware (full user object)
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Invalid or missing token.' })
     }
-  })
+    // User is already found and attached by authenticateToken
+    const user = req.user
 
-  user.updatedAt = new Date().toISOString()
-  return res.json(sanitizeUser(user))
+    const allowedFields = ['fullName', 'phone', 'profilePictureUrl', 'defaultDateRangeFilter', 'notificationPreferences']
+    const updateData = {}
+    Object.entries(req.body).forEach(([key, value]) => {
+      if (allowedFields.includes(key) && value !== undefined) {
+        updateData[key] = value
+      }
+    })
+
+    await user.update(updateData)
+    await user.reload()
+
+    const userData = user.toJSON ? user.toJSON() : user
+    return res.json(sanitizeUser(userData))
+  } catch (error) {
+    logger.error('Failed to update user profile:', error)
+    return res.status(500).json({ message: 'Failed to update user profile', error: error.message })
+  }
 })
 
 app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
@@ -2142,544 +2245,758 @@ app.get('/api/settings/business/public', async (req, res) => {
   }
 })
 
-app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), (req, res) => {
+app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
     // Return store-specific settings
-    const storeSettings = getStoreSettings(req.storeId)
+    const storeSettings = await getStoreSettings(req.storeId)
     if (!storeSettings) {
       return res.status(404).json({ message: 'Store settings not found.' })
     }
     return res.json(storeSettings)
   } catch (error) {
-    console.error('[ERROR] /api/settings/business:', error)
+    logger.error('[ERROR] /api/settings/business:', error)
     return res.status(500).json({ message: 'Failed to fetch business settings', error: error.message })
   }
 })
 
-app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, (req, res) => {
+app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, async (req, res) => {
   try {
-    const store = findStoreById(req.storeId)
+    const store = await findStoreById(req.storeId)
     if (!store) {
       return res.status(404).json({ message: 'Store not found.' })
     }
     
     const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'country', 'dashboardName']
+    const updateData = {}
     Object.entries(req.body).forEach(([key, value]) => {
       if (allowedFields.includes(key) && value !== undefined) {
-        store[key] = value
+        updateData[key] = value
       }
     })
     
-    store.updatedAt = new Date().toISOString()
-    return res.json(getStoreSettings(req.storeId))
+    // Update store or create/update Setting record
+    await store.update(updateData)
+    
+    // Also update Setting if it exists
+    let setting = await Setting.findOne({ where: { storeId: req.storeId } })
+    if (setting) {
+      await setting.update(updateData)
+    } else {
+      await Setting.create({
+        storeId: req.storeId,
+        ...updateData,
+      })
+    }
+    
+    const storeSettings = await getStoreSettings(req.storeId)
+    return res.json(storeSettings)
   } catch (error) {
-    console.error('[ERROR] /api/settings/business:', error)
+    logger.error('[ERROR] /api/settings/business:', error)
     return res.status(500).json({ message: 'Failed to update business settings', error: error.message })
   }
 })
 
 // Product routes
 // Public endpoint for products (for test-order page)
-app.get('/api/products/public', (req, res) => {
+app.get('/api/products/public', async (req, res) => {
   try {
     // Filter by storeId if provided
     const storeId = req.query.storeId
-    let filteredProducts = products
     
+    const where = { status: 'active' }
     if (storeId) {
-      filteredProducts = filterByStore(products, storeId)
+      where.storeId = storeId
     }
     
+    const productsList = await Product.findAll({
+      where,
+      order: [['name', 'ASC']],
+    })
+    
     // Return only active products with basic info (public access)
-    const publicProducts = filteredProducts
-      .filter((p) => p.status === 'active')
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        price: p.price,
-        stockQuantity: p.stockQuantity,
-        category: p.category,
-        imageUrl: p.imageUrl,
-        status: p.status,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name))
+    const publicProducts = productsList.map((p) => {
+      const productData = p.toJSON ? p.toJSON() : p
+      return {
+        id: productData.id,
+        name: productData.name,
+        price: productData.price,
+        stockQuantity: productData.stockQuantity,
+        category: productData.category,
+        imageUrl: productData.imageUrl,
+        status: productData.status,
+      }
+    })
+    
     return res.json(publicProducts)
   } catch (error) {
-    console.error('[ERROR] /api/products/public:', error)
+    logger.error('[ERROR] /api/products/public:', error)
     return res.status(500).json({ message: 'Failed to fetch products', error: error.message })
   }
 })
 
-app.get('/api/products', authenticateToken, (req, res) => {
-  // Filter products by storeId
-  let filteredProducts = filterByStore(products, req.storeId)
-  const lowStockOnly = req.query.lowStock === 'true'
+app.get('/api/products', authenticateToken, async (req, res) => {
+  try {
+    const where = { storeId: req.storeId }
+    const lowStockOnly = req.query.lowStock === 'true'
 
-  if (lowStockOnly) {
-    filteredProducts = filteredProducts.filter((p) => p.lowStock)
-  }
-
-  return res.json(filteredProducts)
-})
-
-app.get('/api/products/low-stock', authenticateToken, (req, res) => {
-  // Filter products by storeId
-  const storeProducts = filterByStore(products, req.storeId)
-  return res.json(storeProducts.filter((p) => p.lowStock))
-})
-
-app.get('/api/products/:id', authenticateToken, (req, res) => {
-  const product = findProductById(req.params.id)
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found.' })
-  }
-  // Verify product belongs to user's store
-  if (product.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Product does not belong to your store.' })
-  }
-  return res.json(product)
-})
-
-app.post('/api/products', authenticateToken, authorizeRole('admin'), validateProduct, (req, res) => {
-  const { name, description, price, stockQuantity, reorderThreshold, category, imageUrl, status } = req.body
-
-  const newProduct = {
-    id: crypto.randomUUID(),
-    storeId: req.storeId, // Assign to user's store
-    name: String(name).trim(),
-    description: description ? String(description).trim() : '',
-    price: Number(price),
-    stockQuantity: Number(stockQuantity),
-    reorderThreshold: Number(reorderThreshold),
-    lowStock: false,
-    status: status || 'active',
-    category: category ? String(category).trim() : undefined,
-    imageUrl: imageUrl ? String(imageUrl).trim() : undefined,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }
-
-  ensureLowStockFlag(newProduct)
-  products.unshift(newProduct)
-  return res.status(201).json(newProduct)
-})
-
-app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validateProduct, (req, res) => {
-  const product = findProductById(req.params.id)
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found.' })
-  }
-
-  // Verify product belongs to user's store
-  if (product.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Product does not belong to your store.' })
-  }
-
-  const allowedFields = ['name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'category', 'imageUrl', 'status']
-  Object.entries(req.body).forEach(([key, value]) => {
-    if (allowedFields.includes(key) && value !== undefined) {
-      product[key] = value
+    if (lowStockOnly) {
+      // Calculate lowStock condition: stockQuantity <= reorderThreshold
+      // Use Sequelize.literal for column comparison
+      const { Sequelize } = require('sequelize')
+      where[Op.and] = [
+        Sequelize.literal('stockQuantity <= reorderThreshold')
+      ]
     }
-  })
 
-  ensureLowStockFlag(product)
-  product.updatedAt = new Date().toISOString()
-  return res.json(product)
+    const productsList = await Product.findAll({
+      where,
+      order: [['name', 'ASC']],
+    })
+
+    // Calculate lowStock flag for each product
+    const productsWithLowStock = productsList.map((p) => {
+      const productData = p.toJSON ? p.toJSON() : p
+      return {
+        ...productData,
+        lowStock: productData.stockQuantity <= productData.reorderThreshold,
+      }
+    })
+
+    return res.json(productsWithLowStock)
+  } catch (error) {
+    logger.error('Failed to fetch products:', error)
+    return res.status(500).json({ message: 'Failed to fetch products', error: error.message })
+  }
 })
 
-app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), (req, res) => {
-  const product = findProductById(req.params.id)
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found.' })
-  }
+app.get('/api/products/low-stock', authenticateToken, async (req, res) => {
+  try {
+    const { Sequelize } = require('sequelize')
+    const productsList = await Product.findAll({
+      where: {
+        storeId: req.storeId,
+        [Op.and]: [
+          Sequelize.literal('stockQuantity <= reorderThreshold')
+        ]
+      },
+      order: [['name', 'ASC']],
+    })
 
-  // Verify product belongs to user's store
-  if (product.storeId !== req.storeId) {
-    return res.status(403).json({ message: 'Product does not belong to your store.' })
-  }
+    const lowStockProducts = productsList.map((p) => {
+      const productData = p.toJSON ? p.toJSON() : p
+      return {
+        ...productData,
+        lowStock: true,
+      }
+    })
 
-  const index = products.findIndex((p) => p.id === req.params.id)
-  products.splice(index, 1)
-  return res.status(204).send()
+    return res.json(lowStockProducts)
+  } catch (error) {
+    logger.error('Failed to fetch low stock products:', error)
+    return res.status(500).json({ message: 'Failed to fetch low stock products', error: error.message })
+  }
 })
 
-app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin'), (req, res) => {
-  const product = findProductById(req.params.id)
-  if (!product) {
-    return res.status(404).json({ message: 'Product not found.' })
+app.get('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const product = await findProductById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' })
+    }
+    
+    const productData = product.toJSON ? product.toJSON() : product
+    
+    // Verify product belongs to user's store
+    if (productData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Product does not belong to your store.' })
+    }
+    
+    // Add lowStock flag
+    const productWithLowStock = {
+      ...productData,
+      lowStock: productData.stockQuantity <= productData.reorderThreshold,
+    }
+    
+    return res.json(productWithLowStock)
+  } catch (error) {
+    logger.error('Failed to fetch product:', error)
+    return res.status(500).json({ message: 'Failed to fetch product', error: error.message })
   }
-  // Mark as reordered (in a real app, this would update a flag or create a purchase order)
-  product.updatedAt = new Date().toISOString()
-  return res.json(product)
+})
+
+app.post('/api/products', authenticateToken, authorizeRole('admin'), validateProduct, async (req, res) => {
+  try {
+    const { name, description, price, stockQuantity, reorderThreshold, category, imageUrl, status } = req.body
+
+    const newProduct = await Product.create({
+      storeId: req.storeId, // Assign to user's store
+      name: String(name).trim(),
+      description: description ? String(description).trim() : '',
+      price: Number(price),
+      stockQuantity: Number(stockQuantity),
+      reorderThreshold: Number(reorderThreshold),
+      status: status || 'active',
+      category: category ? String(category).trim() : undefined,
+      imageUrl: imageUrl ? String(imageUrl).trim() : undefined,
+    })
+
+    const productData = newProduct.toJSON ? newProduct.toJSON() : newProduct
+    const productWithLowStock = {
+      ...productData,
+      lowStock: productData.stockQuantity <= productData.reorderThreshold,
+    }
+
+    return res.status(201).json(productWithLowStock)
+  } catch (error) {
+    logger.error('Failed to create product:', error)
+    return res.status(500).json({ message: 'Failed to create product', error: error.message })
+  }
+})
+
+app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validateProduct, async (req, res) => {
+  try {
+    const product = await findProductById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' })
+    }
+
+    const productData = product.toJSON ? product.toJSON() : product
+
+    // Verify product belongs to user's store
+    if (productData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Product does not belong to your store.' })
+    }
+
+    const allowedFields = ['name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'category', 'imageUrl', 'status']
+    const updateData = {}
+    Object.entries(req.body).forEach(([key, value]) => {
+      if (allowedFields.includes(key) && value !== undefined) {
+        updateData[key] = value
+      }
+    })
+
+    // Update product in database
+    await product.update(updateData)
+    await product.reload()
+
+    const updatedProduct = product.toJSON ? product.toJSON() : product
+    const productWithLowStock = {
+      ...updatedProduct,
+      lowStock: updatedProduct.stockQuantity <= updatedProduct.reorderThreshold,
+    }
+
+    return res.json(productWithLowStock)
+  } catch (error) {
+    logger.error('Failed to update product:', error)
+    return res.status(500).json({ message: 'Failed to update product', error: error.message })
+  }
+})
+
+app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    const product = await findProductById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' })
+    }
+
+    const productData = product.toJSON ? product.toJSON() : product
+
+    // Verify product belongs to user's store
+    if (productData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Product does not belong to your store.' })
+    }
+
+    await product.destroy()
+    return res.status(204).send()
+  } catch (error) {
+    logger.error('Failed to delete product:', error)
+    return res.status(500).json({ message: 'Failed to delete product', error: error.message })
+  }
+})
+
+app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    const product = await findProductById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' })
+    }
+    
+    const productData = product.toJSON ? product.toJSON() : product
+    
+    // Verify product belongs to user's store
+    if (productData.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'Product does not belong to your store.' })
+    }
+    
+    // Mark as reordered (in a real app, this would update a flag or create a purchase order)
+    await product.update({ updatedAt: new Date() })
+    await product.reload()
+    
+    const updatedProduct = product.toJSON ? product.toJSON() : product
+    const productWithLowStock = {
+      ...updatedProduct,
+      lowStock: updatedProduct.stockQuantity <= updatedProduct.reorderThreshold,
+    }
+    
+    return res.json(productWithLowStock)
+  } catch (error) {
+    logger.error('Failed to reorder product:', error)
+    return res.status(500).json({ message: 'Failed to reorder product', error: error.message })
+  }
 })
 // Growth & Progress Reporting endpoints
-app.get('/api/reports/growth', authenticateToken, (req, res) => {
-  const period = req.query.period || 'month' // 'week', 'month', 'quarter'
-  const compareToPrevious = req.query.compareToPrevious !== 'false'
+app.get('/api/reports/growth', authenticateToken, async (req, res) => {
+  try {
+    const period = req.query.period || 'month' // 'week', 'month', 'quarter'
+    const compareToPrevious = req.query.compareToPrevious !== 'false'
 
-  const now = new Date()
-  let currentStart, currentEnd, previousStart, previousEnd
+    const now = new Date()
+    let currentStart, currentEnd, previousStart, previousEnd
 
-  if (period === 'week') {
-    // Current week (last 7 days)
-    currentEnd = new Date(now)
-    currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    // Previous week
-    previousEnd = new Date(currentStart)
-    previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000)
-  } else if (period === 'quarter') {
-    // Current quarter
-    const currentQuarter = Math.floor(now.getMonth() / 3)
-    currentStart = new Date(now.getFullYear(), currentQuarter * 3, 1)
-    currentEnd = new Date(now)
-    // Previous quarter
-    const prevQuarter = currentQuarter === 0 ? 3 : currentQuarter - 1
-    const prevYear = currentQuarter === 0 ? now.getFullYear() - 1 : now.getFullYear()
-    previousStart = new Date(prevYear, prevQuarter * 3, 1)
-    previousEnd = new Date(prevYear, (prevQuarter + 1) * 3, 0, 23, 59, 59, 999)
-  } else {
-    // Current month (default)
-    currentStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    currentEnd = new Date(now)
-    // Previous month
-    previousEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
-    previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  }
+    if (period === 'week') {
+      // Current week (last 7 days)
+      currentEnd = new Date(now)
+      currentStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      // Previous week
+      previousEnd = new Date(currentStart)
+      previousStart = new Date(currentStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+    } else if (period === 'quarter') {
+      // Current quarter
+      const currentQuarter = Math.floor(now.getMonth() / 3)
+      currentStart = new Date(now.getFullYear(), currentQuarter * 3, 1)
+      currentEnd = new Date(now)
+      // Previous quarter
+      const prevQuarter = currentQuarter === 0 ? 3 : currentQuarter - 1
+      const prevYear = currentQuarter === 0 ? now.getFullYear() - 1 : now.getFullYear()
+      previousStart = new Date(prevYear, prevQuarter * 3, 1)
+      previousEnd = new Date(prevYear, (prevQuarter + 1) * 3, 0, 23, 59, 59, 999)
+    } else {
+      // Current month (default)
+      currentStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      currentEnd = new Date(now)
+      // Previous month
+      previousEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+      previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    }
 
-  // Filter by storeId first
-  const storeOrders = filterByStore(orders, req.storeId)
-  const storeReturns = filterByStore(returns, req.storeId)
-  const storeCustomers = filterByStore(customers, req.storeId)
+    const filterOrders = async (start, end) => {
+      return await Order.findAll({
+        where: {
+          storeId: req.storeId,
+          createdAt: {
+            [Op.gte]: start,
+            [Op.lte]: end,
+          },
+        },
+      })
+    }
 
-  const filterOrders = (start, end) => {
-    return storeOrders.filter((order) => {
-      if (!order.createdAt) return false
-      const orderDate = new Date(order.createdAt)
-      return orderDate >= start && orderDate <= end
+    const filterReturns = async (start, end) => {
+      return await Return.findAll({
+        where: {
+          storeId: req.storeId,
+          dateRequested: {
+            [Op.gte]: start,
+            [Op.lte]: end,
+          },
+        },
+      })
+    }
+
+    const filterCustomers = async (start, end) => {
+      return await Customer.findAll({
+        where: {
+          storeId: req.storeId,
+          createdAt: {
+            [Op.gte]: start,
+            [Op.lte]: end,
+          },
+        },
+      })
+    }
+
+    const [currentOrdersList, previousOrdersList, currentReturnsList, previousReturnsList, currentCustomersList] = await Promise.all([
+      filterOrders(currentStart, currentEnd),
+      compareToPrevious ? filterOrders(previousStart, previousEnd) : Promise.resolve([]),
+      filterReturns(currentStart, currentEnd),
+      compareToPrevious ? filterReturns(previousStart, previousEnd) : Promise.resolve([]),
+      filterCustomers(currentStart, currentEnd),
+    ])
+
+    const currentOrders = currentOrdersList.map(o => o.toJSON ? o.toJSON() : o)
+    const previousOrders = previousOrdersList.map(o => o.toJSON ? o.toJSON() : o)
+
+    const totalSales = currentOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+    const totalOrders = currentOrders.length
+    const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0
+
+    const previousSales = previousOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+    const previousOrdersCount = previousOrders.length
+    const previousAverageOrderValue = previousOrdersCount > 0 ? previousSales / previousOrdersCount : 0
+
+    const growthSalesPct = compareToPrevious && previousSales > 0
+      ? ((totalSales - previousSales) / previousSales * 100)
+      : 0
+    const growthOrdersPct = compareToPrevious && previousOrdersCount > 0
+      ? ((totalOrders - previousOrdersCount) / previousOrdersCount * 100)
+      : 0
+
+    const returnRatePct = totalOrders > 0 ? (currentReturnsList.length / totalOrders * 100) : 0
+    const previousReturnRatePct = compareToPrevious && previousOrdersCount > 0
+      ? (previousReturnsList.length / previousOrdersCount * 100)
+      : 0
+
+    const newCustomersCount = currentCustomersList.length
+
+    return res.json({
+      totalSales,
+      totalOrders,
+      averageOrderValue,
+      growthSalesPct: parseFloat(growthSalesPct.toFixed(1)),
+      growthOrdersPct: parseFloat(growthOrdersPct.toFixed(1)),
+      returnRatePct: parseFloat(returnRatePct.toFixed(1)),
+      returnRateChangePct: compareToPrevious
+        ? parseFloat((returnRatePct - previousReturnRatePct).toFixed(1))
+        : 0,
+      newCustomersCount,
+      period: period === 'week' ? 'Last 7 days' : period === 'quarter' ? 'This quarter' : 'This month',
+      startDate: currentStart.toISOString(),
+      endDate: currentEnd.toISOString(),
     })
+  } catch (error) {
+    logger.error('Failed to fetch growth report:', error)
+    return res.status(500).json({ message: 'Failed to fetch growth report', error: error.message })
   }
-
-  const filterReturns = (start, end) => {
-    return storeReturns.filter((returnRequest) => {
-      if (!returnRequest.dateRequested) return false
-      const returnDate = new Date(returnRequest.dateRequested)
-      return returnDate >= start && returnDate <= end
-    })
-  }
-
-  const filterCustomers = (start, end) => {
-    return storeCustomers.filter((customer) => {
-      if (!customer.createdAt) return false
-      const customerDate = new Date(customer.createdAt)
-      return customerDate >= start && customerDate <= end
-    })
-  }
-
-  const currentOrders = filterOrders(currentStart, currentEnd)
-  const previousOrders = compareToPrevious ? filterOrders(previousStart, previousEnd) : []
-
-  const currentReturns = filterReturns(currentStart, currentEnd)
-  const currentCustomers = filterCustomers(currentStart, currentEnd)
-
-  const totalSales = currentOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
-  const totalOrders = currentOrders.length
-  const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0
-
-  const previousSales = previousOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
-  const previousOrdersCount = previousOrders.length
-  const previousAverageOrderValue = previousOrdersCount > 0 ? previousSales / previousOrdersCount : 0
-
-  const growthSalesPct = compareToPrevious && previousSales > 0
-    ? ((totalSales - previousSales) / previousSales * 100)
-    : 0
-  const growthOrdersPct = compareToPrevious && previousOrdersCount > 0
-    ? ((totalOrders - previousOrdersCount) / previousOrdersCount * 100)
-    : 0
-
-  const returnRatePct = totalOrders > 0 ? (currentReturns.length / totalOrders * 100) : 0
-  const previousReturnRatePct = compareToPrevious && previousOrdersCount > 0
-    ? (filterReturns(previousStart, previousEnd).length / previousOrdersCount * 100)
-    : 0
-
-  const newCustomersCount = currentCustomers.length
-
-  res.json({
-    totalSales,
-    totalOrders,
-    averageOrderValue,
-    growthSalesPct: parseFloat(growthSalesPct.toFixed(1)),
-    growthOrdersPct: parseFloat(growthOrdersPct.toFixed(1)),
-    returnRatePct: parseFloat(returnRatePct.toFixed(1)),
-    returnRateChangePct: compareToPrevious
-      ? parseFloat((returnRatePct - previousReturnRatePct).toFixed(1))
-      : 0,
-    newCustomersCount,
-    period: period === 'week' ? 'Last 7 days' : period === 'quarter' ? 'This quarter' : 'This month',
-    startDate: currentStart.toISOString(),
-    endDate: currentEnd.toISOString(),
-  })
 })
 
-app.get('/api/reports/trends', authenticateToken, (req, res) => {
-  const metric = req.query.metric || 'sales' // 'sales', 'orders', 'customers'
-  const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
+app.get('/api/reports/trends', authenticateToken, async (req, res) => {
+  try {
+    const metric = req.query.metric || 'sales' // 'sales', 'orders', 'customers'
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
 
-  // Filter by storeId first
-  const storeOrders = filterByStore(orders, req.storeId)
-  const storeCustomers = filterByStore(customers, req.storeId)
+    // Group data by day
+    const dailyData = {}
+    const currentDate = new Date(startDate)
 
-  // Group data by day
-  const dailyData = {}
-  const currentDate = new Date(startDate)
+    while (currentDate <= endDate) {
+      const dateKey = currentDate.toISOString().split('T')[0]
+      dailyData[dateKey] = { date: dateKey, sales: 0, orders: 0, customers: 0 }
+      currentDate.setDate(currentDate.getDate() + 1)
+    }
 
-  while (currentDate <= endDate) {
-    const dateKey = currentDate.toISOString().split('T')[0]
-    dailyData[dateKey] = { date: dateKey, sales: 0, orders: 0, customers: 0 }
-    currentDate.setDate(currentDate.getDate() + 1)
-  }
+    if (metric === 'sales' || metric === 'orders') {
+      const ordersList = await Order.findAll({
+        where: {
+          storeId: req.storeId,
+          createdAt: {
+            [Op.gte]: startDate,
+            [Op.lte]: endDate,
+          },
+        },
+      })
 
-  if (metric === 'sales' || metric === 'orders') {
-    storeOrders.forEach((order) => {
-      if (!order.createdAt) return
-      const orderDate = new Date(order.createdAt)
-      if (orderDate < startDate || orderDate > endDate) return
+      ordersList.forEach((order) => {
+        const oData = order.toJSON ? order.toJSON() : order
+        if (!oData.createdAt) return
+        const orderDate = new Date(oData.createdAt)
+        const dateKey = orderDate.toISOString().split('T')[0]
+        if (dailyData[dateKey]) {
+          dailyData[dateKey].orders += 1
+          dailyData[dateKey].sales += oData.total ?? 0
+        }
+      })
+    }
 
-      const dateKey = orderDate.toISOString().split('T')[0]
-      if (dailyData[dateKey]) {
-        dailyData[dateKey].orders += 1
-        dailyData[dateKey].sales += order.total ?? 0
-      }
+    if (metric === 'customers') {
+      const customersList = await Customer.findAll({
+        where: {
+          storeId: req.storeId,
+          createdAt: {
+            [Op.gte]: startDate,
+            [Op.lte]: endDate,
+          },
+        },
+      })
+
+      customersList.forEach((customer) => {
+        const cData = customer.toJSON ? customer.toJSON() : customer
+        if (!cData.createdAt) return
+        const customerDate = new Date(cData.createdAt)
+        const dateKey = customerDate.toISOString().split('T')[0]
+        if (dailyData[dateKey]) {
+          dailyData[dateKey].customers += 1
+        }
+      })
+    }
+
+    const dataPoints = Object.values(dailyData)
+      .map((data) => ({
+        date: data.date,
+        dateLabel: new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: metric === 'sales' ? data.sales : metric === 'orders' ? data.orders : data.customers,
+        sales: data.sales,
+        orders: data.orders,
+        customers: data.customers,
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    return res.json({
+      metric,
+      data: dataPoints,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
     })
+  } catch (error) {
+    logger.error('Failed to fetch trends report:', error)
+    return res.status(500).json({ message: 'Failed to fetch trends report', error: error.message })
   }
-
-  if (metric === 'customers') {
-    storeCustomers.forEach((customer) => {
-      if (!customer.createdAt) return
-      const customerDate = new Date(customer.createdAt)
-      if (customerDate < startDate || customerDate > endDate) return
-
-      const dateKey = customerDate.toISOString().split('T')[0]
-      if (dailyData[dateKey]) {
-        dailyData[dateKey].customers += 1
-      }
-    })
-  }
-
-  const dataPoints = Object.values(dailyData)
-    .map((data) => ({
-      date: data.date,
-      dateLabel: new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      value: metric === 'sales' ? data.sales : metric === 'orders' ? data.orders : data.customers,
-      sales: data.sales,
-      orders: data.orders,
-      customers: data.customers,
-    }))
-    .sort((a, b) => a.date.localeCompare(b.date))
-
-  res.json({
-    metric,
-    data: dataPoints,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-  })
 })
 
-app.get('/api/export/orders', authenticateToken, (_req, res) => {
-  const headers = [
-    'Order ID',
-    'Created At',
-    'Customer Name',
-    'Customer Email',
-    'Product Name',
-    'Quantity',
-    'Status',
-    'Is Paid',
-    'Total',
-  ]
-  const rows = orders.map((order) => [
-    order.id,
-    order.createdAt,
-    order.customerName,
-    order.email,
-    order.productName,
-    order.quantity,
-    order.status,
-    order.isPaid ? 'Yes' : 'No',
-    order.total ?? '',
-  ])
-  return sendCsv(res, `orders_export_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows)
-})
-
-app.get('/api/export/products', authenticateToken, (_req, res) => {
-  const headers = [
-    'Product ID',
-    'Name',
-    'Price',
-    'Stock Quantity',
-    'Reorder Threshold',
-    'Low Stock',
-    'Status',
-    'Category',
-    'Updated At',
-  ]
-  const rows = products.map((product) => [
-    product.id,
-    product.name,
-    product.price,
-    product.stockQuantity,
-    product.reorderThreshold,
-    product.lowStock ? 'Yes' : 'No',
-    product.status,
-    product.category ?? '',
-    product.updatedAt ?? '',
-  ])
-  return sendCsv(
-    res,
-    `products_export_${new Date().toISOString().slice(0, 10)}.csv`,
-    headers,
-    rows,
-  )
-})
-
-app.get('/api/export/customers', authenticateToken, (_req, res) => {
-  const headers = ['Customer ID', 'Name', 'Email', 'Phone', 'Orders', 'Last Order Date']
-  const rows = customers.map((customer) => {
-    const serialized = serializeCustomer(customer)
-    return [
-      serialized.id,
-      serialized.name,
-      serialized.email,
-      serialized.phone ?? '',
-      serialized.orderCount ?? 0,
-      serialized.lastOrderDate ?? '',
+app.get('/api/export/orders', authenticateToken, async (req, res) => {
+  try {
+    const headers = [
+      'Order ID',
+      'Created At',
+      'Customer Name',
+      'Customer Email',
+      'Product Name',
+      'Quantity',
+      'Status',
+      'Is Paid',
+      'Total',
     ]
-  })
-  return sendCsv(
-    res,
-    `customers_export_${new Date().toISOString().slice(0, 10)}.csv`,
-    headers,
-    rows,
-  )
+    
+    const ordersList = await Order.findAll({
+      where: { storeId: req.storeId },
+      order: [['createdAt', 'DESC']],
+    })
+    
+    const rows = ordersList.map((order) => {
+      const oData = order.toJSON ? order.toJSON() : order
+      return [
+        oData.id,
+        oData.createdAt,
+        oData.customerName,
+        oData.email,
+        oData.productName,
+        oData.quantity,
+        oData.status,
+        oData.isPaid ? 'Yes' : 'No',
+        oData.total ?? '',
+      ]
+    })
+    
+    return sendCsv(res, `orders_export_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows)
+  } catch (error) {
+    logger.error('Failed to export orders:', error)
+    return res.status(500).json({ message: 'Failed to export orders', error: error.message })
+  }
+})
+
+app.get('/api/export/products', authenticateToken, async (req, res) => {
+  try {
+    const headers = [
+      'Product ID',
+      'Name',
+      'Price',
+      'Stock Quantity',
+      'Reorder Threshold',
+      'Low Stock',
+      'Status',
+      'Category',
+      'Updated At',
+    ]
+    
+    const productsList = await Product.findAll({
+      where: { storeId: req.storeId },
+      order: [['name', 'ASC']],
+    })
+    
+    const rows = productsList.map((product) => {
+      const pData = product.toJSON ? product.toJSON() : product
+      return [
+        pData.id,
+        pData.name,
+        pData.price,
+        pData.stockQuantity,
+        pData.reorderThreshold,
+        (pData.stockQuantity <= pData.reorderThreshold) ? 'Yes' : 'No',
+        pData.status,
+        pData.category ?? '',
+        pData.updatedAt ?? '',
+      ]
+    })
+    
+    return sendCsv(
+      res,
+      `products_export_${new Date().toISOString().slice(0, 10)}.csv`,
+      headers,
+      rows,
+    )
+  } catch (error) {
+    logger.error('Failed to export products:', error)
+    return res.status(500).json({ message: 'Failed to export products', error: error.message })
+  }
+})
+
+app.get('/api/export/customers', authenticateToken, async (req, res) => {
+  try {
+    const headers = ['Customer ID', 'Name', 'Email', 'Phone', 'Orders', 'Last Order Date']
+    
+    const customersList = await Customer.findAll({
+      where: { storeId: req.storeId },
+      order: [['createdAt', 'DESC']],
+    })
+    
+    const serializedCustomers = await Promise.all(
+      customersList.map(c => serializeCustomer(c))
+    )
+    
+    const rows = serializedCustomers.map((customer) => [
+      customer.id,
+      customer.name,
+      customer.email,
+      customer.phone ?? '',
+      customer.orderCount ?? 0,
+      customer.lastOrderDate ?? '',
+    ])
+    
+    return sendCsv(
+      res,
+      `customers_export_${new Date().toISOString().slice(0, 10)}.csv`,
+      headers,
+      rows,
+    )
+  } catch (error) {
+    logger.error('Failed to export customers:', error)
+    return res.status(500).json({ message: 'Failed to export customers', error: error.message })
+  }
 })
 
 app.post(
   '/api/import/products',
   authenticateToken,
   authorizeRole('admin'),
-  (req, res) => {
-    const payload = Array.isArray(req.body)
-      ? req.body
-      : Array.isArray(req.body?.products)
-        ? req.body.products
-        : null
+  async (req, res) => {
+    try {
+      const payload = Array.isArray(req.body)
+        ? req.body
+        : Array.isArray(req.body?.products)
+          ? req.body.products
+          : null
 
-    if (!payload || payload.length === 0) {
-      return res
-        .status(400)
-        .json({ message: 'Provide an array of products to import.' })
-    }
-
-    let created = 0
-    let updated = 0
-    const errors = []
-
-    payload.forEach((item, index) => {
-      try {
-        if (!item || typeof item !== 'object') {
-          throw new Error('Invalid row format.')
-        }
-
-        const name = String(item.name ?? '').trim()
-        if (!name) {
-          throw new Error('Name is required.')
-        }
-
-        const price = Number(item.price ?? item.unitPrice ?? 0)
-        if (Number.isNaN(price) || price < 0) {
-          throw new Error('Price must be a non-negative number.')
-        }
-
-        const stockQuantity = Number(item.stockQuantity ?? item.stock ?? 0)
-        if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
-          throw new Error('Stock quantity must be a non-negative integer.')
-        }
-
-        const reorderThresholdRaw =
-          item.reorderThreshold ?? Math.floor(stockQuantity / 2)
-        const reorderThreshold = Number(reorderThresholdRaw)
-        if (!Number.isInteger(reorderThreshold) || reorderThreshold < 0) {
-          throw new Error('Reorder threshold must be a non-negative integer.')
-        }
-
-        const status =
-          item.status && ['active', 'inactive'].includes(item.status)
-            ? item.status
-            : 'active'
-
-        let product = null
-
-        if (item.id) {
-          product = findProductById(String(item.id))
-        }
-        if (!product) {
-          product = products.find(
-            (candidate) =>
-              candidate.name.toLowerCase() === name.toLowerCase(),
-          )
-        }
-
-        if (product) {
-          product.name = name
-          product.price = price
-          product.stockQuantity = stockQuantity
-          product.reorderThreshold = reorderThreshold
-          product.status = status
-          product.description =
-            (item.description && String(item.description)) ?? product.description ?? ''
-          product.category =
-            (item.category && String(item.category)) || undefined
-          product.imageUrl =
-            (item.imageUrl && String(item.imageUrl)) || undefined
-          ensureLowStockFlag(product)
-          product.updatedAt = new Date().toISOString()
-          updated += 1
-        } else {
-          const newProduct = {
-            id:
-              (item.id && String(item.id)) ||
-              crypto.randomUUID(),
-            name,
-            description: item.description ? String(item.description) : '',
-            price,
-            stockQuantity,
-            reorderThreshold,
-            lowStock: false,
-            status,
-            category: item.category ? String(item.category) : undefined,
-            imageUrl: item.imageUrl ? String(item.imageUrl) : undefined,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }
-          ensureLowStockFlag(newProduct)
-          products.push(newProduct)
-          created += 1
-        }
-      } catch (error) {
-        errors.push({
-          index,
-          message: error instanceof Error ? error.message : 'Unknown error.',
-          row: item,
-        })
+      if (!payload || payload.length === 0) {
+        return res
+          .status(400)
+          .json({ message: 'Provide an array of products to import.' })
       }
-    })
 
-    return res.json({
-      created,
-      updated,
-      failed: errors.length,
-      errors,
-    })
+      let created = 0
+      let updated = 0
+      const errors = []
+
+      // Process imports sequentially to avoid race conditions
+      for (let index = 0; index < payload.length; index++) {
+        const item = payload[index]
+        try {
+          if (!item || typeof item !== 'object') {
+            throw new Error('Invalid row format.')
+          }
+
+          const name = String(item.name ?? '').trim()
+          if (!name) {
+            throw new Error('Name is required.')
+          }
+
+          const price = Number(item.price ?? item.unitPrice ?? 0)
+          if (Number.isNaN(price) || price < 0) {
+            throw new Error('Price must be a non-negative number.')
+          }
+
+          const stockQuantity = Number(item.stockQuantity ?? item.stock ?? 0)
+          if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
+            throw new Error('Stock quantity must be a non-negative integer.')
+          }
+
+          const reorderThresholdRaw =
+            item.reorderThreshold ?? Math.floor(stockQuantity / 2)
+          const reorderThreshold = Number(reorderThresholdRaw)
+          if (!Number.isInteger(reorderThreshold) || reorderThreshold < 0) {
+            throw new Error('Reorder threshold must be a non-negative integer.')
+          }
+
+          const status =
+            item.status && ['active', 'inactive'].includes(item.status)
+              ? item.status
+              : 'active'
+
+          let product = null
+
+          if (item.id) {
+            product = await findProductById(String(item.id))
+            // Verify product belongs to user's store
+            if (product) {
+              const pData = product.toJSON ? product.toJSON() : product
+              if (pData.storeId !== req.storeId) {
+                product = null // Don't allow updating products from other stores
+              }
+            }
+          }
+          if (!product) {
+            product = await Product.findOne({
+              where: {
+                name: { [Op.like]: name },
+                storeId: req.storeId,
+              },
+            })
+          }
+
+          if (product) {
+            await product.update({
+              name,
+              price,
+              stockQuantity,
+              reorderThreshold,
+              status,
+              description: (item.description && String(item.description)) ?? (product.description || ''),
+              category: item.category ? String(item.category) : undefined,
+              imageUrl: item.imageUrl ? String(item.imageUrl) : undefined,
+            })
+            updated += 1
+          } else {
+            await Product.create({
+              storeId: req.storeId,
+              name,
+              description: item.description ? String(item.description) : '',
+              price,
+              stockQuantity,
+              reorderThreshold,
+              status,
+              category: item.category ? String(item.category) : undefined,
+              imageUrl: item.imageUrl ? String(item.imageUrl) : undefined,
+            })
+            created += 1
+          }
+        } catch (error) {
+          errors.push({
+            index,
+            message: error instanceof Error ? error.message : 'Unknown error.',
+            row: item,
+          })
+        }
+      }
+
+      return res.json({
+        created,
+        updated,
+        failed: errors.length,
+        errors: errors.length > 0 ? errors : undefined,
+      })
+    } catch (error) {
+      logger.error('Failed to import products:', error)
+      return res.status(500).json({ message: 'Failed to import products', error: error.message })
+    }
   },
 )
 
