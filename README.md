@@ -191,6 +191,22 @@ See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for com
 
 **Default Currency & Country:** All stores default to **PKR (Pakistani Rupee)** and **Pakistan (PK)**.
 
+## Performance Testing
+
+See **[PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md)** for comprehensive performance, load, and stress testing guide.
+
+**Quick Performance Checks:**
+- Run database indexes migration: `cd backend && npx sequelize-cli db:migrate`
+- Check performance metrics: `GET /api/performance/metrics` (admin only)
+- Monitor health endpoint: `GET /api/health`
+- Run load tests: `k6 run backend/scripts/load-test-k6.js`
+
+**Performance Targets:**
+- Orders list: <500ms (p95)
+- Products list: <300ms (p95)
+- Dashboard metrics: <1s (p95)
+- Low stock query: <500ms (p95)
+
 ## Testing
 
 ### Comprehensive Test Plan

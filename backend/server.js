@@ -779,6 +779,21 @@ app.get('/api/health', async (_req, res) => {
       external: Math.round(memoryUsage.external / 1024 / 1024),
     }
     
+    // Get CPU usage (if available)
+    const cpuUsage = process.cpuUsage()
+    const cpuUsagePercent = {
+      user: Math.round(cpuUsage.user / 1000), // microseconds to milliseconds
+      system: Math.round(cpuUsage.system / 1000),
+    }
+    
+    // Get database connection pool stats
+    const poolStats = db.sequelize.connectionManager.pool ? {
+      size: db.sequelize.connectionManager.pool.size || 0,
+      available: db.sequelize.connectionManager.pool.available || 0,
+      using: db.sequelize.connectionManager.pool.using || 0,
+      waiting: db.sequelize.connectionManager.pool.waiting || 0,
+    } : null
+    
     // Calculate API response time
     const apiLatency = Date.now() - startTime
     
@@ -791,10 +806,12 @@ app.get('/api/health', async (_req, res) => {
         status: dbStatus.status,
         latency: dbStatus.latency,
         error: dbStatus.error || null,
+        pool: poolStats,
       },
       performance: {
         apiLatency,
         memory: memoryMB,
+        cpu: cpuUsagePercent,
       },
       version: require('./package.json').version || '1.0.0',
     }
@@ -811,6 +828,112 @@ app.get('/api/health', async (_req, res) => {
       timestamp: new Date().toISOString(),
       error: error.message,
     })
+  }
+})
+
+// Performance metrics endpoint (admin only)
+app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    const { Order, Product, Customer, Return, User } = db
+    
+    // Get database query performance metrics
+    const queryStartTime = Date.now()
+    
+    // Test common queries and measure performance
+    const metrics = {
+      timestamp: new Date().toISOString(),
+      database: {
+        connectionPool: db.sequelize.connectionManager.pool ? {
+          size: db.sequelize.connectionManager.pool.size || 0,
+          available: db.sequelize.connectionManager.pool.available || 0,
+          using: db.sequelize.connectionManager.pool.using || 0,
+          waiting: db.sequelize.connectionManager.pool.waiting || 0,
+        } : null,
+      },
+      queries: {},
+      counts: {},
+    }
+    
+    // Measure query performance for common operations
+    const storeId = req.storeId
+    
+    // Orders list query
+    const ordersStart = Date.now()
+    await Order.findAll({
+      where: { storeId },
+      limit: 10,
+      order: [['createdAt', 'DESC']],
+    })
+    metrics.queries.ordersList = Date.now() - ordersStart
+    
+    // Products list query
+    const productsStart = Date.now()
+    await Product.findAll({
+      where: { storeId },
+      limit: 10,
+      order: [['name', 'ASC']],
+    })
+    metrics.queries.productsList = Date.now() - productsStart
+    
+    // Low stock query
+    const lowStockStart = Date.now()
+    await Product.findAll({
+      where: {
+        storeId,
+        status: 'active',
+      },
+      attributes: ['id', 'name', 'stockQuantity', 'reorderThreshold'],
+    })
+    metrics.queries.lowStock = Date.now() - lowStockStart
+    
+    // Customers list query
+    const customersStart = Date.now()
+    await Customer.findAll({
+      where: { storeId },
+      limit: 10,
+      order: [['createdAt', 'DESC']],
+    })
+    metrics.queries.customersList = Date.now() - customersStart
+    
+    // Returns list query
+    const returnsStart = Date.now()
+    await Return.findAll({
+      where: { storeId },
+      limit: 10,
+      order: [['dateRequested', 'DESC']],
+    })
+    metrics.queries.returnsList = Date.now() - returnsStart
+    
+    // Get record counts
+    metrics.counts.orders = await Order.count({ where: { storeId } })
+    metrics.counts.products = await Product.count({ where: { storeId } })
+    metrics.counts.customers = await Customer.count({ where: { storeId } })
+    metrics.counts.returns = await Return.count({ where: { storeId } })
+    metrics.counts.users = await User.count({ where: { storeId } })
+    
+    // Overall query time
+    metrics.database.totalQueryTime = Date.now() - queryStartTime
+    
+    // Memory usage
+    const memoryUsage = process.memoryUsage()
+    metrics.memory = {
+      rss: Math.round(memoryUsage.rss / 1024 / 1024),
+      heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+      heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+      external: Math.round(memoryUsage.external / 1024 / 1024),
+    }
+    
+    // CPU usage
+    const cpuUsage = process.cpuUsage()
+    metrics.cpu = {
+      user: Math.round(cpuUsage.user / 1000),
+      system: Math.round(cpuUsage.system / 1000),
+    }
+    
+    return res.json(metrics)
+  } catch (error) {
+    logger.error('Performance metrics failed:', error)
+    return res.status(500).json({ message: 'Failed to fetch performance metrics', error: error.message })
   }
 })
 
@@ -1178,11 +1301,25 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
       }
     }
     
-    // Fetch orders from database
+    // Pagination support
+    const limit = parseInt(req.query.limit || '100', 10) // Default 100, max 1000
+    const offset = parseInt(req.query.offset || '0', 10)
+    const maxLimit = 1000 // Prevent excessive queries
+    const safeLimit = Math.min(limit, maxLimit)
+    
+    // Fetch orders from database with pagination
     const ordersList = await Order.findAll({
       where,
       order: [['createdAt', 'DESC']],
+      limit: safeLimit,
+      offset: offset,
     })
+    
+    // Get total count for pagination metadata (only if limit/offset provided)
+    let totalCount = null
+    if (req.query.limit || req.query.offset) {
+      totalCount = await Order.count({ where })
+    }
     
     // Ensure all orders have required fields before sending
     const sanitizedOrders = ordersList.map((order) => {
@@ -1194,6 +1331,19 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
         total: orderData.total !== undefined && orderData.total !== null ? orderData.total : 0,
       }
     })
+    
+    // Return paginated response if pagination params provided
+    if (req.query.limit || req.query.offset) {
+      return res.json({
+        data: sanitizedOrders,
+        pagination: {
+          total: totalCount,
+          limit: safeLimit,
+          offset: offset,
+          hasMore: offset + sanitizedOrders.length < totalCount,
+        },
+      })
+    }
     
     return res.json(sanitizedOrders)
   } catch (error) {

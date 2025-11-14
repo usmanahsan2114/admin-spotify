@@ -22,10 +22,19 @@ async function initializeDatabase() {
     
     // Configure connection pool for production
     if (process.env.NODE_ENV === 'production') {
-      db.sequelize.connectionManager.pool.max = 10 // Max connections
-      db.sequelize.connectionManager.pool.min = 2 // Min connections
-      db.sequelize.connectionManager.pool.idle = 10000 // Idle timeout
-      logger.info('Database connection pool configured for production.')
+      const poolConfig = {
+        max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Max connections (default 20)
+        min: parseInt(process.env.DB_POOL_MIN || '5', 10), // Min connections (default 5)
+        idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10), // Idle timeout (default 10s)
+        acquire: parseInt(process.env.DB_POOL_ACQUIRE || '30000', 10), // Acquire timeout (default 30s)
+        evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Evict check interval (default 1s)
+      }
+      db.sequelize.connectionManager.pool.max = poolConfig.max
+      db.sequelize.connectionManager.pool.min = poolConfig.min
+      db.sequelize.connectionManager.pool.idle = poolConfig.idle
+      db.sequelize.connectionManager.pool.acquire = poolConfig.acquire
+      db.sequelize.connectionManager.pool.evict = poolConfig.evict
+      logger.info(`Database connection pool configured for production: max=${poolConfig.max}, min=${poolConfig.min}`)
     }
     
     // Sync database (creates tables if they don't exist)
