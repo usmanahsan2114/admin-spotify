@@ -2438,7 +2438,7 @@ app.put('/api/users/me', authenticateToken, validateUserProfile, async (req, res
   }
 })
 
-app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
+app.post('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), validateUser, async (req, res) => {
   try {
     const { email, password, name, role, active, permissions, storeId } = req.body
 
