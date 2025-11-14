@@ -40,9 +40,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useBusinessSettings } from '../../context/BusinessSettingsContext'
 import SiteAttribution from '../common/SiteAttribution'
 import { SkipLink } from '../common/SkipLink'
-import { fetchReturns } from '../../services/returnsService'
 import { fetchMetricsOverview } from '../../services/metricsService'
-import { fetchBusinessSettings } from '../../services/usersService'
 import { DRAWER_WIDTH, TOUCH_TARGET_MIN_SIZE } from '../../constants'
 
 const drawerWidth = DRAWER_WIDTH
@@ -287,7 +285,6 @@ const DashboardLayout = () => {
   const { mode, toggleMode } = useContext(ThemeModeContext)
   const { user, logout } = useAuth()
   const { settings } = useBusinessSettings()
-  const isDemoUser = user?.role === 'demo'
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen((prev) => !prev)
@@ -459,7 +456,7 @@ const DashboardLayout = () => {
             bgcolor: 'transparent',
           }}
         >
-          {isDemoUser && (
+          {false && (
             <Alert
               severity="info"
               sx={{
