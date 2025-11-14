@@ -191,16 +191,56 @@ See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for com
 
 **Default Currency & Country:** All stores default to **PKR (Pakistani Rupee)** and **Pakistan (PK)**.
 
-## Testing Checklist
+## Testing
 
-1. Visit `/login`, sign in as admin, ensure dashboard loads.
-2. Navigate Orders, Products, Users; confirm data tables render and actions succeed.
-3. Submit `/test-order` form—new order should appear in Orders table.
-4. Update an order status; verify timeline entry.
-5. Add/edit/delete a product.
-6. Invite a new user; confirm login works with returned credentials.
-7. Toggle dark mode; reload to confirm persistence.
-8. Sign up via `/signup`; ensure new account logs in automatically.
+### Comprehensive Test Plan
+
+See **[TEST_PLAN.md](./TEST_PLAN.md)** for complete functional and E2E workflow testing documentation.
+
+**Quick Testing Checklist:**
+
+1. **Login & Authentication:**
+   - Visit `/login`, sign in as admin, ensure dashboard loads
+   - Test Staff login and verify limited permissions
+   - Test Demo login and verify read-only access
+   - Test logout functionality
+
+2. **Core Workflows:**
+   - Submit `/test-order` form—new order should appear in Orders table
+   - Update an order status; verify timeline entry
+   - Add/edit/delete a product
+   - Create/edit customer and verify data persistence
+   - Submit return request and approve it
+
+3. **Dashboard & Charts:**
+   - Verify KPI cards display correct values
+   - Test date filters (Last 7 days, Last 30 days)
+   - Verify charts load without errors
+   - Toggle dark mode and verify charts adapt
+
+4. **Settings & Profile:**
+   - Update user profile (name, phone, picture)
+   - Change business settings (logo, brand color, currency)
+   - Verify settings persist across sessions
+
+5. **Export & Import:**
+   - Export products/customers/orders to CSV
+   - Import products from CSV (valid and invalid files)
+   - Verify error handling for invalid imports
+
+6. **Multi-Tenant:**
+   - Login as Admin of Store A, verify only Store A data visible
+   - Login as Admin of Store B, verify cannot see Store A data
+   - Verify demo store isolation and limited permissions
+
+7. **Responsiveness:**
+   - Test all pages on mobile viewport (375px)
+   - Verify no horizontal scroll
+   - Verify forms stack vertically
+   - Verify tables scroll horizontally
+   - Test on actual mobile device (recommended)
+
+**See `TEST_PLAN.md` for detailed test cases and expected results.**
 
 ## Project Structure
 
