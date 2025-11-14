@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
@@ -5,6 +6,11 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const crypto = require('crypto')
 const rateLimit = require('express-rate-limit')
+const helmet = require('helmet')
+const compression = require('compression')
+const winston = require('winston')
+const Sentry = require('@sentry/node')
+const { Op } = require('sequelize')
 const { generateTestData } = require('./generateTestData')
 const { generateMultiStoreData } = require('./generateMultiStoreData')
 const {
@@ -20,14 +26,126 @@ const {
   validateUserProfile,
   validateBusinessSettings,
 } = require('./middleware/validation')
+const { initializeDatabase, db } = require('./db/init')
 
 const PORT = process.env.PORT || 5000
 const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
+const NODE_ENV = process.env.NODE_ENV || 'development'
+
+// Configure Winston logger (must be defined before Sentry initialization)
+const logger = winston.createLogger({
+  level: NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'shopify-admin-api' },
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
+})
+
+// Add console transport for development
+if (NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    )
+  }))
+}
+
+// Initialize Sentry for error tracking (only in production, after logger is defined)
+if (NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: NODE_ENV,
+    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+    beforeSend(event, hint) {
+      // Filter out sensitive data
+      if (event.request) {
+        if (event.request.headers) {
+          delete event.request.headers.authorization
+          delete event.request.headers.cookie
+        }
+        if (event.request.data) {
+          if (typeof event.request.data === 'object') {
+            delete event.request.data.password
+            delete event.request.data.passwordHash
+          }
+        }
+      }
+      return event
+    },
+  })
+  logger.info('Sentry error tracking initialized')
+}
+
+// Import Sequelize models
+const { Store, User, Product, Customer, Order, Return, Setting } = db
 
 const app = express()
 
-app.use(cors())
-app.use(bodyParser.json())
+// Security headers (Helmet) - Enhanced for production
+app.use(helmet({
+  contentSecurityPolicy: NODE_ENV === 'production' ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  } : false, // Disable in dev for easier testing
+  crossOriginEmbedderPolicy: false, // Allow embedding if needed
+  hsts: NODE_ENV === 'production' ? {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true,
+  } : false,
+  frameguard: { action: 'deny' }, // X-Frame-Options: DENY
+  noSniff: true, // X-Content-Type-Options: nosniff
+  xssFilter: true, // X-XSS-Protection
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+}))
+
+// Compression middleware (gzip/brotli)
+app.use(compression({
+  level: 6, // Compression level (1-9)
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false
+    }
+    return compression.filter(req, res)
+  }
+}))
+
+// Trust proxy (for reverse proxy setups like Nginx)
+if (NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
+
+// CORS configuration - restrict to allowed origins
+const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173']
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true
+}))
+app.use(bodyParser.json({ limit: '10mb' }))
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }))
 
 // Rate limiting configuration
 // More lenient limits for development (React StrictMode causes double renders)
@@ -47,6 +165,32 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true, // Don't count successful requests
 })
 
+// Stricter rate limiting for demo store write operations
+const demoWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Very limited writes for demo store
+  message: 'Demo store has limited write operations. Please upgrade to a paid plan for full access.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting if not a demo store user
+    return !req.user || req.user.role !== 'demo'
+  },
+})
+
+// Middleware to check if user is demo and restrict write operations
+const restrictDemoStore = (req, res, next) => {
+  if (req.user && req.user.role === 'demo') {
+    // Demo users can only read, not write
+    if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+      return res.status(403).json({
+        message: 'Demo accounts have read-only access. Please upgrade to a paid plan to create, edit, or delete data.',
+      })
+    }
+  }
+  next()
+}
+
 // Apply rate limiting to all API routes
 app.use('/api/', generalLimiter)
 
@@ -54,159 +198,236 @@ app.use('/api/', generalLimiter)
 app.use('/api/login', authLimiter)
 app.use('/api/signup', authLimiter)
 
-// Error tracking middleware (basic implementation)
-const errorLogger = (err, req, res, next) => {
-  // eslint-disable-next-line no-console
-  console.error('[ERROR]', {
-    timestamp: new Date().toISOString(),
-    method: req.method,
-    path: req.path,
-    status: res.statusCode,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  })
-  next(err)
-}
+// Apply demo store restrictions to write operations
+app.use('/api/orders', demoWriteLimiter, restrictDemoStore)
+app.use('/api/products', demoWriteLimiter, restrictDemoStore)
+app.use('/api/customers', demoWriteLimiter, restrictDemoStore)
+app.use('/api/returns', demoWriteLimiter, restrictDemoStore)
+app.use('/api/users', demoWriteLimiter, restrictDemoStore)
+app.use('/api/settings', demoWriteLimiter, restrictDemoStore)
+app.use('/api/import', demoWriteLimiter, restrictDemoStore)
 
-// Request logging middleware (basic monitoring)
+// Request logging middleware (using Winston)
 const requestLogger = (req, res, next) => {
   const start = Date.now()
   res.on('finish', () => {
     const duration = Date.now() - start
-    // eslint-disable-next-line no-console
-    console.log('[REQUEST]', {
+    const logData = {
       method: req.method,
       path: req.path,
       status: res.statusCode,
       duration: `${duration}ms`,
-      timestamp: new Date().toISOString(),
-    })
+      ip: req.ip || req.connection.remoteAddress,
+      userAgent: req.get('user-agent'),
+    }
+    
+    if (res.statusCode >= 400) {
+      logger.warn('HTTP Request', logData)
+    } else {
+      logger.info('HTTP Request', logData)
+    }
   })
   next()
 }
 
 app.use(requestLogger)
 
-// Generate multi-store test data
-const multiStoreData = generateMultiStoreData()
-
-// In-memory data stores (multi-store support)
-let stores = multiStoreData.stores
-let users = multiStoreData.users
-let orders = multiStoreData.orders
-let products = multiStoreData.products
-let customers = multiStoreData.customers
-let returns = multiStoreData.returns
-
-// Debug: Log user count and sample admin emails
-console.log(`[INIT] Loaded ${stores.length} stores, ${users.length} users, ${orders.length} orders`)
-console.log('[INIT] Admin users:', users.filter(u => u.role === 'admin').map(u => u.email).join(', '))
-
-// Helper to find store by ID
-const findStoreById = (storeId) => stores.find((s) => s.id === storeId)
-
-// Helper to get store settings (per store)
-const getStoreSettings = (storeId) => {
-  const store = findStoreById(storeId)
-  if (!store) return null
-  return {
-    logoUrl: store.logoUrl,
-    brandColor: store.brandColor,
-    defaultCurrency: store.defaultCurrency,
-    country: store.country,
-    dashboardName: store.dashboardName,
+// Error tracking middleware (using Winston and Sentry)
+const errorLogger = (err, req, res, next) => {
+  const errorData = {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    path: req.path,
+    status: res.statusCode || 500,
+    message: err.message,
+    stack: err.stack,
+    ip: req.ip || req.connection.remoteAddress,
+    userAgent: req.get('user-agent'),
+    userId: req.user?.id || null,
+    storeId: req.storeId || null,
   }
+  
+  logger.error('Error occurred', errorData)
+  
+  // Send to Sentry in production
+  if (NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+    Sentry.withScope((scope) => {
+      scope.setTag('method', req.method)
+      scope.setTag('path', req.path)
+      scope.setTag('status', res.statusCode || 500)
+      scope.setContext('request', {
+        method: req.method,
+        path: req.path,
+        query: req.query,
+        body: req.body ? (typeof req.body === 'object' ? JSON.stringify(req.body).substring(0, 500) : String(req.body).substring(0, 500)) : null,
+      })
+      if (req.user) {
+        scope.setUser({
+          id: req.user.id,
+          email: req.user.email,
+          role: req.user.role,
+        })
+      }
+      Sentry.captureException(err)
+    })
+  }
+  
+  next(err)
 }
 
-// Ensure all users have required fields
-users.forEach((user) => {
-  if (!user.updatedAt) user.updatedAt = user.createdAt
-  if (user.profilePictureUrl === undefined) user.profilePictureUrl = null
-  if (user.fullName === undefined) user.fullName = user.name
-  if (user.phone === undefined) user.phone = null
-  if (user.defaultDateRangeFilter === undefined) user.defaultDateRangeFilter = 'last7'
-  if (!user.notificationPreferences) {
-    user.notificationPreferences = {
-      newOrders: true,
-      lowStock: true,
-      returnsPending: true,
+// Database will be initialized on server start
+// Data is now stored in MySQL database, not in-memory arrays
+
+// Helper to find store by ID (using Sequelize)
+const findStoreById = async (storeId) => {
+  if (!storeId) return null
+  return await Store.findByPk(storeId)
+}
+
+// Helper to get store settings (per store) - uses Setting model
+const getStoreSettings = async (storeId) => {
+  if (!storeId) return null
+  const setting = await Setting.findOne({ where: { storeId } })
+  if (setting) {
+    return {
+      logoUrl: setting.logoUrl,
+      brandColor: setting.brandColor,
+      defaultCurrency: setting.defaultCurrency || 'PKR',
+      country: setting.country || 'PK',
+      dashboardName: setting.dashboardName,
     }
   }
-})
+  // Fallback to store defaults
+  const store = await findStoreById(storeId)
+  if (store) {
+    return {
+      logoUrl: store.logoUrl,
+      brandColor: store.brandColor,
+      defaultCurrency: store.defaultCurrency || 'PKR',
+      country: store.country || 'PK',
+      dashboardName: store.dashboardName,
+    }
+  }
+  return null
+}
+
+// User data validation is now handled by Sequelize models
 
 const RETURN_STATUSES = ['Submitted', 'Approved', 'Rejected', 'Refunded']
 
-const findReturnById = (id) => returns.find((item) => item.id === id)
+// Sequelize-based finders
+const findReturnById = async (id) => {
+  if (!id) return null
+  return await Return.findByPk(id)
+}
 
-const findOrderById = (id) => orders.find((order) => order.id === id)
-const findProductById = (id) => products.find((product) => product.id === id)
-const findOrderProduct = (order) =>
-  products.find(
-    (product) =>
-      product.name.toLowerCase() === order.productName?.toLowerCase() ||
-      product.id === order.productId,
-  ) || null
-const findCustomerById = (id) => customers.find((customer) => customer.id === id)
-const findCustomerByEmail = (email) =>
-  customers.find((customer) => normalizeEmail(customer.email) === normalizeEmail(email)) || null
-const findCustomerByPhone = (phone) => {
+const findOrderById = async (id) => {
+  if (!id) return null
+  return await Order.findByPk(id)
+}
+
+const findProductById = async (id) => {
+  if (!id) return null
+  return await Product.findByPk(id)
+}
+
+const findOrderProduct = async (order) => {
+  if (!order) return null
+  if (order.productId) {
+    return await Product.findByPk(order.productId)
+  }
+  if (order.productName) {
+    return await Product.findOne({
+      where: {
+        name: { [Op.like]: order.productName },
+        storeId: order.storeId,
+      },
+    })
+  }
+  return null
+}
+
+const findCustomerById = async (id) => {
+  if (!id) return null
+  return await Customer.findByPk(id)
+}
+
+const findCustomerByEmail = async (email, storeId = null) => {
+  if (!email) return null
+  const normalizedEmail = normalizeEmail(email)
+  const where = {
+    [Op.or]: [
+      { email: { [Op.like]: normalizedEmail } },
+    ],
+  }
+  if (storeId) where.storeId = storeId
+  return await Customer.findOne({ where })
+}
+
+const findCustomerByPhone = async (phone, storeId = null) => {
+  if (!phone) return null
   const normalizedPhone = normalizePhone(phone)
-  return customers.find((customer) => 
-    (customer.phone && normalizePhone(customer.phone) === normalizedPhone) ||
-    (customer.alternativePhone && normalizePhone(customer.alternativePhone) === normalizedPhone)
-  ) || null
-}
-const findCustomerByAddress = (address) => {
-  const normalizedAddress = normalizeAddress(address)
-  return customers.find((customer) => 
-    customer.address && normalizeAddress(customer.address) === normalizedAddress
-  ) || null
+  const where = {
+    [Op.or]: [
+      { phone: { [Op.like]: `%${normalizedPhone}%` } },
+    ],
+  }
+  if (storeId) where.storeId = storeId
+  return await Customer.findOne({ where })
 }
 
-const ensureReturnCustomer = (returnRequest) => {
+const findCustomerByAddress = async (address, storeId = null) => {
+  if (!address) return null
+  const normalizedAddress = normalizeAddress(address)
+  const where = {
+    [Op.or]: [
+      { address: { [Op.like]: `%${normalizedAddress}%` } },
+    ],
+  }
+  if (storeId) where.storeId = storeId
+  return await Customer.findOne({ where })
+}
+
+const ensureReturnCustomer = async (returnRequest) => {
   if (returnRequest.customerId) return returnRequest
-  const order = findOrderById(returnRequest.orderId)
+  const order = await findOrderById(returnRequest.orderId)
   if (!order) return returnRequest
   // Use enhanced matching by contact info
   const customer =
-    (order.customerId && findCustomerById(order.customerId)) ||
-    findCustomerByContact(order.email, order.phone, null)
+    (order.customerId && await findCustomerById(order.customerId)) ||
+    await findCustomerByContact(order.email, order.phone, null, order.storeId)
   if (customer) {
     returnRequest.customerId = customer.id
+    await returnRequest.save()
   }
   return returnRequest
 }
 
-const linkReturnToOrder = (returnRequest) => {
-  const order = findOrderById(returnRequest.orderId)
+const linkReturnToOrder = async (returnRequest) => {
+  const order = await findOrderById(returnRequest.orderId)
   if (!order) return
-  order.returns = order.returns || []
-  if (!order.returns.includes(returnRequest.id)) {
-    order.returns.unshift(returnRequest.id)
-  }
+  // Order timeline is stored in JSON field, we can update it
+  const timeline = order.timeline || []
+  timeline.push({
+    id: crypto.randomUUID(),
+    description: `Return request created: ${returnRequest.id}`,
+    timestamp: new Date().toISOString(),
+    actor: 'System',
+  })
+  order.timeline = timeline
+  await order.save()
 }
 
-// Ensure all returns have required fields (after helper functions are defined)
-returns.forEach((returnRequest) => {
-  if (!returnRequest.dateRequested) returnRequest.dateRequested = new Date().toISOString()
-  if (!returnRequest.customerId && returnRequest.orderId) {
-    const order = findOrderById(returnRequest.orderId)
-    if (order && order.customerId) {
-      returnRequest.customerId = order.customerId
-    }
-  }
-  ensureReturnCustomer(returnRequest)
-  linkReturnToOrder(returnRequest)
-})
-
-const serializeReturn = (returnRequest) => {
-  const order = findOrderById(returnRequest.orderId)
+const serializeReturn = async (returnRequest) => {
+  const order = await findOrderById(returnRequest.orderId)
   const customer =
-    (returnRequest.customerId && findCustomerById(returnRequest.customerId)) ||
-    (order ? findCustomerByContact(order.email, order.phone, null) : null)
+    (returnRequest.customerId && await findCustomerById(returnRequest.customerId)) ||
+    (order ? await findCustomerByContact(order.email, order.phone, null, order.storeId) : null)
+  
+  const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
   return {
-    ...returnRequest,
-    history: [...(returnRequest.history || [])],
+    ...returnData,
+    history: Array.isArray(returnData.history) ? [...returnData.history] : [],
     customer: customer
       ? {
           id: customer.id,
@@ -233,48 +454,76 @@ const normalizeEmail = (value = '') => value.trim().toLowerCase()
 const normalizePhone = (value = '') => String(value || '').trim().replace(/\D/g, '')
 const normalizeAddress = (value = '') => String(value || '').trim().toLowerCase()
 
-// Find customer by email, phone, or address (any match) - optionally filter by storeId
-const findCustomerByContact = (email, phone, address, storeId = null) => {
+// Find customer by email, phone, or address (any match) - optionally filter by storeId (using Sequelize)
+const findCustomerByContact = async (email, phone, address, storeId = null) => {
   if (!email && !phone && !address) return null
   
   const normalizedEmail = email ? normalizeEmail(email) : null
   const normalizedPhone = phone ? normalizePhone(phone) : null
   const normalizedAddress = address ? normalizeAddress(address) : null
   
-  // Filter by storeId if provided
-  const customersToSearch = storeId ? filterByStore(customers, storeId) : customers
+  const whereConditions = []
   
-  return customersToSearch.find((customer) => {
-    // Match by primary email
-    if (normalizedEmail && customer.email && normalizeEmail(customer.email) === normalizedEmail) {
-      return true
+  if (normalizedEmail) {
+    whereConditions.push({
+      [Op.or]: [
+        { email: { [Op.like]: normalizedEmail } },
+        { alternativeEmails: { [Op.like]: `%${normalizedEmail}%` } },
+      ],
+    })
+  }
+  
+  if (normalizedPhone) {
+    whereConditions.push({
+      [Op.or]: [
+        { phone: { [Op.like]: `%${normalizedPhone}%` } },
+      ],
+    })
+  }
+  
+  if (normalizedAddress) {
+    whereConditions.push({
+      [Op.or]: [
+        { address: { [Op.like]: `%${normalizedAddress}%` } },
+        { alternativeAddresses: { [Op.like]: `%${normalizedAddress}%` } },
+      ],
+    })
+  }
+  
+  if (whereConditions.length === 0) return null
+  
+  const where = {
+    [Op.or]: whereConditions,
+  }
+  
+  if (storeId) where.storeId = storeId
+  
+  const customer = await Customer.findOne({ where })
+  
+  // Additional check for alternative emails/phones/addresses in JSON fields
+  if (customer) {
+    const customerData = customer.toJSON ? customer.toJSON() : customer
+    
+    // Check alternative emails
+    if (normalizedEmail && customerData.alternativeEmails && Array.isArray(customerData.alternativeEmails)) {
+      const matchesEmail = customerData.alternativeEmails.some((altEmail) => normalizeEmail(altEmail) === normalizedEmail)
+      if (matchesEmail) return customer
     }
-    // Match by alternative emails
-    if (normalizedEmail && customer.alternativeEmails && Array.isArray(customer.alternativeEmails)) {
-      if (customer.alternativeEmails.some((altEmail) => normalizeEmail(altEmail) === normalizedEmail)) {
-        return true
-      }
+    
+    // Check alternative phones (stored in alternativePhones JSON array)
+    if (normalizedPhone && customerData.alternativePhones && Array.isArray(customerData.alternativePhones)) {
+      const matchesPhone = customerData.alternativePhones.some((altPhone) => normalizePhone(altPhone) === normalizedPhone)
+      if (matchesPhone) return customer
     }
-    // Match by primary phone
-    if (normalizedPhone && customer.phone && normalizePhone(customer.phone) === normalizedPhone) {
-      return true
+    
+    // Check alternative addresses
+    if (normalizedAddress && customerData.alternativeAddresses && Array.isArray(customerData.alternativeAddresses)) {
+      const matchesAddress = customerData.alternativeAddresses.some((altAddress) => normalizeAddress(altAddress) === normalizedAddress)
+      if (matchesAddress) return customer
     }
-    // Match by alternative phone
-    if (normalizedPhone && customer.alternativePhone && normalizePhone(customer.alternativePhone) === normalizedPhone) {
-      return true
-    }
-    // Match by primary address
-    if (normalizedAddress && customer.address && normalizeAddress(customer.address) === normalizedAddress) {
-      return true
-    }
-    // Match by alternative addresses
-    if (normalizedAddress && customer.alternativeAddresses && Array.isArray(customer.alternativeAddresses)) {
-      if (customer.alternativeAddresses.some((altAddress) => normalizeAddress(altAddress) === normalizedAddress)) {
-        return true
-      }
-    }
-    return false
-  }) || null
+  }
+  
+  return customer
 }
 
 // Merge customer information - add new info to existing customer
@@ -329,29 +578,33 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
   return merged
 }
 
-const serializeCustomer = (customer) => {
+// Serialize customer with orders (using Sequelize)
+const serializeCustomer = async (customer) => {
   if (!customer) return null
-  const ordersForCustomer = getOrdersForCustomer(customer)
+  const ordersForCustomer = await getOrdersForCustomer(customer)
   const lastOrder = ordersForCustomer.length > 0 ? ordersForCustomer[0] : null
+  const customerData = customer.toJSON ? customer.toJSON() : customer
   return {
-    id: customer.id,
-    name: customer.name || 'Unknown',
-    email: customer.email || '',
-    phone: customer.phone || 'Not provided',
-    address: customer.address || null,
-    alternativePhone: customer.alternativePhone || null,
-    alternativeEmails: customer.alternativeEmails || [],
-    alternativeNames: customer.alternativeNames || [],
-    alternativeAddresses: customer.alternativeAddresses || [],
-    createdAt: customer.createdAt || new Date().toISOString(),
+    id: customerData.id,
+    name: customerData.name || 'Unknown',
+    email: customerData.email || '',
+    phone: customerData.phone || 'Not provided',
+    address: customerData.address || null,
+    alternativePhone: customerData.alternativePhone || null,
+    alternativeEmails: customerData.alternativeEmails || [],
+    alternativeNames: customerData.alternativeNames || [],
+    alternativeAddresses: customerData.alternativeAddresses || [],
+    createdAt: customerData.createdAt || new Date().toISOString(),
     orderCount: ordersForCustomer.length,
     lastOrderDate: lastOrder ? lastOrder.createdAt : null,
     totalSpent: ordersForCustomer.reduce((sum, order) => sum + (order.total || 0), 0),
   }
 }
 
-const getOrdersForCustomer = (customer) => {
+// Get orders for customer (using Sequelize)
+const getOrdersForCustomer = async (customer) => {
   if (!customer || !customer.id) return []
+  
   const customerEmails = [
     customer.email,
     ...(customer.alternativeEmails || [])
@@ -362,33 +615,22 @@ const getOrdersForCustomer = (customer) => {
     customer.alternativePhone,
   ].filter(Boolean).map(normalizePhone)
   
-  const customerAddresses = [
-    customer.address,
-    ...(customer.alternativeAddresses || [])
-  ].filter(Boolean).map(normalizeAddress)
+  // Build where clause
+  const where = {
+    storeId: customer.storeId,
+    [Op.or]: [
+      { customerId: customer.id },
+      ...(customerEmails.length > 0 ? [{ email: { [Op.in]: customerEmails } }] : []),
+      ...(customerPhones.length > 0 ? [{ phone: { [Op.like]: `%${customerPhones[0]}%` } }] : []),
+    ],
+  }
   
-  // Filter orders by storeId first
-  const storeOrders = customer.storeId ? filterByStore(orders, customer.storeId) : orders
+  const orders = await Order.findAll({
+    where,
+    order: [['createdAt', 'DESC']],
+  })
   
-  return storeOrders
-    .filter((order) => {
-      // Match by customer ID
-      if (order.customerId === customer.id) return true
-      
-      // Match by email
-      if (order.email && customerEmails.includes(normalizeEmail(order.email))) return true
-      
-      // Match by phone
-      if (order.phone && customerPhones.includes(normalizePhone(order.phone))) return true
-      
-      return false
-    })
-    .sort((a, b) => {
-      // Sort by createdAt descending (latest first)
-      const dateA = new Date(a.createdAt || 0).getTime()
-      const dateB = new Date(b.createdAt || 0).getTime()
-      return dateB - dateA
-    })
+  return orders.map(order => order.toJSON ? order.toJSON() : order)
 }
 
 // Business settings (in-memory store)
@@ -480,8 +722,8 @@ const adjustProductStockForReturn = (returnRequest) => {
   }
 }
 
-// Authentication helpers
-const authenticateToken = (req, res, next) => {
+// Authentication helpers (using Sequelize)
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization || ''
   const token = authHeader.split(' ')[1]
 
@@ -490,17 +732,13 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ message: 'Authorization token required.' })
   }
 
-  return jwt.verify(token, JWT_SECRET, (error, payload) => {
-    if (error) {
-      console.log('[AUTH] Token verification failed:', error.message)
-      return res.status(401).json({ message: 'Invalid or expired token.' })
-    }
-
-    // Find user and attach full user object + storeId
-    const user = users.find((u) => u.id === payload.userId)
+  try {
+    const payload = jwt.verify(token, JWT_SECRET)
+    
+    // Find user in database
+    const user = await User.findByPk(payload.userId)
     if (!user) {
       console.log(`[AUTH] User not found for userId: ${payload.userId}`)
-      console.log(`[AUTH] Available user IDs: ${users.slice(0, 5).map(u => u.id).join(', ')}...`)
       return res.status(401).json({ message: 'User not found.' })
     }
 
@@ -508,13 +746,18 @@ const authenticateToken = (req, res, next) => {
       return res.status(403).json({ message: 'Account is inactive.' })
     }
 
-    req.user = user
+    // Convert Sequelize instance to plain object
+    req.user = user.toJSON ? user.toJSON() : user
     req.storeId = user.storeId // Add storeId to request for filtering
     return next()
-  })
+  } catch (error) {
+    console.log('[AUTH] Token verification failed:', error.message)
+    return res.status(401).json({ message: 'Invalid or expired token.' })
+  }
 }
 
-// Helper to filter data by storeId
+// Helper to filter data by storeId (now handled in Sequelize queries with where: { storeId })
+// This function is kept for backward compatibility but should be replaced with Sequelize queries
 const filterByStore = (dataArray, storeId) => {
   if (!storeId) return []
   return dataArray.filter((item) => item.storeId === storeId)
@@ -552,17 +795,77 @@ app.get('/', (_req, res) => {
   res.status(200).send('API running')
 })
 
-// Get all stores (public endpoint for store selection)
-app.get('/api/stores', (_req, res) => {
+// Health check endpoint - Enhanced with performance metrics
+app.get('/api/health', async (_req, res) => {
+  const startTime = Date.now()
   try {
-    const storeList = stores.map((store) => ({
-      id: store.id,
-      name: store.name,
-      dashboardName: store.dashboardName,
-      domain: store.domain,
-      category: store.category,
-    }))
-    return res.json(storeList)
+    const serverUptime = process.uptime()
+    
+    // Test database connection and get response time
+    const dbStartTime = Date.now()
+    const dbStatus = await db.sequelize.authenticate()
+      .then(() => {
+        const dbLatency = Date.now() - dbStartTime
+        return { status: 'connected', latency: dbLatency }
+      })
+      .catch((error) => {
+        const dbLatency = Date.now() - dbStartTime
+        logger.error('Database health check failed:', error)
+        return { status: 'disconnected', latency: dbLatency, error: error.message }
+      })
+    
+    // Get memory usage
+    const memoryUsage = process.memoryUsage()
+    const memoryMB = {
+      rss: Math.round(memoryUsage.rss / 1024 / 1024),
+      heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+      heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+      external: Math.round(memoryUsage.external / 1024 / 1024),
+    }
+    
+    // Calculate API response time
+    const apiLatency = Date.now() - startTime
+    
+    const health = {
+      status: dbStatus.status === 'connected' ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(serverUptime),
+      environment: NODE_ENV,
+      database: {
+        status: dbStatus.status,
+        latency: dbStatus.latency,
+        error: dbStatus.error || null,
+      },
+      performance: {
+        apiLatency,
+        memory: memoryMB,
+      },
+      version: require('./package.json').version || '1.0.0',
+    }
+    
+    const statusCode = dbStatus.status === 'connected' ? 200 : 503
+    return res.status(statusCode).json(health)
+  } catch (error) {
+    logger.error('Health check failed:', error)
+    if (NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+      Sentry.captureException(error)
+    }
+    return res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+    })
+  }
+})
+
+// Get all stores (public endpoint for store selection) - using Sequelize
+app.get('/api/stores', async (_req, res) => {
+  try {
+    const storesList = await Store.findAll({
+      attributes: ['id', 'name', 'dashboardName', 'domain', 'category'],
+      order: [['name', 'ASC']],
+    })
+    return res.json(storesList.map(store => store.toJSON ? store.toJSON() : store))
   } catch (error) {
     console.error('[ERROR] /api/stores:', error)
     return res.status(500).json({ message: 'Failed to fetch stores', error: error.message })
@@ -570,125 +873,154 @@ app.get('/api/stores', (_req, res) => {
 })
 
 app.post('/api/login', validateLogin, async (req, res) => {
-  const { email, password } = req.body
+  try {
+    const { email, password } = req.body
 
-  const normalizedEmail = normalizeEmail(email)
-  const user = users.find((u) => normalizeEmail(u.email) === normalizedEmail)
+    const normalizedEmail = normalizeEmail(email)
+    const user = await User.findOne({
+      where: { email: normalizedEmail },
+    })
 
-  // Debug logging
-  if (!user) {
-    console.log(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
-    console.log(`[LOGIN] Available users: ${users.slice(0, 5).map(u => u.email).join(', ')}...`)
-    return res.status(401).json({ message: 'Invalid email or password.' })
+    // Debug logging
+    if (!user) {
+      console.log(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
+      return res.status(401).json({ message: 'Invalid email or password.' })
+    }
+
+    if (!bcrypt.compareSync(password, user.passwordHash)) {
+      console.log(`[LOGIN] Password mismatch for: ${email}`)
+      return res.status(401).json({ message: 'Invalid email or password.' })
+    }
+
+    if (!user.active) {
+      return res.status(403).json({ message: 'Account is inactive.' })
+    }
+
+    const userData = user.toJSON ? user.toJSON() : user
+    const store = await findStoreById(user.storeId)
+
+    // Include storeId in JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role, storeId: user.storeId },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    return res.json({
+      token,
+      user: sanitizeUser(userData),
+      needsPasswordChange: !user.passwordChangedAt, // Flag for password change requirement
+      store: store ? {
+        id: store.id,
+        name: store.name,
+        dashboardName: store.dashboardName,
+      } : null,
+    })
+  } catch (error) {
+    console.error('[ERROR] /api/login:', error)
+    return res.status(500).json({ message: 'Login failed', error: error.message })
   }
-
-  if (!bcrypt.compareSync(password, user.passwordHash)) {
-    console.log(`[LOGIN] Password mismatch for: ${email}`)
-    return res.status(401).json({ message: 'Invalid email or password.' })
-  }
-
-  if (!user.active) {
-    return res.status(403).json({ message: 'Account is inactive.' })
-  }
-
-  // Include storeId in JWT token
-  const token = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role, storeId: user.storeId },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  )
-
-  return res.json({
-    token,
-    user: sanitizeUser(user),
-    store: findStoreById(user.storeId) ? {
-      id: user.storeId,
-      name: findStoreById(user.storeId).name,
-      dashboardName: findStoreById(user.storeId).dashboardName,
-    } : null,
-  })
 })
 
 app.post('/api/signup', validateSignup, async (req, res) => {
-  const { email, password, name, role } = req.body
+  try {
+    const { email, password, name, role, storeId } = req.body
 
-  if (findUserByEmail(email)) {
-    return res.status(409).json({ message: 'An account with that email already exists.' })
-  }
-
-  const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
-  const passwordHash = await bcrypt.hash(password, 10)
-  
-  // Set default permissions based on role
-  let userPermissions
-  if (userRole === 'admin') {
-    userPermissions = {
-      viewOrders: true, editOrders: true, deleteOrders: true,
-      viewProducts: true, editProducts: true, deleteProducts: true,
-      viewCustomers: true, editCustomers: true,
-      viewReturns: true, processReturns: true,
-      viewReports: true, manageUsers: true, manageSettings: true,
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email)
+    if (existingUser) {
+      return res.status(409).json({ message: 'An account with that email already exists.' })
     }
-  } else {
-    userPermissions = {
-      viewOrders: true, editOrders: true, deleteOrders: false,
-      viewProducts: true, editProducts: true, deleteProducts: false,
-      viewCustomers: true, editCustomers: false,
-      viewReturns: true, processReturns: true,
-      viewReports: true, manageUsers: false, manageSettings: false,
+
+    const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
+    const passwordHash = await bcrypt.hash(password, 10)
+    
+    // Set default permissions based on role
+    let userPermissions
+    if (userRole === 'admin') {
+      userPermissions = {
+        viewOrders: true, editOrders: true, deleteOrders: true,
+        viewProducts: true, editProducts: true, deleteProducts: true,
+        viewCustomers: true, editCustomers: true,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: true, manageSettings: true,
+      }
+    } else {
+      userPermissions = {
+        viewOrders: true, editOrders: true, deleteOrders: false,
+        viewProducts: true, editProducts: true, deleteProducts: false,
+        viewCustomers: true, editCustomers: false,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: false, manageSettings: false,
+      }
     }
+    
+    // Get storeId from request or default to first store
+    let targetStoreId = storeId
+    if (!targetStoreId) {
+      const firstStore = await Store.findOne({ order: [['name', 'ASC']] })
+      if (!firstStore) {
+        return res.status(400).json({ message: 'No store available. Please create a store first.' })
+      }
+      targetStoreId = firstStore.id
+    } else {
+      const store = await findStoreById(targetStoreId)
+      if (!store) {
+        return res.status(400).json({ message: 'Invalid store ID.' })
+      }
+    }
+
+    const newUser = await User.create({
+      storeId: targetStoreId,
+      email: email.toLowerCase(),
+      name,
+      role: userRole,
+      passwordHash,
+      active: true,
+      permissions: userPermissions,
+      profilePictureUrl: null,
+      fullName: name,
+      phone: null,
+      defaultDateRangeFilter: 'last7',
+      notificationPreferences: {
+        newOrders: true,
+        lowStock: true,
+        returnsPending: true,
+      },
+    })
+
+    const userData = newUser.toJSON ? newUser.toJSON() : newUser
+    const store = await findStoreById(targetStoreId)
+
+    const token = jwt.sign(
+      { userId: userData.id, email: userData.email, role: userData.role, storeId: userData.storeId },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    return res.status(201).json({
+      token,
+      user: sanitizeUser(userData),
+      store: store ? {
+        id: store.id,
+        name: store.name,
+        dashboardName: store.dashboardName,
+      } : null,
+    })
+  } catch (error) {
+    logger.error('Signup failed:', error)
+    return res.status(500).json({ message: 'Signup failed', error: error.message })
   }
-  
-  // Get storeId from request or default to first store
-  const { storeId } = req.body
-  const targetStoreId = storeId && findStoreById(storeId) ? storeId : stores[0]?.id
-
-  if (!targetStoreId) {
-    return res.status(400).json({ message: 'No store available. Please create a store first.' })
-  }
-
-  const newUser = {
-    id: crypto.randomUUID(),
-    storeId: targetStoreId,
-    email: email.toLowerCase(),
-    name,
-    role: userRole,
-    passwordHash,
-    active: true,
-    permissions: userPermissions,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    profilePictureUrl: null,
-    fullName: name,
-    phone: null,
-    defaultDateRangeFilter: 'last7',
-    notificationPreferences: {
-      newOrders: true,
-      lowStock: true,
-      returnsPending: true,
-    },
-  }
-
-  users.push(newUser)
-
-  const token = jwt.sign(
-    { userId: newUser.id, email: newUser.email, role: newUser.role, storeId: newUser.storeId },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  )
-
-  return res.status(201).json({
-    token,
-    user: sanitizeUser(newUser),
-    store: findStoreById(newUser.storeId) ? {
-      id: newUser.storeId,
-      name: findStoreById(newUser.storeId).name,
-      dashboardName: findStoreById(newUser.storeId).dashboardName,
-    } : null,
-  })
 })
 
-const findUserByEmail = (email) => users.find((u) => normalizeEmail(u.email) === normalizeEmail(email))
+// Find user by email (using Sequelize)
+const findUserByEmail = async (email, storeId = null) => {
+  if (!email) return null
+  const normalizedEmail = normalizeEmail(email)
+  const where = { email: normalizedEmail }
+  if (storeId) where.storeId = storeId
+  return await User.findOne({ where })
+}
 
 // Order routes
 // Public endpoint to search orders by email or phone (uses customer matching logic)
@@ -842,81 +1174,101 @@ app.get('/api/orders/:id', (req, res) => {
   })
 })
 
-app.post('/api/orders', validateOrder, (req, res) => {
-  const { productName, customerName, email, phone, quantity, notes } = req.body
+app.post('/api/orders', validateOrder, async (req, res) => {
+  try {
+    const { productName, customerName, email, phone, quantity, notes, storeId } = req.body
 
-  let submittedBy = null
-  const authHeader = req.headers.authorization || ''
-  const token = authHeader.split(' ')[1]
+    let submittedBy = null
+    let orderStoreId = storeId || null
+    const authHeader = req.headers.authorization || ''
+    const token = authHeader.split(' ')[1]
 
-  if (token) {
-    try {
-      const payload = jwt.verify(token, JWT_SECRET)
-      if (payload.userId) {
-        // Find user to get name and email
-        const user = users.find((u) => u.id === payload.userId)
-        if (user) {
-          submittedBy = `${user.name || user.email} (${user.email})`
-        } else {
-          submittedBy = payload.userId
+    if (token) {
+      try {
+        const payload = jwt.verify(token, JWT_SECRET)
+        if (payload.userId) {
+          // Find user to get name and email
+          const user = await User.findByPk(payload.userId)
+          if (user) {
+            submittedBy = `${user.name || user.email} (${user.email})`
+            orderStoreId = orderStoreId || user.storeId
+          } else {
+            submittedBy = payload.userId
+          }
         }
+      } catch (error) {
+        logger.warn('Invalid token supplied on order submission.')
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.warn('Invalid token supplied on order submission.')
     }
-  }
 
-  const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
-  const productPrice = product ? product.price : 0
-  const orderTotal = productPrice * quantity
+    // Find product by name (case-insensitive)
+    const product = await Product.findOne({
+      where: {
+        name: { [Op.like]: productName },
+        ...(orderStoreId ? { storeId: orderStoreId } : {}),
+      },
+    })
+    const productPrice = product ? product.price : 0
+    const orderTotal = productPrice * quantity
 
-  // Determine storeId - from auth token or from product
-  let orderStoreId = null
-  if (token) {
-    try {
-      const payload = jwt.verify(token, JWT_SECRET)
-      const user = users.find((u) => u.id === payload.userId)
-      if (user) orderStoreId = user.storeId
-    } catch (error) {
-      // If no valid token, try to get storeId from product
-      const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
-      if (product) orderStoreId = product.storeId
+    // Determine storeId - from auth token, product, or request body
+    if (!orderStoreId && product) {
+      orderStoreId = product.storeId
     }
-  } else {
-    // Public order - get storeId from product
-    const product = products.find((p) => p.name.toLowerCase() === productName.toLowerCase())
-    if (product) orderStoreId = product.storeId
+
+    // Default to first store if no storeId found
+    if (!orderStoreId) {
+      const firstStore = await Store.findOne({ order: [['name', 'ASC']] })
+      if (!firstStore) {
+        return res.status(400).json({ message: 'No store available. Please create a store first.' })
+      }
+      orderStoreId = firstStore.id
+    }
+
+    // Find or create customer
+    let customer = await findCustomerByContact(email, phone, null, orderStoreId)
+    if (!customer) {
+      customer = await Customer.create({
+        storeId: orderStoreId,
+        name: customerName,
+        email,
+        phone: phone || null,
+        address: null,
+        alternativePhone: null,
+        alternativeEmails: [],
+        alternativeNames: [],
+        alternativeAddresses: [],
+      })
+    }
+
+    const newOrder = await Order.create({
+      storeId: orderStoreId,
+      productName,
+      customerName,
+      email,
+      phone: phone || '',
+      quantity,
+      status: 'Pending',
+      isPaid: false,
+      notes: notes || '',
+      submittedBy,
+      total: orderTotal,
+      customerId: customer.id,
+      timeline: [{
+        id: crypto.randomUUID(),
+        description: 'Order created',
+        timestamp: new Date().toISOString(),
+        actor: customerName,
+      }],
+    })
+
+    logger.info(`[orders] New order received: ${newOrder.id}`)
+    const orderData = newOrder.toJSON ? newOrder.toJSON() : newOrder
+    return res.status(201).json(orderData)
+  } catch (error) {
+    logger.error('Order creation failed:', error)
+    return res.status(500).json({ message: 'Order creation failed', error: error.message })
   }
-
-  // Default to first store if no storeId found
-  if (!orderStoreId && stores.length > 0) {
-    orderStoreId = stores[0].id
-  }
-
-  const newOrder = {
-    id: crypto.randomUUID(),
-    storeId: orderStoreId,
-    productName,
-    customerName,
-    email,
-    phone: phone || '',
-    quantity,
-    status: 'Pending',
-    isPaid: false,
-    notes: notes || '',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    submittedBy,
-    total: orderTotal,
-  }
-
-  orders.unshift(newOrder)
-  attachOrderToCustomer(newOrder)
-  // eslint-disable-next-line no-console
-  console.info(`[orders] New order received: ${newOrder.id}`)
-
-  return res.status(201).json(newOrder)
 })
 
 app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, (req, res) => {
@@ -1614,130 +1966,165 @@ app.put('/api/users/me', authenticateToken, validateUserProfile, (req, res) => {
 })
 
 app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
-  const { email, password, name, role, active, permissions } = req.body
+  try {
+    const { email, password, name, role, active, permissions, storeId } = req.body
 
-  if (findUserByEmail(email)) {
-    return res.status(409).json({ message: 'An account with that email already exists.' })
-  }
+    // Check if user already exists (within same store)
+    const existingUser = await findUserByEmail(email, storeId || req.storeId)
+    if (existingUser) {
+      return res.status(409).json({ message: 'An account with that email already exists.' })
+    }
 
-  const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
-  const passwordHash = await bcrypt.hash(password, 10)
-  
-  // Set default permissions based on role if not provided
-  let userPermissions = permissions
-  if (!userPermissions) {
-    if (userRole === 'admin') {
-      userPermissions = {
-        viewOrders: true, editOrders: true, deleteOrders: true,
-        viewProducts: true, editProducts: true, deleteProducts: true,
-        viewCustomers: true, editCustomers: true,
-        viewReturns: true, processReturns: true,
-        viewReports: true, manageUsers: true, manageSettings: true,
-      }
-    } else {
-      userPermissions = {
-        viewOrders: true, editOrders: true, deleteOrders: false,
-        viewProducts: true, editProducts: true, deleteProducts: false,
-        viewCustomers: true, editCustomers: false,
-        viewReturns: true, processReturns: true,
-        viewReports: true, manageUsers: false, manageSettings: false,
+    const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
+    const passwordHash = await bcrypt.hash(password, 10)
+    
+    // Set default permissions based on role if not provided
+    let userPermissions = permissions
+    if (!userPermissions) {
+      if (userRole === 'admin') {
+        userPermissions = {
+          viewOrders: true, editOrders: true, deleteOrders: true,
+          viewProducts: true, editProducts: true, deleteProducts: true,
+          viewCustomers: true, editCustomers: true,
+          viewReturns: true, processReturns: true,
+          viewReports: true, manageUsers: true, manageSettings: true,
+        }
+      } else {
+        userPermissions = {
+          viewOrders: true, editOrders: true, deleteOrders: false,
+          viewProducts: true, editProducts: true, deleteProducts: false,
+          viewCustomers: true, editCustomers: false,
+          viewReturns: true, processReturns: true,
+          viewReports: true, manageUsers: false, manageSettings: false,
+        }
       }
     }
-  }
-  
-  const newUser = {
-    id: crypto.randomUUID(),
-    email: email.toLowerCase(),
-    name,
-    role: userRole,
-    passwordHash,
-    active: active !== undefined ? active : true,
-    permissions: userPermissions,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    profilePictureUrl: null,
-    fullName: name,
-    phone: null,
-    defaultDateRangeFilter: 'last7',
-    notificationPreferences: {
-      newOrders: true,
-      lowStock: true,
-      returnsPending: true,
-    },
-  }
+    
+    const targetStoreId = storeId || req.storeId
+    if (!targetStoreId) {
+      return res.status(400).json({ message: 'Store ID is required.' })
+    }
 
-  users.push(newUser)
-  return res.status(201).json(sanitizeUser(newUser))
+    const newUser = await User.create({
+      storeId: targetStoreId,
+      email: email.toLowerCase(),
+      name,
+      role: userRole,
+      passwordHash,
+      active: active !== undefined ? active : true,
+      permissions: userPermissions,
+      profilePictureUrl: null,
+      fullName: name,
+      phone: null,
+      defaultDateRangeFilter: 'last7',
+      notificationPreferences: {
+        newOrders: true,
+        lowStock: true,
+        returnsPending: true,
+      },
+    })
+
+    const userData = newUser.toJSON ? newUser.toJSON() : newUser
+    return res.status(201).json(sanitizeUser(userData))
+  } catch (error) {
+    logger.error('User creation failed:', error)
+    return res.status(500).json({ message: 'User creation failed', error: error.message })
+  }
 })
 
 app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
-  const user = users.find((u) => u.id === req.params.id)
-  if (!user) {
-    return res.status(404).json({ message: 'User not found.' })
-  }
-
-  if (user.id === ADMIN_USER_ID && req.body.email && normalizeEmail(req.body.email) !== normalizeEmail(user.email)) {
-    return res.status(403).json({ message: 'Cannot change primary admin email.' })
-  }
-
-  const { name, email, role, password, active, permissions } = req.body
-
-  if (name) user.name = String(name).trim()
-  if (email && user.id !== ADMIN_USER_ID) {
-    if (findUserByEmail(email) && normalizeEmail(email) !== normalizeEmail(user.email)) {
-      return res.status(409).json({ message: 'Email already in use.' })
+  try {
+    const user = await User.findByPk(req.params.id)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' })
     }
-    user.email = email.toLowerCase()
-  }
-  if (role) {
-    user.role = role
-    // Reset permissions to defaults when role changes
-    if (role === 'admin') {
-      user.permissions = {
-        viewOrders: true, editOrders: true, deleteOrders: true,
-        viewProducts: true, editProducts: true, deleteProducts: true,
-        viewCustomers: true, editCustomers: true,
-        viewReturns: true, processReturns: true,
-        viewReports: true, manageUsers: true, manageSettings: true,
+
+    // Verify user belongs to same store
+    if (user.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'User does not belong to your store.' })
+    }
+
+    const { name, email, role, password, active, permissions } = req.body
+
+    if (name) user.name = String(name).trim()
+    if (email && normalizeEmail(email) !== normalizeEmail(user.email)) {
+      const existingUser = await findUserByEmail(email, req.storeId)
+      if (existingUser && existingUser.id !== user.id) {
+        return res.status(409).json({ message: 'Email already in use.' })
       }
-    } else if (role === 'staff' && !permissions) {
-      user.permissions = {
-        viewOrders: true, editOrders: true, deleteOrders: false,
-        viewProducts: true, editProducts: true, deleteProducts: false,
-        viewCustomers: true, editCustomers: false,
-        viewReturns: true, processReturns: true,
-        viewReports: true, manageUsers: false, manageSettings: false,
+      user.email = email.toLowerCase()
+    }
+    if (role) {
+      user.role = role
+      // Reset permissions to defaults when role changes
+      if (role === 'admin') {
+        user.permissions = {
+          viewOrders: true, editOrders: true, deleteOrders: true,
+          viewProducts: true, editProducts: true, deleteProducts: true,
+          viewCustomers: true, editCustomers: true,
+          viewReturns: true, processReturns: true,
+          viewReports: true, manageUsers: true, manageSettings: true,
+        }
+      } else if (role === 'staff' && !permissions) {
+        user.permissions = {
+          viewOrders: true, editOrders: true, deleteOrders: false,
+          viewProducts: true, editProducts: true, deleteProducts: false,
+          viewCustomers: true, editCustomers: false,
+          viewReturns: true, processReturns: true,
+          viewReports: true, manageUsers: false, manageSettings: false,
+        }
       }
     }
-  }
-  if (password) user.passwordHash = await bcrypt.hash(password, 10)
-  if (active !== undefined) user.active = active
-  if (name) user.fullName = name
-  if (permissions) user.permissions = permissions
+    if (password) user.passwordHash = await bcrypt.hash(password, 10)
+    if (active !== undefined) user.active = active
+    if (name) user.fullName = name
+    if (permissions) user.permissions = permissions
 
-  user.updatedAt = new Date().toISOString()
-  return res.json(sanitizeUser(user))
+    await user.save()
+    const userData = user.toJSON ? user.toJSON() : user
+    return res.json(sanitizeUser(userData))
+  } catch (error) {
+    logger.error('User update failed:', error)
+    return res.status(500).json({ message: 'User update failed', error: error.message })
+  }
 })
 
-app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), (req, res) => {
-  if (req.params.id === ADMIN_USER_ID) {
-    return res.status(403).json({ message: 'Cannot delete primary admin account.' })
+app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' })
+    }
+
+    // Verify user belongs to same store
+    if (user.storeId !== req.storeId) {
+      return res.status(403).json({ message: 'User does not belong to your store.' })
+    }
+
+    // Prevent deleting yourself
+    if (user.id === req.user.id) {
+      return res.status(403).json({ message: 'Cannot delete your own account.' })
+    }
+
+    await user.destroy()
+    return res.status(204).send()
+  } catch (error) {
+    logger.error('User deletion failed:', error)
+    return res.status(500).json({ message: 'User deletion failed', error: error.message })
   }
-  const index = users.findIndex((u) => u.id === req.params.id)
-  if (index === -1) {
-    return res.status(404).json({ message: 'User not found.' })
-  }
-  users.splice(index, 1)
-  return res.status(204).send()
 })
 
 // Business settings routes
 // Public endpoint for logo, dashboard name, currency, and country (used in customer portal and public pages)
-app.get('/api/settings/business/public', (req, res) => {
+app.get('/api/settings/business/public', async (req, res) => {
   try {
     // Get storeId from query param or use first store as default
-    const storeId = req.query.storeId || stores[0]?.id
-    const storeSettings = getStoreSettings(storeId)
+    let storeId = req.query.storeId
+    if (!storeId) {
+      const firstStore = await Store.findOne({ order: [['name', 'ASC']] })
+      storeId = firstStore ? firstStore.id : null
+    }
+    const storeSettings = await getStoreSettings(storeId)
     
     if (!storeSettings) {
       // Return default settings if no store found (Pakistan/PKR defaults)
@@ -2297,6 +2684,12 @@ app.post(
   },
 )
 
+// Sentry request handler (must be before other error handlers)
+if (NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.requestHandler())
+  app.use(Sentry.Handlers.tracingHandler())
+}
+
 // Global error handler fallback
 app.use(errorLogger)
 // eslint-disable-next-line no-unused-vars
@@ -2304,7 +2697,154 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ message: 'Unexpected server error.' })
 })
 
-app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
-  console.log(`API running on port ${PORT}`)
-})
+// Sentry error handler (must be after all other error handlers)
+if (NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler())
+}
+
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Initialize database connection
+    await initializeDatabase()
+    
+    // Seed database if empty (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      const storeCount = await Store.count()
+      if (storeCount === 0) {
+        console.log('[INIT] Database is empty, seeding initial data...')
+        const { generateMultiStoreData } = require('./generateMultiStoreData')
+        const multiStoreData = generateMultiStoreData()
+        
+        // Seed stores
+        await Store.bulkCreate(multiStoreData.stores.map(store => ({
+          id: store.id,
+          name: store.name,
+          dashboardName: store.dashboardName,
+          domain: store.domain,
+          category: store.category,
+          defaultCurrency: store.defaultCurrency || 'PKR',
+          country: store.country || 'PK',
+          logoUrl: store.logoUrl || null,
+          brandColor: store.brandColor || '#1976d2',
+          isDemo: store.isDemo || false,
+        })))
+        
+        // Seed users
+        await User.bulkCreate(multiStoreData.users.map(user => ({
+          id: user.id,
+          email: user.email,
+          passwordHash: user.passwordHash,
+          name: user.name,
+          role: user.role,
+          storeId: user.storeId,
+          fullName: user.fullName || user.name,
+          phone: user.phone || null,
+          profilePictureUrl: user.profilePictureUrl || null,
+          defaultDateRangeFilter: user.defaultDateRangeFilter || 'last7',
+          notificationPreferences: user.notificationPreferences || {
+            newOrders: true,
+            lowStock: true,
+            returnsPending: true,
+          },
+          permissions: user.permissions || {},
+          active: user.active !== undefined ? user.active : true,
+          passwordChangedAt: null, // Force password change on first login
+        })))
+        
+        // Seed products
+        await Product.bulkCreate(multiStoreData.products.map(product => ({
+          id: product.id,
+          storeId: product.storeId,
+          name: product.name,
+          description: product.description || '',
+          price: product.price || 0,
+          stockQuantity: product.stockQuantity || 0,
+          reorderThreshold: product.reorderThreshold || 10,
+          category: product.category || 'Uncategorized',
+          imageUrl: product.imageUrl || null,
+          status: product.status || 'active',
+        })))
+        
+        // Seed customers
+        await Customer.bulkCreate(multiStoreData.customers.map(customer => ({
+          id: customer.id,
+          storeId: customer.storeId,
+          name: customer.name,
+          email: customer.email || null,
+          phone: customer.phone || null,
+          address: customer.address || null,
+          alternativeNames: customer.alternativeNames || [],
+          alternativeEmails: customer.alternativeEmails || [],
+          alternativePhones: customer.alternativePhones || [],
+          alternativeAddresses: customer.alternativeAddresses || [],
+        })))
+        
+        // Seed orders
+        await Order.bulkCreate(multiStoreData.orders.map(order => ({
+          id: order.id,
+          storeId: order.storeId,
+          customerId: order.customerId || null,
+          orderNumber: order.orderNumber || `ORD-${order.id.substring(0, 8).toUpperCase()}`,
+          productName: order.productName,
+          customerName: order.customerName,
+          email: order.email,
+          phone: order.phone || null,
+          quantity: order.quantity || 1,
+          status: order.status || 'Pending',
+          isPaid: order.isPaid !== undefined ? order.isPaid : false,
+          total: order.total || 0,
+          notes: order.notes || null,
+          submittedBy: order.submittedBy || null,
+          timeline: order.timeline || [],
+          items: order.items || [],
+          shippingAddress: order.shippingAddress || null,
+          paymentStatus: order.paymentStatus || (order.isPaid ? 'paid' : 'pending'),
+        })))
+        
+        // Seed returns
+        await Return.bulkCreate(multiStoreData.returns.map(returnItem => ({
+          id: returnItem.id,
+          storeId: returnItem.storeId,
+          orderId: returnItem.orderId,
+          customerId: returnItem.customerId || null,
+          productId: returnItem.productId || null,
+          reason: returnItem.reason,
+          returnedQuantity: returnItem.returnedQuantity || returnItem.quantity || 1,
+          status: returnItem.status || 'Submitted',
+          refundAmount: returnItem.refundAmount || 0,
+          history: returnItem.history || [],
+          dateRequested: returnItem.dateRequested || returnItem.createdAt || new Date(),
+        })))
+        
+        // Seed settings
+        const settings = multiStoreData.stores.map(store => ({
+          id: crypto.randomUUID(),
+          storeId: store.id,
+          logoUrl: store.logoUrl || null,
+          brandColor: store.brandColor || '#1976d2',
+          defaultCurrency: store.defaultCurrency || 'PKR',
+          country: store.country || 'PK',
+          dashboardName: store.dashboardName,
+          defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
+        }))
+        await Setting.bulkCreate(settings)
+        
+        console.log('[INIT] Database seeded successfully')
+      }
+    }
+    
+    // Start server
+    app.listen(PORT, () => {
+      logger.info(`Server started on port ${PORT}`)
+      logger.info(`Environment: ${NODE_ENV}`)
+      logger.info(`Health check available at http://localhost:${PORT}/api/health`)
+    })
+  } catch (error) {
+    logger.error('Failed to start server:', error)
+    process.exit(1)
+  }
+}
+
+// Start the server
+startServer()

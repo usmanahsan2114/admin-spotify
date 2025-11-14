@@ -57,6 +57,7 @@ import { Link as RouterLink } from 'react-router-dom'
 import { alpha } from '@mui/material/styles'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
 import GrowthKPI from '../components/common/GrowthKPI'
+import SystemStatusCard from '../components/common/SystemStatusCard'
 
 const PIE_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#607D8B']
 
@@ -262,6 +263,9 @@ const DashboardHome = () => {
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>
+      {/* System Status Card */}
+      <SystemStatusCard />
+
       <Card>
         <CardContent>
           <DateFilter value={dateRange} onChange={setDateRange} />

@@ -79,6 +79,25 @@ export const formatRelativeTime = (value?: string | null): string => {
  * formatDateRange('2024-01-01', '2024-01-31') // "Jan 1 - Jan 31, 2024"
  * ```
  */
+export const formatDuration = (seconds: number): string => {
+  if (seconds < 60) {
+    return `${seconds}s`
+  }
+  if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`
+  }
+  if (seconds < 86400) {
+    const hours = Math.floor(seconds / 3600)
+    const remainingMinutes = Math.floor((seconds % 3600) / 60)
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
+  }
+  const days = Math.floor(seconds / 86400)
+  const remainingHours = Math.floor((seconds % 86400) / 3600)
+  return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`
+}
+
 export const formatDateRange = (startDate?: string | null, endDate?: string | null): string => {
   if (!startDate || !endDate) return '—'
   try {

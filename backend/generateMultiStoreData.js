@@ -21,7 +21,7 @@ const addDays = (date, days) => {
   return result
 }
 
-// Store templates - 5 stores with lots of data
+// Store templates - 5 stores with lots of data + 1 demo store
 const storeTemplates = [
   {
     name: 'TechHub Electronics',
@@ -30,6 +30,7 @@ const storeTemplates = [
     category: 'Electronics',
     defaultCurrency: 'PKR',
     country: 'PK',
+    isDemo: false,
   },
   {
     name: 'Fashion Forward',
@@ -38,6 +39,7 @@ const storeTemplates = [
     category: 'Apparel',
     defaultCurrency: 'PKR',
     country: 'PK',
+    isDemo: false,
   },
   {
     name: 'Home & Living Store',
@@ -46,6 +48,7 @@ const storeTemplates = [
     category: 'Home & Living',
     defaultCurrency: 'PKR',
     country: 'PK',
+    isDemo: false,
   },
   {
     name: 'Fitness Gear Pro',
@@ -54,6 +57,7 @@ const storeTemplates = [
     category: 'Fitness',
     defaultCurrency: 'PKR',
     country: 'PK',
+    isDemo: false,
   },
   {
     name: 'Beauty Essentials',
@@ -62,6 +66,16 @@ const storeTemplates = [
     category: 'Beauty',
     defaultCurrency: 'PKR',
     country: 'PK',
+    isDemo: false,
+  },
+  {
+    name: 'Demo Store',
+    dashboardName: 'Demo Store - Try It Out',
+    domain: 'demo.shopifyadmin.com',
+    category: 'Demo',
+    defaultCurrency: 'PKR',
+    country: 'PK',
+    isDemo: true,
   },
 ]
 
@@ -302,6 +316,8 @@ const generateMultiStoreData = () => {
   // Generate stores
   storeTemplates.forEach((template, storeIndex) => {
     const storeId = crypto.randomUUID()
+    const storeCreatedAt = template.isDemo ? now.toISOString() : randomDate(oneYearAgo, threeMonthsAgo).toISOString()
+    
     const store = {
       id: storeId,
       name: template.name,
@@ -311,10 +327,154 @@ const generateMultiStoreData = () => {
       defaultCurrency: template.defaultCurrency,
       country: template.country,
       logoUrl: null,
-      brandColor: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-      createdAt: randomDate(oneYearAgo, threeMonthsAgo).toISOString(), // Store created 3-12 months ago
+      brandColor: ['#1976d2', '#d32f2f', '#388e3c', '#f57c00', '#7b1fa2', '#00acc1'][storeIndex % 6],
+      isDemo: template.isDemo || false,
+      createdAt: storeCreatedAt,
     }
     stores.push(store)
+    
+    // Demo store gets minimal data - skip heavy generation
+    if (template.isDemo) {
+      // Demo store: 1 admin user, 5 products, 10 customers, 20 orders, 2 returns
+      const demoAdminPassword = bcrypt.hashSync('demo123', 10)
+      const demoAdmin = {
+        id: crypto.randomUUID(),
+        storeId: storeId,
+        email: 'demo@demo.shopifyadmin.com',
+        passwordHash: demoAdminPassword,
+        name: 'Demo Admin',
+        role: 'demo', // Special demo role
+        fullName: 'Demo Admin',
+        phone: null,
+        profilePictureUrl: null,
+        defaultDateRangeFilter: 'last7',
+        notificationPreferences: { newOrders: true, lowStock: true, returnsPending: true },
+        permissions: {
+          viewOrders: true,
+          editOrders: false, // Demo cannot edit
+          deleteOrders: false,
+          viewProducts: true,
+          editProducts: false, // Demo cannot edit
+          deleteProducts: false,
+          viewCustomers: true,
+          editCustomers: false, // Demo cannot edit
+          viewReturns: true,
+          processReturns: false, // Demo cannot process returns
+          viewReports: true,
+          manageUsers: false, // Demo cannot manage users
+          manageSettings: false, // Demo cannot manage settings
+        },
+        active: true,
+        passwordChangedAt: null,
+        createdAt: storeCreatedAt,
+        updatedAt: storeCreatedAt,
+      }
+      allUsers.push(demoAdmin)
+      
+      // Demo products (5 products)
+      const demoProducts = [
+        { name: 'Demo Product 1', price: 29.99, reorderThreshold: 5 },
+        { name: 'Demo Product 2', price: 49.99, reorderThreshold: 5 },
+        { name: 'Demo Product 3', price: 19.99, reorderThreshold: 5 },
+        { name: 'Demo Product 4', price: 39.99, reorderThreshold: 5 },
+        { name: 'Demo Product 5', price: 59.99, reorderThreshold: 5 },
+      ]
+      
+      demoProducts.forEach((prodTemplate, index) => {
+        const product = {
+          id: crypto.randomUUID(),
+          storeId: storeId,
+          name: prodTemplate.name,
+          description: `Demo product for testing purposes.`,
+          price: prodTemplate.price,
+          stockQuantity: Math.floor(Math.random() * 20) + 10,
+          reorderThreshold: prodTemplate.reorderThreshold,
+          lowStock: false,
+          status: 'active',
+          category: 'Demo',
+          imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + index}?auto=format&fit=crop&w=800&q=60`,
+          createdAt: storeCreatedAt,
+          updatedAt: storeCreatedAt,
+        }
+        allProducts.push(product)
+      })
+      
+      // Demo customers (10 customers)
+      for (let i = 0; i < 10; i++) {
+        const name = randomCustomerName()
+        const email = randomEmail(name, 'demo.shopifyadmin.com')
+        const customer = {
+          id: crypto.randomUUID(),
+          storeId: storeId,
+          name,
+          email,
+          phone: randomPhone(),
+          address: `${Math.floor(Math.random() * 9999) + 1} Demo St, Demo City`,
+          alternativePhone: null,
+          alternativeEmails: [],
+          alternativeNames: [],
+          alternativeAddresses: [],
+          createdAt: storeCreatedAt,
+          orderIds: [],
+        }
+        allCustomers.push(customer)
+      }
+      
+      // Demo orders (20 orders)
+      const demoCustomers = allCustomers.filter(c => c.storeId === storeId)
+      const demoStoreProducts = allProducts.filter(p => p.storeId === storeId)
+      
+      for (let i = 0; i < 20; i++) {
+        const orderDate = randomDate(threeMonthsAgo, now)
+        const product = demoStoreProducts[Math.floor(Math.random() * demoStoreProducts.length)]
+        const customer = demoCustomers[Math.floor(Math.random() * demoCustomers.length)]
+        const quantity = Math.floor(Math.random() * 3) + 1
+        const total = product.price * quantity
+        
+        const order = {
+          id: crypto.randomUUID(),
+          storeId: storeId,
+          productName: product.name,
+          customerName: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          quantity,
+          status: ['Pending', 'Paid', 'Shipped', 'Completed'][Math.floor(Math.random() * 4)],
+          isPaid: Math.random() > 0.3,
+          notes: '',
+          createdAt: orderDate.toISOString(),
+          updatedAt: orderDate.toISOString(),
+          submittedBy: demoAdmin.name,
+          total,
+          timeline: generateTimeline(orderDate, 'Completed', customer.name),
+          customerId: customer.id,
+        }
+        allOrders.push(order)
+        customer.orderIds.push(order.id)
+      }
+      
+      // Demo returns (2 returns)
+      const demoOrders = allOrders.filter(o => o.storeId === storeId)
+      const ordersForReturns = demoOrders.slice(0, 2)
+      
+      ordersForReturns.forEach((order) => {
+        const returnDate = randomDate(new Date(order.createdAt), now)
+        const returnRequest = {
+          id: crypto.randomUUID(),
+          storeId: storeId,
+          orderId: order.id,
+          customerId: order.customerId,
+          reason: 'Demo return request',
+          returnedQuantity: 1,
+          dateRequested: returnDate.toISOString(),
+          status: 'Submitted',
+          history: generateReturnHistory(returnDate, 'Submitted'),
+        }
+        allReturns.push(returnRequest)
+      })
+      
+      return // Skip normal generation for demo store
+    }
     
     // Generate admin user for this store
     const adminName = `${template.name} Admin`
