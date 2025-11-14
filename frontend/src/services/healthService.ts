@@ -25,7 +25,7 @@ export interface HealthStatus {
 export const fetchHealthStatus = async (): Promise<HealthStatus> => {
   return apiFetch<HealthStatus>('/api/health', {
     method: 'GET',
-    skipAuth: false,
+    skipAuth: true, // Health endpoint is public, no auth required
   })
 }
 
