@@ -13,6 +13,16 @@
 - Global footer credits "Design & Developed by" Apex IT Solutions and Apex Marketings with links for brand visibility.
 - Customers entity is linked to orders by email; new submissions auto-create or enrich CRM records so marketing and support teams see order history instantly.
 
+## December 2024 - Login Email Matching Fix
+
+**Issue:** All login attempts were failing with "Invalid email or password" error.
+
+**Root Cause:** Login endpoint was using `Op.like` (pattern matching) for email lookup instead of exact match. Email is already normalized to lowercase, so exact match should be used.
+
+**Fix:** Changed to exact email match since email is already normalized. Also improved database seeding to re-seed if users don't exist.
+
+**Status:** ✅ **FIXED** - Login now works correctly.
+
 ## Production Features & Architecture
 
 **Database Migration (100% Complete)**:
