@@ -31,9 +31,9 @@
 The following endpoints still need to be updated to use Sequelize queries:
 
 1. **Orders**
+   - ✅ `POST /api/orders` - Create order (MIGRATED)
    - `GET /api/orders` - List orders
    - `GET /api/orders/:id` - Get order details
-   - `POST /api/orders` - Create order
    - `PUT /api/orders/:id` - Update order
    - `GET /api/orders/search/by-contact` - Search orders
 
@@ -59,13 +59,13 @@ The following endpoints still need to be updated to use Sequelize queries:
    - `PUT /api/returns/:id` - Update return
 
 5. **Users**
+   - ✅ `POST /api/signup` - User signup (MIGRATED)
+   - ✅ `POST /api/users` - Create user (MIGRATED)
+   - ✅ `PUT /api/users/:id` - Update user (MIGRATED)
+   - ✅ `DELETE /api/users/:id` - Delete user (MIGRATED)
    - `GET /api/users` - List users
    - `GET /api/users/me` - Get current user
    - `PUT /api/users/me` - Update current user
-   - `POST /api/users` - Create user
-   - `PUT /api/users/:id` - Update user
-   - `DELETE /api/users/:id` - Delete user
-   - `POST /api/signup` - User signup
 
 6. **Settings**
    - `GET /api/settings/business` - Get business settings
@@ -88,12 +88,14 @@ The following endpoints still need to be updated to use Sequelize queries:
 9. **Import**
    - `POST /api/import/products` - Import products
 
-## 🔧 Helper Functions That Need Updates
+## 🔧 Helper Functions Status
 
-Some helper functions still reference in-memory arrays and need to be updated:
+**✅ Migrated:**
+- `findUserByEmail` - Converted to async Sequelize query
+- `getOrdersForCustomer` - Converted to async Sequelize query
+- `serializeCustomer` - Converted to async function using Sequelize
 
-- `serializeCustomer` - Needs async/await for order queries
-- `getOrdersForCustomer` - Needs Sequelize queries
+**⚠️ Still Need Updates:**
 - `attachOrderToCustomer` - Needs Sequelize create/update
 - `mergeCustomerInfo` - Needs Sequelize update
 - `ensureLowStockFlag` - Needs Sequelize update
@@ -213,7 +215,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 
 ---
 
-**Status:** ⚠️ IN PROGRESS - 30% Complete (Core infrastructure done, endpoints need updating)
+**Status:** ⚠️ IN PROGRESS - 35% Complete (Core infrastructure done, critical endpoints migrated, remaining endpoints need updating)
 
 **Last Updated:** December 2024
 
