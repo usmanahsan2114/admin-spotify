@@ -141,9 +141,11 @@ const SignupPage = () => {
                 Return to login
               </Link>
             </Typography>
-            <Typography variant="caption" color="text.secondary" textAlign="center">
-              Seeded accounts: admin@example.com / admin123 · staff@example.com / staff123
-            </Typography>
+            {import.meta.env.DEV && (
+              <Typography variant="caption" color="text.secondary" textAlign="center">
+                Seeded accounts: admin@example.com / admin123 · staff@example.com / staff123
+              </Typography>
+            )}
           </Stack>
         </CardContent>
       </Card>

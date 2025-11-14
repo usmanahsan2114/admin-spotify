@@ -20,6 +20,7 @@ const ProductsPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ de
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.default })))
 const UsersPage = lazy(() => import('./pages/UsersPage').then((m) => ({ default: m.default })))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then((m) => ({ default: m.default })))
+const ChangePasswordPage = lazy(() => import('./pages/auth/ChangePasswordPage').then((m) => ({ default: m.default })))
 const NotFoundPage = lazy(() => import('./pages/auth/NotFoundPage').then((m) => ({ default: m.default })))
 const SignupPage = lazy(() => import('./pages/auth/SignupPage').then((m) => ({ default: m.default })))
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage').then((m) => ({ default: m.default })))
@@ -38,7 +39,7 @@ const LoadingFallback = () => (
 )
 
 const PrivateRoute = ({ children }: { children: ReactElement }) => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, needsPasswordChange, loading } = useAuth()
 
   if (loading) {
     return <LoadingFallback />
@@ -46,6 +47,11 @@ const PrivateRoute = ({ children }: { children: ReactElement }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  // Force password change on first login
+  if (needsPasswordChange) {
+    return <Navigate to="/change-password" replace />
   }
 
   return children
@@ -111,6 +117,14 @@ const App = () => (
           element={
             <Suspense fallback={<LoadingFallback />}>
               <SignupPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/change-password"
+          element={
+            <Suspense fallback={<LoadingFallback />}>
+              <ChangePasswordPage />
             </Suspense>
           }
         />

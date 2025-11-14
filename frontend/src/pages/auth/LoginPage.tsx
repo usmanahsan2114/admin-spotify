@@ -37,9 +37,14 @@ const LoginPage = () => {
     setSubmitting(true)
     setError(null)
     try {
-      await login(email, password)
-      const redirectTo = searchParams.get('redirectTo') || '/'
-      navigate(redirectTo, { replace: true })
+      const result = await login(email, password)
+      // Redirect to change password page if password change is required
+      if (result.needsPasswordChange) {
+        navigate('/change-password', { replace: true })
+      } else {
+        const redirectTo = searchParams.get('redirectTo') || '/'
+        navigate(redirectTo, { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to login.')
     } finally {
@@ -126,22 +131,24 @@ const LoginPage = () => {
               {submitting ? 'Signing in…' : 'Sign in'}
             </Button>
 
-            <Typography variant="caption" color="text.secondary" textAlign="center">
-              Need credentials? Use{' '}
-              <Link component="button" type="button" onClick={() => {
-                setEmail('admin@example.com')
-                setPassword('admin123')
-              }}>
-                admin@example.com / admin123
-              </Link>
-              {' '}or{' '}
-              <Link component="button" type="button" onClick={() => {
-                setEmail('staff@example.com')
-                setPassword('staff123')
-              }}>
-                staff@example.com / staff123
-              </Link>
-            </Typography>
+            {import.meta.env.DEV && (
+              <Typography variant="caption" color="text.secondary" textAlign="center">
+                Need credentials? Use{' '}
+                <Link component="button" type="button" onClick={() => {
+                  setEmail('admin@example.com')
+                  setPassword('admin123')
+                }}>
+                  admin@example.com / admin123
+                </Link>
+                {' '}or{' '}
+                <Link component="button" type="button" onClick={() => {
+                  setEmail('staff@example.com')
+                  setPassword('staff123')
+                }}>
+                  staff@example.com / staff123
+                </Link>
+              </Typography>
+            )}
             <Typography variant="caption" color="text.secondary" textAlign="center">
               New here?{' '}
               <Link component="button" type="button" onClick={() => navigate('/signup')}>

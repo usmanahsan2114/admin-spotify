@@ -726,6 +726,63 @@ The codebase follows React and TypeScript best practices with:
 
 **Migration Status**: ✅ **100% Complete** - All API endpoints migrated to Sequelize ORM with MySQL database.
 
+## Step 33 – Security, Monitoring & Deployment Readiness (Part 2)
+
+**Objective**: Implement comprehensive security hardening, monitoring, logging, backup, and deployment readiness features for production launch.
+
+**Implementation**:
+
+1. **Security Hardening**:
+   - ✅ JWT_SECRET validation: Requires environment variable in production (no fallback), minimum 32 characters
+   - ✅ Password change enforcement: Created `POST /api/users/me/change-password` endpoint with validation
+   - ✅ Force password change on first login: `needsPasswordChange` flag in login response, frontend redirects to `/change-password`
+   - ✅ Role-based access control: All protected endpoints use `authorizeRole('admin')` middleware
+   - ✅ Rate limiting: Configured for general API (100 req/15min), auth routes (5 req/15min), demo store writes (10 req/15min)
+   - ✅ Security headers: Helmet middleware with CSP, HSTS, X-Frame-Options, X-Content-Type-Options
+   - ✅ Removed console.log statements: Replaced with Winston logger throughout backend
+
+2. **Monitoring & Logging**:
+   - ✅ Sentry error tracking: Configured with performance monitoring (10% sampling), sensitive data filtering
+   - ✅ Winston structured logging: File transports (`logs/error.log`, `logs/combined.log`), console transport for development
+   - ✅ Health check endpoint: Enhanced `/api/health` with database status, latency, memory usage, uptime
+   - ✅ Request logging: All HTTP requests logged with method, path, status, duration, IP, user agent
+   - ✅ Error logging: Structured error logging with context (user, request details)
+
+3. **Backup & Recovery**:
+   - ✅ Encrypted backup script: `backup-database-encrypted.sh` with AES-256-CBC encryption, compression, off-site storage support
+   - ✅ Windows backup script: `backup-database.ps1` for cross-platform support
+   - ✅ Restore script: `restore-database.sh` with confirmation prompts
+   - ✅ Retention policy: 30-day default retention with automatic cleanup
+
+4. **Frontend Production Readiness**:
+   - ✅ Production build config: Terser minification, console.log removal, code splitting, sourcemaps disabled
+   - ✅ Demo credentials hidden: Login and signup pages hide demo credentials in production (`import.meta.env.DEV` check)
+   - ✅ Password change page: Created `ChangePasswordPage` component with validation and error handling
+   - ✅ Password change enforcement: `PrivateRoute` redirects to `/change-password` if `needsPasswordChange` is true
+   - ✅ User-friendly error states: Proper error messages, no stack traces exposed to users
+
+5. **Code Quality**:
+   - ✅ Removed debug endpoints: Legacy customer authentication endpoints removed
+   - ✅ Replaced console.log: All backend logging uses Winston logger
+   - ✅ Environment variable validation: JWT_SECRET validated on startup in production
+
+**Technical Decisions**:
+- JWT_SECRET must be set in production environment - no fallback prevents security vulnerabilities
+- Password change enforced on first login ensures users set secure passwords
+- Rate limiting prevents brute force attacks and resource exhaustion
+- Structured logging enables better debugging and monitoring in production
+- Encrypted backups protect data at rest even if backup files are compromised
+- Demo credentials hidden in production prevents unauthorized access attempts
+
+**Impact**: 
+- **Production-ready security**: Strong authentication, role-based access, rate limiting, security headers
+- **Comprehensive monitoring**: Error tracking, structured logging, health checks, performance metrics
+- **Reliable backups**: Encrypted backups with off-site storage support, automated retention
+- **User security**: Password change enforcement, secure password requirements
+- **Production-ready frontend**: Optimized builds, hidden debug features, user-friendly errors
+
+**Status**: ✅ **Complete** - All security, monitoring, and deployment readiness features implemented.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.

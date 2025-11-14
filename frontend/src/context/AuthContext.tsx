@@ -15,7 +15,8 @@ type AuthState = {
   isAuthenticated: boolean
   user: User | null
   token: string | null
-  login: (email: string, password: string) => Promise<void>
+  needsPasswordChange: boolean
+  login: (email: string, password: string) => Promise<{ needsPasswordChange?: boolean }>
   signup: (payload: SignupPayload) => Promise<void>
   logout: () => void
   loading: boolean
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthState | undefined>(undefined)
 type LoginResponse = {
   token: string
   user: User
+  needsPasswordChange?: boolean
 }
 
 type SignupPayload = {
@@ -40,6 +42,7 @@ const STORAGE_KEY = 'dashboard.user'
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
+  const [needsPasswordChange, setNeedsPasswordChange] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -72,6 +75,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(result.user))
     setToken(result.token)
     setUser(result.user)
+    setNeedsPasswordChange(result.needsPasswordChange || false)
+    return { needsPasswordChange: result.needsPasswordChange || false }
   }, [])
 
   const signup = useCallback(async (payload: SignupPayload) => {
@@ -93,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setToken(null)
     setUser(null)
+    setNeedsPasswordChange(false)
   }, [])
 
   const value = useMemo<AuthState>(
@@ -100,12 +106,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isAuthenticated: Boolean(token),
       user,
       token,
+      needsPasswordChange,
       login,
       signup,
       logout,
       loading,
     }),
-    [token, user, login, signup, logout, loading],
+    [token, user, needsPasswordChange, login, signup, logout, loading],
   )
 
   return (

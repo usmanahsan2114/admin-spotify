@@ -28,8 +28,16 @@ const {
 const { initializeDatabase, db } = require('./db/init')
 
 const PORT = process.env.PORT || 5000
-const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
 const NODE_ENV = process.env.NODE_ENV || 'development'
+
+// JWT_SECRET must be set in production - no fallback allowed
+if (NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required in production. Please set a strong random secret (minimum 32 characters).')
+}
+const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
+if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters long in production.')
+}
 
 // Configure Winston logger (must be defined before Sentry initialization)
 const logger = winston.createLogger({
@@ -680,7 +688,7 @@ const authenticateToken = async (req, res, next) => {
   const token = authHeader.split(' ')[1]
 
   if (!token) {
-    console.log('[AUTH] No token provided in Authorization header')
+    logger.debug('[AUTH] No token provided in Authorization header')
     return res.status(401).json({ message: 'Authorization token required.' })
   }
 
@@ -690,7 +698,7 @@ const authenticateToken = async (req, res, next) => {
     // Find user in database
     const user = await User.findByPk(payload.userId)
     if (!user) {
-      console.log(`[AUTH] User not found for userId: ${payload.userId}`)
+      logger.warn(`[AUTH] User not found for userId: ${payload.userId}`)
       return res.status(401).json({ message: 'User not found.' })
     }
 
@@ -703,7 +711,7 @@ const authenticateToken = async (req, res, next) => {
     req.storeId = user.storeId // Add storeId to request for filtering
     return next()
   } catch (error) {
-    console.log('[AUTH] Token verification failed:', error.message)
+    logger.warn('[AUTH] Token verification failed:', error.message)
     return res.status(401).json({ message: 'Invalid or expired token.' })
   }
 }
@@ -831,12 +839,12 @@ app.post('/api/login', validateLogin, async (req, res) => {
 
     // Debug logging
     if (!user) {
-      console.log(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
+      logger.warn(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
       return res.status(401).json({ message: 'Invalid email or password.' })
     }
 
     if (!bcrypt.compareSync(password, user.passwordHash)) {
-      console.log(`[LOGIN] Password mismatch for: ${email}`)
+      logger.warn(`[LOGIN] Password mismatch for: ${email}`)
       return res.status(401).json({ message: 'Invalid email or password.' })
     }
 
@@ -865,7 +873,7 @@ app.post('/api/login', validateLogin, async (req, res) => {
       } : null,
     })
   } catch (error) {
-    console.error('[ERROR] /api/login:', error)
+    logger.error('[ERROR] /api/login:', error)
     return res.status(500).json({ message: 'Login failed', error: error.message })
   }
 })
@@ -2031,12 +2039,55 @@ app.get('/api/users', authenticateToken, authorizeRole('admin'), async (req, res
 app.get('/api/users/me', authenticateToken, (req, res) => {
   // req.user is already set by authenticateToken middleware (full user object)
   if (!req.user || !req.user.id) {
-    console.log('[ERROR] /api/users/me: req.user is missing or invalid')
-    console.log('[ERROR] req.user:', req.user)
+    logger.error('[ERROR] /api/users/me: req.user is missing or invalid', { user: req.user })
     return res.status(401).json({ message: 'Invalid or missing token.' })
   }
   // User is already found and attached by authenticateToken, just return it
   return res.json(sanitizeUser(req.user))
+})
+
+// Password change endpoint
+app.post('/api/users/me/change-password', authenticateToken, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Invalid or missing token.' })
+    }
+
+    const { currentPassword, newPassword } = req.body
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required.' })
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters long.' })
+    }
+
+    // Find user in database to get passwordHash
+    const user = await User.findByPk(req.user.id)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' })
+    }
+
+    // Verify current password
+    if (!bcrypt.compareSync(currentPassword, user.passwordHash)) {
+      return res.status(401).json({ message: 'Current password is incorrect.' })
+    }
+
+    // Update password and set passwordChangedAt
+    const hashedPassword = bcrypt.hashSync(newPassword, 10)
+    await user.update({
+      passwordHash: hashedPassword,
+      passwordChangedAt: new Date(),
+    })
+
+    logger.info(`[PASSWORD] Password changed for user: ${user.email}`)
+
+    return res.json({ message: 'Password changed successfully.' })
+  } catch (error) {
+    logger.error('[ERROR] /api/users/me/change-password:', error)
+    return res.status(500).json({ message: 'Failed to change password', error: error.message })
+  }
 })
 
 app.put('/api/users/me', authenticateToken, validateUserProfile, async (req, res) => {
@@ -3028,7 +3079,7 @@ async function startServer() {
     if (process.env.NODE_ENV === 'development') {
       const storeCount = await Store.count()
       if (storeCount === 0) {
-        console.log('[INIT] Database is empty, seeding initial data...')
+        logger.info('[INIT] Database is empty, seeding initial data...')
         const { generateMultiStoreData } = require('./generateMultiStoreData')
         const multiStoreData = generateMultiStoreData()
         
@@ -3146,7 +3197,7 @@ async function startServer() {
         }))
         await Setting.bulkCreate(settings)
         
-        console.log('[INIT] Database seeded successfully')
+        logger.info('[INIT] Database seeded successfully')
       }
     }
     

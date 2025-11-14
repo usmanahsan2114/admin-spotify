@@ -128,13 +128,14 @@ VITE_API_BASE_URL=https://admin.yourdomain.com/api
 ```env
 NODE_ENV=production
 PORT=5000
-JWT_SECRET=STRONG_RANDOM_STRING_MIN_32_CHARS
+JWT_SECRET=STRONG_RANDOM_STRING_MIN_32_CHARS  # Required in production, minimum 32 characters
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=shopify_admin
 DB_USER=shopify_admin
 DB_PASSWORD=STRONG_PASSWORD
 CORS_ORIGIN=https://admin.yourdomain.com,https://techhub.yourdomain.com
+SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id  # Optional: for error tracking
 ```
 
 **See `PRODUCTION_DEPLOYMENT.md` for complete deployment instructions.**
