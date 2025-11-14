@@ -1,5 +1,28 @@
 # 🔍 Login Troubleshooting Guide
 
+**Last Updated:** December 2024 - Fixed email matching issue (Op.like → exact match)
+
+## ✅ FIXED: "Invalid email or password" Error
+
+**Status:** ✅ **FIXED** - Email matching now uses exact match instead of pattern matching.
+
+**Previous Issue:**
+- Login endpoint was using `Op.like` for email matching (pattern matching with wildcards)
+- This caused all login attempts to fail with "Invalid email or password"
+
+**Fix Applied (December 2024):**
+- Changed to exact email match (email is already normalized to lowercase)
+- Database seeding improved to re-seed if users don't exist (even if stores exist)
+- Better error messages: Shows user count and sample users in development mode
+
+**If you still see this error:**
+1. Check backend terminal for seeding messages: `[INIT] Database seeded successfully: X stores, Y users`
+2. Verify database has users: Check backend logs for "Sample users in database"
+3. Ensure you're using correct credentials (`.pk` domain, not `.com`)
+4. Restart backend server to trigger re-seeding if needed
+
+---
+
 ## 401 Unauthorized Error
 
 If you're getting `401 (Unauthorized)` when trying to login, check the following:
