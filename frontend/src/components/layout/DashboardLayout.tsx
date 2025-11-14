@@ -33,6 +33,7 @@ import MenuIcon from '@mui/icons-material/Menu'
 import LogoutIcon from '@mui/icons-material/Logout'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
+import StoreIcon from '@mui/icons-material/Store'
 import type { Theme } from '@mui/material/styles'
 import { ThemeModeContext } from '../../providers/ThemeModeProvider'
 import { useAuth } from '../../context/AuthContext'
@@ -110,11 +111,18 @@ const activeStyles = (theme: Theme) => ({
 const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   const theme = useTheme()
   const { settings } = useBusinessSettings()
-  const { logout, user } = useAuth()
+  const { logout, user, isAuthenticated } = useAuth()
   const [pendingReturns, setPendingReturns] = useState<number>(0)
   const [lowStockCount, setLowStockCount] = useState<number>(0)
 
   useEffect(() => {
+    // Only fetch metrics if user is authenticated
+    if (!isAuthenticated) {
+      setPendingReturns(0)
+      setLowStockCount(0)
+      return
+    }
+
     let isMounted = true
     
     // Fetch metrics for badges
@@ -125,6 +133,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         setLowStockCount(metrics.lowStockCount)
       })
       .catch(() => {
+        // Silently handle errors (401 is expected when not authenticated)
         if (!isMounted) return
         setPendingReturns(0)
         setLowStockCount(0)
@@ -133,7 +142,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isAuthenticated])
 
   const navItems = useMemo(
     () => {
