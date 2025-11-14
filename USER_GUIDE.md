@@ -28,6 +28,7 @@ A **store management system** that helps you manage your online business in one 
 **Quick overview of your business**
 
 **What you see:**
+- **System Status** - Real-time health monitoring (database status, API latency, server uptime, memory usage)
 - **Total Orders** - All orders ever received
 - **Pending Orders** - Orders waiting to be processed
 - **Total Revenue** - Total money made from all orders

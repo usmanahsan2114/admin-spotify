@@ -1,6 +1,6 @@
 # 🗄️ Database Migration Guide
 
-## ✅ Migration Status: 30% Complete
+## ✅ Migration Status: 35% Complete
 
 **Completed:**
 - ✅ Sequelize ORM installed and configured
@@ -10,10 +10,15 @@
 - ✅ Server initialization with database connection
 - ✅ Auto-seeding on server start (development mode)
 - ✅ Core endpoints updated (stores, login, authentication)
+- ✅ Signup endpoint migrated (`POST /api/signup`)
+- ✅ User management endpoints migrated (`POST /api/users`, `PUT /api/users/:id`, `DELETE /api/users/:id`)
+- ✅ Order creation endpoint migrated (`POST /api/orders`)
+- ✅ Helper functions migrated (`findUserByEmail`, `getOrdersForCustomer`, `serializeCustomer`)
+- ✅ Critical bug fixes applied (logger initialization, async/await fixes)
 
 **Remaining:**
-- ⚠️ ~40+ API endpoints still need Sequelize updates
-- ⚠️ Helper functions need async/await updates
+- ⚠️ ~35 API endpoints still need Sequelize updates
+- ⚠️ Some helper functions still need async/await updates
 - ⚠️ Password change endpoint needs implementation
 
 **See `PRODUCTION_MIGRATION_STATUS.md` for detailed status.**

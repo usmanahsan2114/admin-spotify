@@ -521,7 +521,41 @@ sudo ufw status
 
 ## 9. Backup Strategy
 
-### 9.1 Database Backup Script
+### 9.1 Encrypted Database Backup Script ✅ IMPLEMENTED
+
+**Location:** `backend/scripts/backup-database-encrypted.sh`
+
+**Features:**
+- ✅ AES-256-CBC encryption using PBKDF2 key derivation
+- ✅ Compression (gzip) before encryption
+- ✅ Off-site storage support (S3, SCP, or local-only)
+- ✅ Automatic cleanup with retention policy (30 days default)
+- ✅ Restore script available (`backend/scripts/restore-database.sh`)
+
+**Setup:**
+```bash
+# Generate encryption key (store securely!)
+openssl rand -base64 32 > /home/shopifyadmin/backup-key.txt
+chmod 600 /home/shopifyadmin/backup-key.txt
+
+# Configure backup script
+cd /home/shopifyadmin/app/backend/scripts
+chmod +x backup-database-encrypted.sh
+
+# Edit script to set:
+# - BACKUP_KEY_FILE (path to encryption key)
+# - BACKUP_DIR (backup storage location)
+# - OFF_SITE_STORAGE (S3, SCP, or local)
+
+# Test backup
+./backup-database-encrypted.sh
+
+# Schedule daily backups (crontab)
+crontab -e
+# Add: 0 2 * * * /home/shopifyadmin/app/backend/scripts/backup-database-encrypted.sh
+```
+
+**Legacy Simple Backup Script:**
 
 **Create `/home/shopifyadmin/scripts/backup-db.sh`:**
 ```bash
@@ -599,24 +633,59 @@ df -h
 free -h
 ```
 
-### 10.3 Application Health Checks
+### 10.3 Application Health Checks ✅ IMPLEMENTED
 
-**Create health check endpoint in backend:**
-```javascript
-// backend/server.js
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
-  });
-});
+**Enhanced Health Check Endpoint:** `GET /api/health`
+
+**Features:**
+- ✅ Database connection status and latency
+- ✅ Memory usage metrics (RSS, heap total/used, external)
+- ✅ API response latency
+- ✅ Server uptime
+- ✅ Environment and version information
+- ✅ Returns 200 when healthy, 503 when degraded/error
+
+**Response Example:**
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-12-XXT...",
+  "uptime": 3600,
+  "environment": "production",
+  "database": {
+    "status": "connected",
+    "latency": 5
+  },
+  "performance": {
+    "apiLatency": 12,
+    "memory": {
+      "rss": 150,
+      "heapTotal": 80,
+      "heapUsed": 60,
+      "external": 5
+    }
+  },
+  "version": "1.0.0"
+}
 ```
 
 **Setup Uptime Monitoring:**
 - Use services like UptimeRobot, Pingdom, or StatusCake
 - Monitor: `https://admin.yourdomain.com/api/health`
+- Set alerts for status != "ok" or database.status != "connected"
+
+**System Status Card:**
+- ✅ Real-time health monitoring visible in dashboard
+- ✅ Auto-refreshes every 30 seconds
+- ✅ Shows database status, API latency, uptime, memory usage
+- ✅ Color-coded indicators (green/yellow/red)
+- ✅ Responsive design (mobile-friendly)
+
+**Error Tracking:**
+- ✅ Sentry integration configured (optional but recommended)
+- ✅ Set `SENTRY_DSN` in `backend/.env` for production error tracking
+- ✅ Sensitive data filtering (passwords, tokens excluded)
+- ✅ Performance monitoring (10% transaction sampling)
 
 ---
 
