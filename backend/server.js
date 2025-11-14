@@ -818,13 +818,120 @@ app.get('/api/health', async (_req, res) => {
 app.get('/api/stores', async (_req, res) => {
   try {
     const storesList = await Store.findAll({
-      attributes: ['id', 'name', 'dashboardName', 'domain', 'category'],
+      attributes: ['id', 'name', 'dashboardName', 'domain', 'category', 'isDemo'],
       order: [['name', 'ASC']],
     })
     return res.json(storesList.map(store => store.toJSON ? store.toJSON() : store))
   } catch (error) {
-    console.error('[ERROR] /api/stores:', error)
+    logger.error('[ERROR] /api/stores:', error)
     return res.status(500).json({ message: 'Failed to fetch stores', error: error.message })
+  }
+})
+
+// Get all stores with user counts (admin only)
+app.get('/api/stores/admin', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    const storesList = await Store.findAll({
+      attributes: ['id', 'name', 'dashboardName', 'domain', 'category', 'isDemo', 'createdAt'],
+      order: [['name', 'ASC']],
+    })
+    
+    // Get user counts for each store
+    const storesWithCounts = await Promise.all(
+      storesList.map(async (store) => {
+        const userCount = await User.count({ where: { storeId: store.id } })
+        const orderCount = await Order.count({ where: { storeId: store.id } })
+        const productCount = await Product.count({ where: { storeId: store.id } })
+        const customerCount = await Customer.count({ where: { storeId: store.id } })
+        
+        const storeData = store.toJSON ? store.toJSON() : store
+        return {
+          ...storeData,
+          userCount,
+          orderCount,
+          productCount,
+          customerCount,
+        }
+      })
+    )
+    
+    return res.json(storesWithCounts)
+  } catch (error) {
+    logger.error('[ERROR] /api/stores/admin:', error)
+    return res.status(500).json({ message: 'Failed to fetch stores', error: error.message })
+  }
+})
+
+// Demo store data reset endpoint (admin only)
+app.post('/api/demo/reset-data', authenticateToken, authorizeRole('admin'), async (req, res) => {
+  try {
+    // Find demo store
+    const demoStore = await Store.findOne({ where: { isDemo: true } })
+    if (!demoStore) {
+      return res.status(404).json({ message: 'Demo store not found.' })
+    }
+
+    const demoStoreId = demoStore.id
+
+    // Delete all demo store data (except users and store itself)
+    await Order.destroy({ where: { storeId: demoStoreId } })
+    await Return.destroy({ where: { storeId: demoStoreId } })
+    await Product.destroy({ where: { storeId: demoStoreId } })
+    await Customer.destroy({ where: { storeId: demoStoreId } })
+
+    // Re-seed demo store data
+    const { generateMultiStoreData } = require('./generateMultiStoreData')
+    const multiStoreData = generateMultiStoreData()
+    
+    // Find demo store template
+    const demoStoreTemplate = multiStoreData.stores.find(s => s.isDemo)
+    if (!demoStoreTemplate) {
+      return res.status(500).json({ message: 'Demo store template not found in seed data.' })
+    }
+
+    // Generate demo products
+    const demoProducts = [
+      { name: 'Demo Product 1', price: 29.99, reorderThreshold: 5, description: 'Demo product for testing purposes.', category: 'Demo', status: 'active', stockQuantity: 10 },
+      { name: 'Demo Product 2', price: 49.99, reorderThreshold: 5, description: 'Demo product for testing purposes.', category: 'Demo', status: 'active', stockQuantity: 8 },
+      { name: 'Demo Product 3', price: 19.99, reorderThreshold: 5, description: 'Demo product for testing purposes.', category: 'Demo', status: 'active', stockQuantity: 12 },
+      { name: 'Demo Product 4', price: 39.99, reorderThreshold: 5, description: 'Demo product for testing purposes.', category: 'Demo', status: 'active', stockQuantity: 6 },
+      { name: 'Demo Product 5', price: 59.99, reorderThreshold: 5, description: 'Demo product for testing purposes.', category: 'Demo', status: 'active', stockQuantity: 9 },
+    ]
+
+    for (const prodTemplate of demoProducts) {
+      await Product.create({
+        storeId: demoStoreId,
+        name: prodTemplate.name,
+        price: prodTemplate.price,
+        stockQuantity: prodTemplate.stockQuantity,
+        reorderThreshold: prodTemplate.reorderThreshold,
+        description: prodTemplate.description,
+        category: prodTemplate.category,
+        status: prodTemplate.status,
+      })
+    }
+
+    // Generate demo customers (10 customers)
+    const demoCustomerNames = ['John Demo', 'Jane Demo', 'Bob Demo', 'Alice Demo', 'Charlie Demo', 'Diana Demo', 'Eve Demo', 'Frank Demo', 'Grace Demo', 'Henry Demo']
+    for (const name of demoCustomerNames) {
+      await Customer.create({
+        storeId: demoStoreId,
+        name,
+        email: `${name.toLowerCase().replace(' ', '.')}@demo.shopifyadmin.com`,
+        phone: `+92${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+        address: `${Math.floor(Math.random() * 9999) + 1} Demo St, Demo City`,
+      })
+    }
+
+    logger.info('[DEMO] Demo store data reset successfully')
+
+    return res.json({ 
+      message: 'Demo store data reset successfully.',
+      resetAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    logger.error('[ERROR] /api/demo/reset-data:', error)
+    return res.status(500).json({ message: 'Failed to reset demo store data', error: error.message })
   }
 })
 

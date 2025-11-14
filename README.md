@@ -143,18 +143,49 @@ SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id  # Optional: for error t
 
 ## Multi-Store System
 
-This application supports **5 independent stores**, each with its own:
+This application supports **6 stores** (5 client stores + 1 demo store), each with its own:
 - Admin and staff accounts
 - Products, customers, orders, and returns
 - Business settings (logo, currency, country)
-- Complete data isolation
+- Complete data isolation via `storeId` scoping
 
-**Default Store Accounts:**
+**Client Store Accounts:**
 - **TechHub Electronics**: `admin@techhub.com` / `admin123`
 - **Fashion Forward**: `admin@fashionforward.com` / `admin123`
 - **Home & Living Store**: `admin@homeliving.com` / `admin123`
 - **Fitness Gear Pro**: `admin@fitnessgear.com` / `admin123`
 - **Beauty Essentials**: `admin@beautyessentials.com` / `admin123`
+
+**Demo Store Account:**
+- **Demo Store**: `demo@demo.shopifyadmin.com` / `demo123` (read-only access, limited permissions)
+
+### Client Onboarding
+
+**Creating a New Store:**
+1. Store data is seeded via `generateMultiStoreData.js` script
+2. Each store gets a default admin user with strong password (change on first login)
+3. Store settings (logo, brand color, currency) can be configured via Settings page
+
+**Inviting Users:**
+1. Admin users can create new users via `/users` page
+2. New users are automatically assigned to the admin's store (`storeId` isolation)
+3. Users receive default permissions based on their role (admin/staff/demo)
+
+**Demo Store:**
+- Demo store has limited permissions (view-only for most features)
+- Demo credentials are displayed on login page when demo store is selected
+- Demo store data can be reset via `POST /api/demo/reset-data` (admin only)
+- Demo mode banner is displayed for demo users throughout the application
+
+**Store Selection:**
+- Login page includes store selection dropdown
+- Users login with email/password; storeId comes from their account
+- Store branding (logo, name) is displayed in dashboard header
+
+**Client Stores Management:**
+- Admin users can view all stores and their metrics via `/client-stores` page
+- Shows user count, order count, product count, customer count per store
+- Accessible only to admin role users
 
 See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for complete login credentials and all application URLs.
 

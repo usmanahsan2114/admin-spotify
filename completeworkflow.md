@@ -783,6 +783,72 @@ The codebase follows React and TypeScript best practices with:
 
 **Status**: ✅ **Complete** - All security, monitoring, and deployment readiness features implemented.
 
+## Step 34 – Client Onboarding, Demo Account Setup & Multi-Tenant Preparation (Part 3)
+
+**Objective**: Finalize client onboarding and demo account setup for production multi-client use with complete tenant isolation and demo store functionality.
+
+**Implementation**:
+
+1. **Store Seeding & User Management**:
+   - ✅ 6 stores seeded: 5 client stores (TechHub Electronics, Fashion Forward, Home & Living Store, Fitness Gear Pro, Beauty Essentials) + 1 demo store
+   - ✅ Each store has default admin user with strong password (change required on first login)
+   - ✅ Demo store has demo user with limited permissions (read-only access)
+   - ✅ User registration endpoint (`POST /api/users`) works for existing stores with Admin permissions
+   - ✅ Tenant isolation: All queries scoped by `storeId` (e.g., `where: { storeId: req.user.storeId }`)
+
+2. **Role & Permission Logic**:
+   - ✅ Admin: Can manage users, settings, all data (full access)
+   - ✅ Staff: Cannot manage other users or change business settings (limited access)
+   - ✅ Demo: Minimal permissions (view only, cannot edit/delete/create)
+
+3. **Demo Store Features**:
+   - ✅ Demo reset endpoint: `POST /api/demo/reset-data` (admin only) resets demo store data
+   - ✅ Demo credentials displayed on login page when demo store is selected
+   - ✅ Demo mode banner displayed for demo users throughout application
+   - ✅ Destructive actions disabled for demo users (delete/edit buttons disabled)
+
+4. **Frontend Multi-Tenant Features**:
+   - ✅ Store selection dropdown on login page (shows all stores, auto-selects demo)
+   - ✅ Store branding displayed on dashboard (logo + name from BusinessSettingsContext)
+   - ✅ Client Stores list page (`/client-stores`) for admin users showing:
+     - Store name, category, demo status
+     - User count, order count, product count, customer count
+     - Responsive design (mobile cards, desktop DataGrid)
+   - ✅ Demo credentials alert on login page when demo store selected
+   - ✅ Demo mode banner in dashboard layout for demo users
+   - ✅ Permission checks on Products page (edit/delete buttons disabled for demo users)
+   - ✅ Import/Export buttons hidden for demo users
+
+5. **Tenant Isolation**:
+   - ✅ All backend queries use `where: { storeId: req.storeId }` to ensure data isolation
+   - ✅ User management scoped to user's store
+   - ✅ Orders, products, customers, returns all filtered by storeId
+   - ✅ Settings and metrics scoped per store
+   - ✅ No cross-store data leakage possible
+
+6. **UI/UX & Responsiveness**:
+   - ✅ Store selection dropdown accessible and intuitive on mobile
+   - ✅ Store branding persists in header/sidebar (logo + dashboardName)
+   - ✅ Demo mode banner responsive and visible on all screen sizes
+   - ✅ Client Stores page responsive (mobile cards, desktop table)
+   - ✅ All forms and tables adapt to mobile viewport
+
+**Technical Decisions**:
+- Store selection on login page helps users identify which store they're accessing
+- Demo store uses minimal data (5 products, 10 customers, 20 orders) for faster reset
+- Tenant isolation enforced at database query level prevents data leakage
+- Demo user permissions enforced both backend (rate limiting, restrictions) and frontend (disabled buttons)
+- Client Stores list provides admin visibility into all stores and their usage
+
+**Impact**: 
+- **Complete multi-tenant support**: 6 stores (5 clients + 1 demo) with full data isolation
+- **Client onboarding ready**: Store creation, user invitation, settings configuration all functional
+- **Demo store functional**: Public demo with limited permissions, reset capability, clear branding
+- **Admin visibility**: Client Stores page shows usage metrics for all stores
+- **Production-ready**: All tenant isolation, permissions, and demo features implemented
+
+**Status**: ✅ **Complete** - All client onboarding, demo account setup, and multi-tenant preparation features implemented.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.

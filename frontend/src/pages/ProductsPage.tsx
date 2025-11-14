@@ -52,8 +52,23 @@ import {
 import { useCurrency } from '../hooks/useCurrency'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
+
 import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
 import dayjs from 'dayjs'
+
+const canEditProduct = (user: ReturnType<typeof useAuth>['user']) => {
+  if (!user) return false
+  if (user.role === 'admin') return true
+  if (user.role === 'demo') return false
+  return user.permissions?.editProducts !== false
+}
+
+const canDeleteProduct = (user: ReturnType<typeof useAuth>['user']) => {
+  if (!user) return false
+  if (user.role === 'admin') return true
+  if (user.role === 'demo') return false
+  return user.permissions?.deleteProducts !== false
+}
 
 type FormValues = {
   name: string
@@ -130,9 +145,11 @@ const ProductsPage = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [showLowStockOnly, setShowLowStockOnly] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+  const canEdit = canEditProduct(user)
+  const canDelete = canDeleteProduct(user)
   const lowStockRowBg = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.18 : 0.12)
   const lowStockRowHover = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.26 : 0.18)
 
@@ -479,24 +496,30 @@ const ProductsPage = () => {
       width: 130,
       renderCell: (params: GridRenderCellParams<Product>) => (
         <Stack direction="row" spacing={1}>
-          <Tooltip title="Edit product">
-            <IconButton
-              color="primary"
-              onClick={() => handleOpenDialog(params.row)}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
+          <Tooltip title={canEdit ? "Edit product" : "Edit disabled for demo users"}>
+            <span>
+              <IconButton
+                color="primary"
+                onClick={() => handleOpenDialog(params.row)}
+                disabled={!canEdit}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
-          <Tooltip title="Delete product">
-            <IconButton
-              color="error"
-              onClick={() => {
-                setProductToDelete(params.row)
-                setDeleteConfirmOpen(true)
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+          <Tooltip title={canDelete ? "Delete product" : "Delete disabled for demo users"}>
+            <span>
+              <IconButton
+                color="error"
+                onClick={() => {
+                  setProductToDelete(params.row)
+                  setDeleteConfirmOpen(true)
+                }}
+                disabled={!canDelete}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
           </Tooltip>
         </Stack>
       ),
@@ -547,24 +570,28 @@ const ProductsPage = () => {
               >
                 {exporting ? 'Exporting…' : 'Export products'}
               </Button>
-              <Button
-                variant="outlined"
-                startIcon={
-                  importing ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />
-                }
-                onClick={handleOpenImportDialog}
-                disabled={importing}
-              >
-                {importing ? 'Uploading…' : 'Import products'}
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-                fullWidth={isSmall}
-              >
-                Add Product
-              </Button>
+              {user?.role !== 'demo' && (
+                <Button
+                  variant="outlined"
+                  startIcon={
+                    importing ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />
+                  }
+                  onClick={handleOpenImportDialog}
+                  disabled={importing}
+                >
+                  {importing ? 'Uploading…' : 'Import products'}
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenDialog()}
+                  fullWidth={isSmall}
+                >
+                  Add Product
+                </Button>
+              )}
             </Stack>
           </Stack>
 
@@ -994,7 +1021,7 @@ const ProductsPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={!canDelete}>
             Delete
           </Button>
         </DialogActions>

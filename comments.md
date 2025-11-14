@@ -41,6 +41,20 @@
 - ✅ Password change page: `ChangePasswordPage` component with validation and error handling
 - ✅ All console.log replaced: Backend logging uses Winston logger throughout
 
+**Client Onboarding & Multi-Tenant Preparation (100% Complete)**:
+- ✅ 6 stores seeded: 5 client stores + 1 demo store with default admin users
+- ✅ Tenant isolation: All queries scoped by `storeId` (`where: { storeId: req.user.storeId }`)
+- ✅ Role/permission logic: Admin (full access), Staff (limited), Demo (view only)
+- ✅ Demo reset endpoint: `POST /api/demo/reset-data` (admin only) resets demo store data
+- ✅ Store selection dropdown: Login page shows all stores, auto-selects demo
+- ✅ Store branding: Logo + name displayed in dashboard header (from BusinessSettingsContext)
+- ✅ Client Stores list: `/client-stores` page for admin showing all stores and metrics
+- ✅ Demo credentials display: Shown on login page when demo store selected
+- ✅ Demo mode banner: Displayed for demo users throughout application
+- ✅ Demo permissions: Destructive actions disabled (edit/delete buttons, import/export hidden)
+- ✅ User registration: `POST /api/users` works for existing stores with Admin permissions
+- ✅ Store endpoints: `GET /api/stores` (public), `GET /api/stores/admin` (admin only with metrics)
+
 **Monitoring & Observability**:
 - Sentry error tracking with performance monitoring (10% transaction sampling)
 - Winston structured logging (file transports: error.log, combined.log, database.log)

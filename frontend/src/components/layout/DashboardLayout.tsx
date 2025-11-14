@@ -4,6 +4,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
   AppBar,
   Avatar,
+  Alert,
   Box,
   Divider,
   Drawer,
@@ -135,8 +136,22 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
   }, [])
 
   const navItems = useMemo(
-    () =>
-      baseNavItems.map((item) => {
+    () => {
+      const items = [...baseNavItems]
+      
+      // Add Client Stores menu item for admin users only
+      if (user?.role === 'admin') {
+        const clientStoresIndex = items.findIndex(item => item.label === 'Users')
+        if (clientStoresIndex !== -1) {
+          items.splice(clientStoresIndex + 1, 0, {
+            label: 'Client Stores',
+            to: '/client-stores',
+            icon: <StoreIcon />,
+          })
+        }
+      }
+      
+      return items.map((item) => {
         if (item.label === 'Returns') {
           return {
             ...item,
@@ -152,8 +167,9 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
           }
         }
         return item
-      }),
-    [pendingReturns, lowStockCount],
+      })
+    },
+    [pendingReturns, lowStockCount, user],
   )
 
   return (
@@ -262,6 +278,7 @@ const DashboardLayout = () => {
   const { mode, toggleMode } = useContext(ThemeModeContext)
   const { user, logout } = useAuth()
   const { settings } = useBusinessSettings()
+  const isDemoUser = user?.role === 'demo'
 
   const handleDrawerToggle = useCallback(() => {
     setMobileOpen((prev) => !prev)
@@ -433,6 +450,22 @@ const DashboardLayout = () => {
             bgcolor: 'transparent',
           }}
         >
+          {isDemoUser && (
+            <Alert
+              severity="info"
+              sx={{
+                mb: 2,
+                mx: { xs: 1, sm: 0 },
+              }}
+            >
+              <Typography variant="body2" fontWeight={600}>
+                Demo Mode – Limited Permissions
+              </Typography>
+              <Typography variant="caption" component="div">
+                You are viewing the demo store with read-only access. Some features are disabled.
+              </Typography>
+            </Alert>
+          )}
           <Outlet />
           <SiteAttribution sx={{ mt: 4, pb: 4 }} />
         </Box>

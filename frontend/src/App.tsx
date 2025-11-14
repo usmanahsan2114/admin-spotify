@@ -19,6 +19,7 @@ const ReturnDetailPage = lazy(() => import('./pages/ReturnDetailPage').then((m) 
 const ProductsPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ default: m.default })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.default })))
 const UsersPage = lazy(() => import('./pages/UsersPage').then((m) => ({ default: m.default })))
+const ClientStoresPage = lazy(() => import('./pages/ClientStoresPage').then((m) => ({ default: m.default })))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then((m) => ({ default: m.default })))
 const ChangePasswordPage = lazy(() => import('./pages/auth/ChangePasswordPage').then((m) => ({ default: m.default })))
 const NotFoundPage = lazy(() => import('./pages/auth/NotFoundPage').then((m) => ({ default: m.default })))
@@ -225,6 +226,16 @@ const App = () => (
               <PrivateRoute>
                 <Suspense fallback={<LoadingFallback />}>
                   <UsersPage />
+                </Suspense>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="client-stores"
+            element={
+              <PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ClientStoresPage />
                 </Suspense>
               </PrivateRoute>
             }
