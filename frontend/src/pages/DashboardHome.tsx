@@ -422,7 +422,11 @@ const DashboardHome = () => {
                 </Select>
               </FormControl>
             </Stack>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: isDesktop ? 300 : 250 }}>
+            <Box 
+              sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: isDesktop ? 300 : 250 }}
+              role="img"
+              aria-label={`${trendMetric === 'sales' ? 'Sales' : trendMetric === 'orders' ? 'Orders' : 'Customers'} trend chart showing data over time`}
+            >
               <ResponsiveContainer width="100%" height={isDesktop ? 300 : 250}>
                 {isDesktop ? (
                   <LineChart data={trendReport.data}>
@@ -638,7 +642,11 @@ const DashboardHome = () => {
             <Typography variant="h6" fontWeight={600} mb={2}>
               Sales Over Time
             </Typography>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
+            <Box 
+              sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}
+              role="img"
+              aria-label="Sales over time chart showing orders and revenue trends"
+            >
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <LineChart data={salesOverTime.data}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -691,7 +699,11 @@ const DashboardHome = () => {
             <Typography variant="h6" fontWeight={600} mb={2}>
               Period Comparison
             </Typography>
-            <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
+            <Box 
+              sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}
+              role="img"
+              aria-label="Period comparison chart showing orders and revenue for current and previous periods"
+            >
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <BarChart data={growthChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -782,7 +794,11 @@ const DashboardHome = () => {
                   No order activity recorded yet.
                 </Typography>
               ) : (
-                <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
+                <Box 
+                  sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}
+                  role="img"
+                  aria-label="Orders by status distribution pie chart"
+                >
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <PieChart>
                       <Pie
@@ -820,7 +836,11 @@ const DashboardHome = () => {
               <Typography variant="h6" fontWeight={600} mb={2}>
                 Low Stock Products Over Time
               </Typography>
-              <Box sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}>
+              <Box 
+                sx={{ flexGrow: 1, minWidth: 0, width: '100%', minHeight: chartHeight }}
+                role="img"
+                aria-label="Low stock products trend chart showing count of low stock items over time"
+              >
                 <ResponsiveContainer width="100%" height={chartHeight}>
                   <BarChart data={lowStockTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />

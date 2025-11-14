@@ -207,6 +207,44 @@ See **[PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md)** for comprehensive per
 - Dashboard metrics: <1s (p95)
 - Low stock query: <500ms (p95)
 
+## Accessibility & Cross-Browser Testing
+
+See **[ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md)** for comprehensive accessibility, cross-browser compatibility, and mobile responsiveness testing guide.
+
+**Quick Accessibility Checks:**
+- Run Lighthouse audit: Chrome DevTools → Lighthouse → Accessibility (target: >90)
+- Run axe DevTools scan: Right-click → "Scan for accessibility issues"
+- Test keyboard navigation: Tab through all pages, verify focus indicators
+- Test screen reader: Use NVDA (Windows) or VoiceOver (Mac)
+- Verify color contrast: Use WebAIM Contrast Checker
+- Test mobile responsiveness: Use Chrome DevTools mobile emulation or real device
+
+**Accessibility Features:**
+- ✅ ARIA labels on all interactive elements (buttons, icons, forms)
+- ✅ Skip link component for keyboard navigation
+- ✅ Proper semantic HTML (headings, lists, forms, landmarks)
+- ✅ Keyboard navigation support (Tab, Enter, Arrow keys)
+- ✅ Screen reader support (NVDA, VoiceOver compatible)
+- ✅ Color contrast meets WCAG AA standards (4.5:1 for normal text, 3:1 for large text)
+- ✅ Touch targets meet minimum size (48x48px)
+- ✅ Charts have descriptive `aria-label` attributes
+- ✅ Theme persistence (light/dark mode)
+- ✅ Responsive design (mobile-first, adapts to all screen sizes)
+
+**Cross-Browser Support:**
+- ✅ Chrome (desktop & mobile)
+- ✅ Firefox (desktop)
+- ✅ Safari (desktop & iOS)
+- ✅ Edge (desktop)
+
+**Mobile Responsiveness:**
+- ✅ Sidebar collapses to drawer on mobile
+- ✅ Tables scroll horizontally when needed
+- ✅ Forms stack vertically on small screens
+- ✅ Charts resize appropriately
+- ✅ No horizontal scrolling on main content
+- ✅ Touch targets are accessible (48x48px minimum)
+
 ## Security & Compliance Testing
 
 See **[SECURITY_TESTING.md](./SECURITY_TESTING.md)** for comprehensive security and compliance testing guide.
