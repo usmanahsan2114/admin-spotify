@@ -25,7 +25,7 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 ## Tech Stack
 
 - **Frontend**: React 19 (TypeScript), Vite, Material UI, MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
-- **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with MySQL** (database migration in progress - 30% complete).
+- **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with MySQL** (database migration in progress - 35% complete). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
 - **Tooling**: npm-run-all for concurrent dev servers, nodemon for backend reloads, ESLint.
 
 ## Getting Started

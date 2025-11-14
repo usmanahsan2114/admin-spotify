@@ -555,36 +555,32 @@ crontab -e
 # Add: 0 2 * * * /home/shopifyadmin/app/backend/scripts/backup-database-encrypted.sh
 ```
 
-**Legacy Simple Backup Script:**
+**Windows PowerShell Backup Script:**
 
-**Create `/home/shopifyadmin/scripts/backup-db.sh`:**
-```bash
-#!/bin/bash
-BACKUP_DIR="/home/shopifyadmin/backups"
-DATE=$(date +%Y%m%d_%H%M%S)
-DB_NAME="shopify_admin"
-DB_USER="shopify_admin"
-DB_PASS="YOUR_DB_PASSWORD"
+**Location:** `backend/scripts/backup-database.ps1`
 
-mkdir -p $BACKUP_DIR
+**Features:**
+- ✅ Windows-compatible backup script
+- ✅ Compression support
+- ✅ Retention policy (30 days default)
+- ✅ Automated cleanup
 
-# Create database backup
-mysqldump -u $DB_USER -p$DB_PASS $DB_NAME | gzip > $BACKUP_DIR/db_backup_$DATE.sql.gz
+**Setup:**
+```powershell
+# Configure environment variables
+$env:DB_HOST = "localhost"
+$env:DB_PORT = 3306
+$env:DB_NAME = "shopify_admin"
+$env:DB_USER = "shopify_admin"
+$env:DB_PASSWORD = "YOUR_PASSWORD"
+$env:BACKUP_DIR = "C:\backups"
+$env:RETENTION_DAYS = 30
 
-# Keep only last 7 days of backups
-find $BACKUP_DIR -name "db_backup_*.sql.gz" -mtime +7 -delete
+# Run backup
+.\backend\scripts\backup-database.ps1
 
-echo "Backup completed: db_backup_$DATE.sql.gz"
-```
-
-**Make executable and setup cron:**
-```bash
-chmod +x /home/shopifyadmin/scripts/backup-db.sh
-
-# Add to crontab (daily at 2 AM)
-crontab -e
-# Add this line:
-0 2 * * * /home/shopifyadmin/scripts/backup-db.sh
+# Schedule via Task Scheduler (Windows)
+# Create daily task at 2 AM to run backup script
 ```
 
 ### 9.2 Application Files Backup

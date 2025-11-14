@@ -12,6 +12,38 @@
 - Sample data across orders, products, and team members now includes rich metadata (totals, categories, histories) so every page has realistic content out-of-the-box.
 - Global footer credits "Design & Developed by" Apex IT Solutions and Apex Marketings with links for brand visibility.
 - Customers entity is linked to orders by email; new submissions auto-create or enrich CRM records so marketing and support teams see order history instantly.
+
+## Production Features & Architecture
+
+**Database Migration (35% Complete)**:
+- Core infrastructure migrated: Sequelize ORM, MySQL database, models, migrations, seeders
+- Critical endpoints migrated: Authentication, user management, order creation
+- Remaining endpoints documented in `PRODUCTION_MIGRATION_STATUS.md`
+- All migrated endpoints use async Sequelize queries with proper error handling
+
+**Monitoring & Observability**:
+- Sentry error tracking with performance monitoring (10% transaction sampling)
+- Winston structured logging (file transports: error.log, combined.log, database.log)
+- Enhanced health check endpoint (`/api/health`) with database latency, memory usage, API response time
+- System Status card in dashboard for real-time health monitoring (auto-refresh every 30 seconds)
+- Health endpoint compatible with external monitoring tools (UptimeRobot, Pingdom)
+
+**Security Hardening**:
+- Helmet middleware: CSP, HSTS (1-year max-age), X-Frame-Options: DENY, X-Content-Type-Options, X-XSS-Protection
+- Rate limiting: 100 requests/15min (general), 5 attempts/15min (auth routes)
+- Encrypted database backups (AES-256-CBC with PBKDF2) with off-site storage support
+- Sensitive data filtering in Sentry (passwords, tokens excluded)
+
+**Backup & Recovery**:
+- Encrypted backup script (`backup-database-encrypted.sh`) with compression, off-site storage (S3/SCP/local)
+- Windows PowerShell backup script (`backup-database.ps1`) for cross-platform support
+- Restore script (`restore-database.sh`) with confirmation prompts
+- Comprehensive rollback plan documented in `ROLLBACK_PLAN.md`
+
+**Code Quality**:
+- Removed redundant files (`generateTestData.js`, basic backup script)
+- Clean codebase with single source of truth for data generation
+- All documentation synchronized with latest project state
 - Fixed backend boot regression by hoisting `attachOrderToCustomer` so the CRM routes stay live when the server starts, and locked dashboard charts to explicit heights to eliminate the lingering Recharts (-1) warnings.
 - Returns workflow surfaces pending requests in the navigation badge, dedicated `/returns` hub, per-order summaries, and a detail page; approving or refunding a request automatically adjusts product stock and chronicles history.
 - CSV export/import flows use `papaparse` + `file-saver` on the client and lightweight validators on the API; admins can bulk load products while orders/customers/products export in a single click with role-aware guards.

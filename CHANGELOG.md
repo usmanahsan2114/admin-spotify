@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased] - 2025-12-XX
 
+### Removed
+- Removed redundant `generateTestData.js` (replaced by `generateMultiStoreData.js`)
+- Removed redundant `backup-database.sh` (replaced by `backup-database-encrypted.sh`)
+
 ### Fixed
 - Fixed logger initialization order (logger now defined before Sentry to prevent ReferenceError)
 - Fixed undefined `users` array reference in `findUserByEmail` (converted to async Sequelize query)
@@ -11,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Fixed undefined `ADMIN_USER_ID` constant references
 - Fixed missing await on async functions in customer serialization
 - Fixed order creation endpoint to use Sequelize instead of in-memory array
+- Removed unused `generateTestData` import from `server.js`
 
 ### Changed
 - Migrated signup endpoint (`POST /api/signup`) to use Sequelize `User.create()`
@@ -18,14 +23,17 @@ All notable changes to this project will be documented in this file.
 - Migrated order creation endpoint (`POST /api/orders`) to use Sequelize
 - Converted `getOrdersForCustomer` and `serializeCustomer` to async functions
 - Database migration progress increased from 30% to 35%
+- Codebase cleanup: removed redundant files and unused imports
 
 ### Added
 - System Status card component for real-time health monitoring
-- Encrypted database backup scripts with off-site storage support
+- Encrypted database backup scripts with off-site storage support (S3, SCP, or local)
+- Windows PowerShell backup script (`backup-database.ps1`) for Windows environments
 - Comprehensive rollback plan documentation
 - Enhanced health check endpoint with performance metrics
-- Sentry error tracking integration
-- Enhanced security headers (CSP, HSTS, X-Frame-Options)
+- Sentry error tracking integration with performance monitoring
+- Enhanced security headers (CSP, HSTS, X-Frame-Options) via Helmet
+- Winston structured logging with file transports
 
 ## [Previous] - 2025-XX-XX
 

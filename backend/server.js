@@ -11,7 +11,6 @@ const compression = require('compression')
 const winston = require('winston')
 const Sentry = require('@sentry/node')
 const { Op } = require('sequelize')
-const { generateTestData } = require('./generateTestData')
 const { generateMultiStoreData } = require('./generateMultiStoreData')
 const {
   validateLogin,

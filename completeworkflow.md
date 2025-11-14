@@ -634,6 +634,35 @@ The codebase follows React and TypeScript best practices with:
 
 **Impact**: Application runs without critical runtime errors. Core functionality (authentication, user management, order creation) fully operational with database. Foundation established for completing remaining endpoint migrations. Database migration progress increased from 30% to 35%.
 
+## Step 31 – Codebase Cleanup & Documentation Sync
+
+**Objective**: Remove redundant files, clean up unused code, and synchronize all documentation with latest project state.
+
+**Implementation**:
+
+1. **File Cleanup**:
+   - ✅ Removed `backend/generateTestData.js` (unused, replaced by `generateMultiStoreData.js`)
+   - ✅ Removed `backend/scripts/backup-database.sh` (replaced by encrypted version)
+   - ✅ Removed unused `generateTestData` import from `server.js`
+   - ✅ Kept `backup-database-encrypted.sh` (production-ready, cross-platform)
+   - ✅ Kept `backup-database.ps1` (Windows PowerShell support)
+
+2. **Documentation Updates**:
+   - ✅ Updated `README.md` with latest migration status (35%) and production features
+   - ✅ Updated `CHANGELOG.md` with cleanup entries
+   - ✅ Updated `history.md` with cleanup entry
+   - ✅ Updated `PRODUCTION_MIGRATION_STATUS.md` (already at 35%)
+   - ✅ Updated all deployment guides with latest features
+   - ✅ Synchronized migration status across all documentation
+
+**Technical Decisions**:
+- Removed unused files to reduce maintenance burden
+- Kept cross-platform backup scripts (Linux encrypted + Windows PowerShell)
+- Single source of truth for data generation (`generateMultiStoreData.js`)
+- Documentation reflects actual codebase state
+
+**Impact**: Cleaner codebase, reduced confusion, improved maintainability, accurate documentation. All markdown files now reflect current project state (35% migration, production features, latest changes).
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.
