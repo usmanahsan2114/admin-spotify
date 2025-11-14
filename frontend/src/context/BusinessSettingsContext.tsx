@@ -50,8 +50,7 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
         })
       }
     } catch (err) {
-      console.warn('Failed to load business settings:', err)
-      // Set defaults
+      // Failed to load settings - use defaults
       setSettings({
         logoUrl: null,
         dashboardName: 'Shopify Admin Dashboard',

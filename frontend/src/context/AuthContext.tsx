@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(savedToken)
         setUser(parsedUser)
       } catch (error) {
-        console.warn('Failed to parse stored user', error)
+        // Invalid stored user data - clear it
         window.localStorage.removeItem(STORAGE_KEY)
       }
     }

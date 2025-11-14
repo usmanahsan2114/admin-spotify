@@ -53,7 +53,7 @@ const LoginPage = () => {
           setSelectedStoreId(demoStore.id)
         }
       } catch (err) {
-        console.error('Failed to load stores:', err)
+        // Silently fail - stores dropdown is optional
       } finally {
         setLoadingStores(false)
       }

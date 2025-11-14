@@ -84,7 +84,6 @@ const OrderTestForm = () => {
         setProducts(productsData)
         setCustomers(customersData)
       } catch (err) {
-        console.error('Failed to load products:', err)
         setStatus('error')
         setMessage('Failed to load products. Please refresh the page.')
       } finally {
@@ -164,16 +163,11 @@ const OrderTestForm = () => {
                 (c) => normalizeEmail(c.email) === trimmedEmail
               )
             } catch (fetchErr) {
-              console.warn('Failed to fetch customers:', fetchErr)
+              // Failed to fetch customers - continue with order creation
             }
-          } else {
-            // If not authenticated, customer will be created automatically by backend
-            console.warn('Customer creation requires authentication. Customer will be created automatically when order is submitted.')
           }
+          // If not authenticated, customer will be created automatically by backend
         }
-      } else if (!existingCustomer && !token) {
-        // Not authenticated - customer will be created automatically by backend attachOrderToCustomer
-        console.info('Customer will be created automatically when order is submitted.')
       } else if (existingCustomer) {
         // Update existing customer with alternative info if needed
         const updates: Partial<Customer> = {}
@@ -222,7 +216,7 @@ const OrderTestForm = () => {
             )
             existingCustomer = updated
           } catch (err) {
-            console.warn('Failed to update customer:', err)
+            // Failed to update customer - continue with order creation
           }
         }
       }
@@ -273,7 +267,7 @@ const OrderTestForm = () => {
           const updatedCustomers = await fetchCustomers()
           setCustomers(updatedCustomers)
         } catch (err) {
-          console.warn('Failed to reload customers:', err)
+          // Failed to reload customers - non-critical
         }
       }
       setFormData({

@@ -322,14 +322,12 @@ const SettingsPage = () => {
         
         if (isUserNotFound) {
           // Only logout if user is truly not found (data regenerated)
-          console.log('[Settings] User not found - logging out. Error:', originalMessage)
           logout()
           setError('Your session is invalid. Please sign in again.')
           return
         } else {
           // For other 401 errors (like expired token), show error but don't logout immediately
           // This allows the user to try refreshing or manually logout
-          console.log('[Settings] 401 error but not user not found:', originalMessage)
           setError(`Authentication failed: ${originalMessage || errorMessage}. Please try refreshing the page.`)
           return
         }
