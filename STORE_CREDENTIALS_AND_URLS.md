@@ -121,7 +121,7 @@ Each store contains:
 
 ## 🎯 Notes
 
-- All stores have **independent databases** - data is completely isolated
+- All stores have **independent data** - data is completely isolated by `storeId` (database migration 35% complete)
 - Each store has its own **settings, logo, currency (PKR), and country (Pakistan)** configuration
 - **Default currency**: PKR (Pakistani Rupee) for all stores
 - **Default country**: Pakistan (PK) for all stores
@@ -130,4 +130,10 @@ Each store contains:
 - **Growth & Progress reports** are store-specific - each store has independent metrics
 - Staff accounts have limited permissions compared to admin accounts
 - All dates are relative to today - data spans exactly one year from today
+
+---
+
+**Last Updated:** December 2024
+
+**Note:** Database migration is in progress (35% complete). Core endpoints migrated to MySQL database. See `PRODUCTION_MIGRATION_STATUS.md` for migration status.
 

@@ -277,3 +277,5 @@ If clients want to use their own domains:
 
 **Last Updated:** December 2024
 
+**Note:** Database migration is in progress (35% complete). Core authentication, user management, and order creation are fully operational with database. Remaining endpoints are being migrated. See `PRODUCTION_MIGRATION_STATUS.md` for details.
+

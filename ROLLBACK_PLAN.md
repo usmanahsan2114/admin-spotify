@@ -88,8 +88,16 @@ Before deploying, ensure:
 
 3. **Restore Database Backup (if needed):**
    ```bash
-   # Decrypt and restore backup
-   ./scripts/restore-database.sh /backups/db_backup_shopify_admin_YYYYMMDD_HHMMSS.enc.gz
+   # Use encrypted backup restore script
+   cd backend/scripts
+   ./restore-database.sh /backups/db_backup_shopify_admin_YYYYMMDD_HHMMSS.enc.gz
+   
+   # Script will:
+   # - Prompt for encryption key
+   # - Decrypt backup
+   # - Decompress
+   # - Restore database
+   # - Provide confirmation
    ```
 
 4. **Revert Code:**
@@ -316,7 +324,10 @@ After rollback, verify:
 5. **Monitoring:**
    - Check PM2 logs: `pm2 logs`
    - Check error logs: `tail -f logs/error.log`
-   - Monitor Sentry for new errors
+   - Check combined logs: `tail -f logs/combined.log`
+   - Monitor Sentry dashboard for new errors (if configured)
+   - Check System Status card in dashboard (real-time health monitoring)
+   - Verify health endpoint: `curl https://yourdomain.com/api/health`
 
 ---
 
@@ -385,7 +396,10 @@ To minimize rollback needs:
 
 ## Recovery Point Objectives (RPO)
 
-- **Database Backups:** Daily (with 30-day retention)
+- **Database Backups:** Daily encrypted backups (AES-256-CBC) with 30-day retention
+- **Backup Storage:** Off-site storage supported (S3, SCP, or local)
+- **Backup Scripts:** Automated via cron (`backend/scripts/backup-database-encrypted.sh`)
+- **Restore Scripts:** Available (`backend/scripts/restore-database.sh`) with confirmation prompts
 - **Code Versioning:** Every deployment tagged
 - **Configuration:** Version controlled
 
