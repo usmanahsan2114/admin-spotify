@@ -67,12 +67,12 @@ const ClientStoresPage = () => {
       }
     }
 
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'superadmin') {
       loadStores()
     }
   }, [user, handleError])
 
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
     return (
       <Box p={3}>
         <Alert severity="error">You do not have permission to view this page.</Alert>
@@ -184,10 +184,12 @@ const ClientStoresPage = () => {
     <Box>
       <Box mb={3}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Client Stores
+          {user?.role === 'superadmin' ? 'All Stores' : 'Client Stores'}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Overview of all stores and their usage metrics
+          {user?.role === 'superadmin' 
+            ? 'Overview of all stores across the platform and their usage metrics'
+            : 'Overview of all stores and their usage metrics'}
         </Typography>
       </Box>
 

@@ -45,11 +45,13 @@ import {
   updateUser,
 } from '../services/usersService'
 import { useAuth } from '../context/AuthContext'
+import { apiFetch } from '../services/apiClient'
 
 type FormValues = {
   name: string
   email: string
   role: UserRole
+  storeId?: string | null
   password?: string
   active: boolean
   requirePassword: boolean
@@ -60,7 +62,7 @@ const userSchema = yup
   .object({
     name: yup.string().required('Name is required'),
     email: yup.string().email('Invalid email address').required('Email is required'),
-    role: yup.mixed<UserRole>().oneOf(['admin', 'staff']).required(),
+    role: yup.mixed<UserRole>().oneOf(['admin', 'staff', 'superadmin']).required(),
     password: yup
       .string()
       .when('requirePassword', {
@@ -81,6 +83,7 @@ const userSchema = yup
 const roleLabels: Record<UserRole, string> = {
   admin: 'Admin',
   staff: 'Staff',
+  superadmin: 'Super Admin',
 }
 
 const getDefaultPermissions = (role: UserRole): UserPermissions => {
@@ -220,7 +223,8 @@ const UsersPage = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const { user, logout } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
+  const isSuperAdmin = user?.role === 'superadmin'
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
 
@@ -236,6 +240,7 @@ const UsersPage = () => {
       name: '',
       email: '',
       role: 'staff',
+      storeId: null,
       password: '',
       active: true,
       requirePassword: true,
@@ -281,6 +286,20 @@ const UsersPage = () => {
     }
   }, [isAdmin])
 
+  useEffect(() => {
+    const loadStores = async () => {
+      if (isSuperAdmin) {
+        try {
+          const storesList = await apiFetch<Array<{ id: string; name: string }>>('/api/stores/admin')
+          setStores(storesList)
+        } catch (err) {
+          // Silently fail, stores are optional
+        }
+      }
+    }
+    loadStores()
+  }, [isSuperAdmin])
+
   const openDialog = (user?: User) => {
     if (user) {
       setSelectedUser(user)
@@ -288,6 +307,7 @@ const UsersPage = () => {
         name: user.name,
         email: user.email,
         role: user.role,
+        storeId: user.storeId ?? null,
         password: '',
         active: user.active ?? true,
         requirePassword: false,
@@ -299,6 +319,7 @@ const UsersPage = () => {
         name: '',
         email: '',
         role: 'staff',
+        storeId: null,
         password: '',
         active: true,
         requirePassword: true,
@@ -352,6 +373,7 @@ const UsersPage = () => {
           name: data.name,
           email: data.email,
           role: data.role,
+          storeId: isSuperAdmin ? (data.role === 'superadmin' ? null : data.storeId) : undefined,
           password: passwordForCreate,
           active: data.active,
           permissions: permissions || getDefaultPermissions(data.role),
@@ -401,6 +423,21 @@ const UsersPage = () => {
         minWidth: 120,
         valueFormatter: ({ value }) => roleLabels[value as UserRole] ?? value,
       },
+      ...(isSuperAdmin
+        ? [
+            {
+              field: 'storeId',
+              headerName: 'Store',
+              flex: 1,
+              minWidth: 150,
+              valueGetter: (_value, row: User) => {
+                if (row.role === 'superadmin') return 'N/A (Super Admin)'
+                const store = stores.find((s) => s.id === row.storeId)
+                return store ? store.name : row.storeId || '—'
+              },
+            } as GridColDef<User>,
+          ]
+        : []),
       {
         field: 'active',
         headerName: 'Status',
@@ -646,9 +683,40 @@ const UsersPage = () => {
                 <TextField {...field} id="user-role" select label="Role" required autoComplete="off">
                   <MenuItem value="admin">Admin</MenuItem>
                   <MenuItem value="staff">Staff</MenuItem>
+                  {isSuperAdmin && <MenuItem value="superadmin">Super Admin</MenuItem>}
                 </TextField>
               )}
             />
+            {isSuperAdmin && (
+              <Controller
+                name="storeId"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="user-store"
+                    select
+                    label="Store"
+                    value={field.value || ''}
+                    onChange={(e) => field.onChange(e.target.value || null)}
+                    helperText={
+                      watch('role') === 'superadmin'
+                        ? 'Super Admin users are not assigned to a specific store'
+                        : 'Select a store for this user'
+                    }
+                    disabled={watch('role') === 'superadmin'}
+                    autoComplete="off"
+                  >
+                    <MenuItem value="">None (Super Admin)</MenuItem>
+                    {stores.map((store) => (
+                      <MenuItem key={store.id} value={store.id}>
+                        {store.name}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+            )}
             <Controller
               name="password"
               control={control}

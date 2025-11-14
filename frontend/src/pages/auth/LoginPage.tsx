@@ -126,6 +126,11 @@ const LoginPage = () => {
               <Typography variant="body2" color="text.secondary" mt={1}>
                 Sign in to continue to the admin dashboard.
               </Typography>
+              {import.meta.env.DEV && (
+                <Typography variant="caption" color="text.secondary" mt={0.5} display="block">
+                  💡 Tip: Select a store below to see quick-fill credentials
+                </Typography>
+              )}
             </Box>
 
             {error && (
@@ -136,21 +141,27 @@ const LoginPage = () => {
 
             {!loadingStores && stores.length > 0 && (
               <FormControl fullWidth>
-                <InputLabel id="store-select-label">Store</InputLabel>
+                <InputLabel id="store-select-label">Store (Optional - for quick credentials)</InputLabel>
                 <Select
                   labelId="store-select-label"
                   id="store-select"
                   value={selectedStoreId}
-                  label="Store"
+                  label="Store (Optional - for quick credentials)"
                   onChange={(e) => setSelectedStoreId(e.target.value)}
                   disabled={submitting}
                 >
+                  <MenuItem value="">
+                    <em>Select store to see credentials...</em>
+                  </MenuItem>
                   {stores.map((store) => (
                     <MenuItem key={store.id} value={store.id}>
                       {store.name} {store.isDemo && '(Demo)'}
                     </MenuItem>
                   ))}
                 </Select>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Note: Store selection is optional. Login uses your email/password. Select a store to see quick-fill credentials.
+                </Typography>
               </FormControl>
             )}
 
@@ -187,22 +198,85 @@ const LoginPage = () => {
               {submitting ? 'Signing in…' : 'Sign in'}
             </Button>
 
-            {selectedStoreId && stores.find(s => s.id === selectedStoreId)?.isDemo && (
-              <Alert severity="info" sx={{ mb: 1 }}>
+            {/* Superadmin Credentials */}
+            {import.meta.env.DEV && (
+              <Alert severity="success" sx={{ mb: 1 }}>
                 <Typography variant="body2" fontWeight={600} gutterBottom>
-                  Demo Store Credentials
+                  Superadmin Account (Global Access)
                 </Typography>
                 <Typography variant="caption" component="div">
-                  Email: <strong>demo@demo.shopifyadmin.com</strong>
+                  Email: <strong>superadmin@shopifyadmin.pk</strong>
                   <br />
-                  Password: <strong>demo123</strong>
+                  Password: <strong>superadmin123</strong>
+                  <br />
+                  <Typography variant="caption" color="text.secondary" component="span">
+                    Can access all stores and manage all users
+                  </Typography>
                 </Typography>
                 <Button
                   size="small"
                   variant="outlined"
                   sx={{ mt: 1 }}
                   onClick={() => {
-                    setEmail('demo@demo.shopifyadmin.com')
+                    setEmail('superadmin@shopifyadmin.pk')
+                    setPassword('superadmin123')
+                    setSelectedStoreId('') // Clear store selection for superadmin
+                  }}
+                >
+                  Use Superadmin Credentials
+                </Button>
+              </Alert>
+            )}
+
+            {/* Store Admin Credentials */}
+            {selectedStoreId && stores.find(s => s.id === selectedStoreId) && !stores.find(s => s.id === selectedStoreId)?.isDemo && (
+              <Alert severity="info" sx={{ mb: 1 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  {stores.find(s => s.id === selectedStoreId)?.name} Admin Credentials
+                </Typography>
+                <Typography variant="caption" component="div">
+                  Email: <strong>admin@{stores.find(s => s.id === selectedStoreId)?.domain}</strong>
+                  <br />
+                  Password: <strong>admin123</strong>
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    const store = stores.find(s => s.id === selectedStoreId)
+                    if (store) {
+                      setEmail(`admin@${store.domain}`)
+                      setPassword('admin123')
+                    }
+                  }}
+                >
+                  Use Admin Credentials
+                </Button>
+              </Alert>
+            )}
+
+            {/* Demo Store Credentials */}
+            {selectedStoreId && stores.find(s => s.id === selectedStoreId)?.isDemo && (
+              <Alert severity="info" sx={{ mb: 1 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Demo Store Credentials
+                </Typography>
+                <Typography variant="caption" component="div">
+                  Email: <strong>demo@demo.shopifyadmin.pk</strong>
+                  <br />
+                  Password: <strong>demo123</strong>
+                  <br />
+                  <Typography variant="caption" color="text.secondary" component="span">
+                    Read-only access, limited permissions
+                  </Typography>
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                  onClick={() => {
+                    setEmail('demo@demo.shopifyadmin.pk')
                     setPassword('demo123')
                   }}
                 >
@@ -212,22 +286,22 @@ const LoginPage = () => {
             )}
 
             {import.meta.env.DEV && !selectedStoreId && (
-              <Typography variant="caption" color="text.secondary" textAlign="center">
-                Need credentials? Use{' '}
-                <Link component="button" type="button" onClick={() => {
-                  setEmail('admin@example.com')
-                  setPassword('admin123')
-                }}>
-                  admin@example.com / admin123
-                </Link>
-                {' '}or{' '}
-                <Link component="button" type="button" onClick={() => {
-                  setEmail('staff@example.com')
-                  setPassword('staff123')
-                }}>
-                  staff@example.com / staff123
-                </Link>
-              </Typography>
+              <Alert severity="info" sx={{ mb: 1 }}>
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Quick Login (Development Mode)
+                </Typography>
+                <Typography variant="caption" component="div">
+                  <strong>Superadmin:</strong>{' '}
+                  <Link component="button" type="button" onClick={() => {
+                    setEmail('superadmin@shopifyadmin.pk')
+                    setPassword('superadmin123')
+                  }}>
+                    superadmin@shopifyadmin.pk / superadmin123
+                  </Link>
+                  <br />
+                  <strong>Store Admins:</strong> Select a store above to see credentials
+                </Typography>
+              </Alert>
             )}
             <Typography variant="caption" color="text.secondary" textAlign="center">
               New here?{' '}

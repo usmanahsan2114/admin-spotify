@@ -41,10 +41,10 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
           })
         }
       } else {
-        // If not authenticated, use public settings
+        // If not authenticated, use generic settings (don't show store-specific branding)
         setSettings({
-          logoUrl: publicSettings.logoUrl,
-          dashboardName: publicSettings.dashboardName,
+          logoUrl: null, // No logo on public pages
+          dashboardName: 'Shopify Admin Dashboard', // Generic title for public pages
           defaultCurrency: publicSettings.defaultCurrency || 'USD',
           country: publicSettings.country || 'US',
         })

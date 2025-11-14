@@ -15,15 +15,18 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 ### Test Accounts
 
 **Store A (TechHub Electronics):**
-- Admin: `admin@techhub.com` / `admin123`
-- Staff: `staff1@techhub.com` / `staff123`
+- Admin: `admin@techhub.pk` / `admin123` ⚠️ **Note: Uses .pk domain, NOT .com**
+- Staff: `staff1@techhub.pk` / `staff123`
 
 **Store B (Fashion Forward):**
-- Admin: `admin@fashionforward.com` / `admin123`
-- Staff: `staff1@fashionforward.com` / `staff123`
+- Admin: `admin@fashionforward.pk` / `admin123` ⚠️ **Note: Uses .pk domain, NOT .com**
+- Staff: `staff1@fashionforward.pk` / `staff123`
 
 **Demo Store:**
-- Demo: `demo@demo.shopifyadmin.com` / `demo123`
+- Demo: `demo@demo.shopifyadmin.pk` / `demo123` ⚠️ **Note: Uses .pk domain, NOT .com**
+
+**Superadmin Account:**
+- Super Admin: `superadmin@shopifyadmin.pk` / `superadmin123` (can access all stores)
 
 ---
 
@@ -35,7 +38,7 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 **Steps:**
 1. Navigate to `/login`
 2. Select "TechHub Electronics" from store dropdown
-3. Enter email: `admin@techhub.com`
+3. Enter email: `admin@techhub.pk` ⚠️ **Note: Uses .pk domain, NOT .com**
 4. Enter password: `admin123`
 5. Click "Sign in"
 
@@ -48,7 +51,7 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 
 #### TC-1.2: Staff Login & Permissions
 **Steps:**
-1. Login as `staff1@techhub.com` / `staff123`
+1. Login as `staff1@techhub.pk` / `staff123` ⚠️ **Note: Uses .pk domain, NOT .com**
 2. Navigate to `/users` page
 3. Attempt to create/edit/delete users
 4. Navigate to `/settings` page
@@ -64,7 +67,7 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 #### TC-1.3: Demo User Login & Limited Permissions
 **Steps:**
 1. Select "Demo Store" from login dropdown
-2. Use demo credentials: `demo@demo.shopifyadmin.com` / `demo123`
+2. Use demo credentials: `demo@demo.shopifyadmin.pk` / `demo123` ⚠️ **Note: Uses .pk domain, NOT .com**
 3. Navigate through all pages
 4. Attempt to edit/delete products
 5. Attempt to create orders/products/customers
@@ -597,7 +600,7 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 
 #### TC-9.1: Store A Data Isolation
 **Steps:**
-1. Login as Admin of Store A (`admin@techhub.com`)
+1. Login as Admin of Store A (`admin@techhub.pk`) ⚠️ **Note: Uses .pk domain, NOT .com**
 2. Note number of orders/products/customers
 3. Create a new order
 4. Create a new product
@@ -614,7 +617,7 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 #### TC-9.2: Store B Data Isolation
 **Steps:**
 1. Logout from Store A
-2. Login as Admin of Store B (`admin@fashionforward.com`)
+2. Login as Admin of Store B (`admin@fashionforward.pk`) ⚠️ **Note: Uses .pk domain, NOT .com**
 3. Verify cannot see Store A's data
 4. Verify can only see Store B's data
 5. Create test data in Store B
@@ -628,7 +631,7 @@ This document outlines comprehensive functional and end-to-end workflow testing 
 
 #### TC-9.3: Demo Store Isolation
 **Steps:**
-1. Login as Demo user (`demo@demo.shopifyadmin.com`)
+1. Login as Demo user (`demo@demo.shopifyadmin.pk`) ⚠️ **Note: Uses .pk domain, NOT .com**
 2. Verify can only see Demo Store data
 3. Verify cannot see client store data
 4. Verify limited permissions

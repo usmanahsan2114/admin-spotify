@@ -26,12 +26,12 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       role: {
-        type: DataTypes.ENUM('admin', 'staff'),
+        type: DataTypes.ENUM('admin', 'staff', 'superadmin'),
         defaultValue: 'staff',
       },
       storeId: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true, // Nullable for superadmin users
         references: {
           model: 'stores',
           key: 'id',

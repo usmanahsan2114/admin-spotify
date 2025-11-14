@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'staff'
+export type UserRole = 'admin' | 'staff' | 'superadmin'
 
 export type NotificationPreferences = {
   newOrders: boolean
@@ -27,6 +27,7 @@ export type User = {
   name: string
   email: string
   role: UserRole
+  storeId?: string | null // Null for superadmin
   active?: boolean
   createdAt?: string
   updatedAt?: string
@@ -43,6 +44,7 @@ export type CreateUserPayload = {
   email: string
   password: string
   role: UserRole
+  storeId?: string | null // Optional, null for superadmin
   active?: boolean
   permissions?: UserPermissions
 }

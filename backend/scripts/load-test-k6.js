@@ -34,9 +34,9 @@ const BASE_URL = __ENV.API_URL || 'http://localhost:5000'
 
 // Test users (should match seeded data)
 const testUsers = [
-  { email: 'admin@techhub.com', password: 'admin123' },
-  { email: 'admin@fashionforward.com', password: 'admin123' },
-  { email: 'staff1@techhub.com', password: 'staff123' },
+  { email: 'admin@techhub.pk', password: 'admin123' },
+  { email: 'admin@fashionforward.pk', password: 'admin123' },
+  { email: 'staff1@techhub.pk', password: 'staff123' },
 ]
 
 // Helper function to login and get token

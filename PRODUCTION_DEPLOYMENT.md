@@ -1,5 +1,13 @@
 # 🚀 Production Deployment Guide
 
+**For Hostinger-specific deployment, see:**
+- **[QUICK_DEPLOYMENT_GUIDE.md](./QUICK_DEPLOYMENT_GUIDE.md)** - Quick step-by-step guide for Hostinger
+- **[DEPLOYMENT_PLAN.md](./DEPLOYMENT_PLAN.md)** - Complete detailed deployment plan for Hostinger
+
+**Status:** ✅ **PRODUCTION READY** - Database migration 100% complete
+
+---
+
 ## Pre-Deployment Checklist
 
 ### ✅ Code Audit

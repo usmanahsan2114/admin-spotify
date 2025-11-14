@@ -45,7 +45,7 @@ module.exports = {
         }),
         permissions: JSON.stringify(user.permissions || {}),
         active: user.active !== undefined ? user.active : true,
-        passwordChangedAt: null, // Force password change on first login
+        passwordChangedAt: new Date(), // Set to current date to skip password change requirement (for testing)
         createdAt: user.createdAt || new Date(),
         updatedAt: user.updatedAt || new Date(),
       })))

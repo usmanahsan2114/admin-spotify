@@ -708,7 +708,8 @@ const authenticateToken = async (req, res, next) => {
 
     // Convert Sequelize instance to plain object
     req.user = user.toJSON ? user.toJSON() : user
-    req.storeId = user.storeId // Add storeId to request for filtering
+    req.storeId = user.storeId // Add storeId to request for filtering (null for superadmin)
+    req.isSuperAdmin = user.role === 'superadmin' // Flag for superadmin
     return next()
   } catch (error) {
     logger.warn('[AUTH] Token verification failed:', error.message)
@@ -745,6 +746,49 @@ const authorizeRole =
     }
     return next()
   }
+
+// Middleware to allow superadmin or require store admin
+const authorizeSuperAdminOrStoreAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(403).json({ message: 'Authentication required.' })
+  }
+  if (req.user.role === 'superadmin' || req.user.role === 'admin') {
+    return next()
+  }
+  return res.status(403).json({ message: 'Admin or superadmin access required.' })
+}
+
+// Middleware to check if user can access a specific store (superadmin can access all)
+const canAccessStore = (storeId) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(403).json({ message: 'Authentication required.' })
+    }
+    if (req.user.role === 'superadmin') {
+      return next() // Superadmin can access any store
+    }
+    if (req.user.storeId === storeId) {
+      return next() // User belongs to this store
+    }
+    return res.status(403).json({ message: 'Access denied to this store.' })
+  }
+}
+
+// Helper function to build storeId filter (superadmin sees all stores)
+const buildStoreFilter = (req) => {
+  if (req.isSuperAdmin) {
+    return {} // Superadmin can see all stores (no filter)
+  }
+  return { storeId: req.storeId }
+}
+
+// Helper function to build storeId where clause for Sequelize queries
+const buildStoreWhere = (req, baseWhere = {}) => {
+  if (req.isSuperAdmin) {
+    return baseWhere // Superadmin can see all stores
+  }
+  return { ...baseWhere, storeId: req.storeId }
+}
 
 // Routes
 app.get('/', (_req, res) => {
@@ -952,7 +996,7 @@ app.get('/api/stores', async (_req, res) => {
 })
 
 // Get all stores with user counts (admin only)
-app.get('/api/stores/admin', authenticateToken, authorizeRole('admin'), async (req, res) => {
+app.get('/api/stores/admin', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     const storesList = await Store.findAll({
       attributes: ['id', 'name', 'dashboardName', 'domain', 'category', 'isDemo', 'createdAt'],
@@ -1040,7 +1084,7 @@ app.post('/api/demo/reset-data', authenticateToken, authorizeRole('admin'), asyn
       await Customer.create({
         storeId: demoStoreId,
         name,
-        email: `${name.toLowerCase().replace(' ', '.')}@demo.shopifyadmin.com`,
+        email: `${name.toLowerCase().replace(' ', '.')}@demo.shopifyadmin.pk`,
         phone: `+92${Math.floor(Math.random() * 9000000000) + 1000000000}`,
         address: `${Math.floor(Math.random() * 9999) + 1} Demo St, Demo City`,
       })
@@ -1083,9 +1127,11 @@ app.post('/api/login', validateLogin, async (req, res) => {
     }
 
     const userData = user.toJSON ? user.toJSON() : user
-    const store = await findStoreById(user.storeId)
+    
+    // Superadmin doesn't have a storeId, regular users do
+    const store = user.storeId ? await findStoreById(user.storeId) : null
 
-    // Include storeId in JWT token
+    // Include storeId in JWT token (null for superadmin)
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role, storeId: user.storeId },
       JWT_SECRET,
@@ -1208,6 +1254,18 @@ const findUserByEmail = async (email, storeId = null) => {
   return await User.findOne({ where })
 }
 
+// Find superadmin user by email (for login)
+const findSuperAdminByEmail = async (email) => {
+  if (!email) return null
+  const normalizedEmail = normalizeEmail(email)
+  return await User.findOne({ 
+    where: { 
+      email: normalizedEmail,
+      role: 'superadmin',
+    } 
+  })
+}
+
 // Order routes
 // Public endpoint to search orders by email or phone (uses customer matching logic)
 // MUST be before /api/orders/:id to avoid route conflict
@@ -1282,8 +1340,8 @@ app.get('/api/orders/search/by-contact', async (req, res) => {
 
 app.get('/api/orders', authenticateToken, async (req, res) => {
   try {
-    // Build where clause with storeId filter
-    const where = { storeId: req.storeId }
+    // Build where clause with storeId filter (superadmin sees all)
+    const where = buildStoreWhere(req)
     
     // Apply date filtering if provided
     const startDate = req.query.startDate
@@ -1506,8 +1564,8 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, r
 
     const orderData = order.toJSON ? order.toJSON() : order
 
-    // Verify order belongs to user's store
-    if (orderData.storeId !== req.storeId) {
+    // Verify order belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && orderData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Order does not belong to your store.' })
     }
 
@@ -1554,9 +1612,9 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, r
 // Customer routes
 app.get('/api/customers', authenticateToken, async (req, res) => {
   try {
-    // Fetch customers by storeId
+    // Fetch customers (superadmin sees all stores)
     const customersList = await Customer.findAll({
-      where: { storeId: req.storeId },
+      where: buildStoreWhere(req),
       order: [['createdAt', 'DESC']],
     })
     
@@ -1596,9 +1654,14 @@ app.post('/api/customers', authenticateToken, validateCustomer, async (req, res)
       return res.json(serialized)
     }
 
-    // Create new customer if none found
+    // Create new customer (superadmin can specify storeId)
+    const targetStoreId = req.isSuperAdmin && req.body.storeId ? req.body.storeId : req.storeId
+    if (!targetStoreId) {
+      return res.status(400).json({ message: 'Store ID is required.' })
+    }
+    
     const newCustomer = await Customer.create({
-      storeId: req.storeId, // Assign to user's store
+      storeId: targetStoreId,
       name: String(name).trim(),
       email: String(email).trim(),
       phone: phone ? String(phone).trim() : 'Not provided',
@@ -1648,17 +1711,14 @@ app.get('/api/customers/:id', authenticateToken, async (req, res) => {
 
     const customerData = customer.toJSON ? customer.toJSON() : customer
 
-    // Verify customer belongs to user's store
-    if (customerData.storeId !== req.storeId) {
+    // Verify customer belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && customerData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Customer does not belong to your store.' })
     }
 
     const ordersForCustomer = await getOrdersForCustomer(customer)
     const storeReturns = await Return.findAll({
-      where: {
-        storeId: req.storeId,
-        customerId: customerData.id,
-      },
+      where: buildStoreWhere(req, { customerId: customerData.id }),
       order: [['dateRequested', 'DESC']],
     })
     
@@ -1772,8 +1832,8 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, async (req, r
 // Returns routes
 app.get('/api/returns', authenticateToken, async (req, res) => {
   try {
-    // Build where clause with storeId filter
-    const where = { storeId: req.storeId }
+    // Build where clause with storeId filter (superadmin sees all)
+    const where = buildStoreWhere(req)
     
     // Apply date filtering if provided
     const startDate = req.query.startDate
@@ -1816,8 +1876,8 @@ app.get('/api/returns/:id', authenticateToken, async (req, res) => {
     
     const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
     
-    // Verify return belongs to user's store
-    if (returnData.storeId !== req.storeId) {
+    // Verify return belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && returnData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Return does not belong to your store.' })
     }
     
@@ -1866,8 +1926,8 @@ app.post('/api/returns', authenticateToken, validateReturn, async (req, res) => 
         .json({ message: `returnedQuantity cannot exceed the remaining order quantity (${remainingQuantity} available).` })
     }
 
-    // Verify order belongs to user's store
-    if (orderData.storeId !== req.storeId) {
+    // Verify order belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && orderData.storeId !== req.storeId) {
       await transaction.rollback()
       return res.status(403).json({ message: 'Order does not belong to your store.' })
     }
@@ -1995,9 +2055,9 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
     const startDate = req.query.startDate ? new Date(req.query.startDate) : null
     const endDate = req.query.endDate ? new Date(req.query.endDate) : null
     
-    // Build where clauses
-    const orderWhere = { storeId: req.storeId }
-    const customerWhere = { storeId: req.storeId }
+    // Build where clauses (superadmin sees all stores)
+    const orderWhere = buildStoreWhere(req)
+    const customerWhere = buildStoreWhere(req)
     
     if (startDate || endDate) {
       orderWhere.createdAt = {}
@@ -2014,11 +2074,13 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
       }
     }
     
-    // Fetch data from database
+    // Fetch data from database (superadmin sees all stores)
+    const productWhere = buildStoreWhere(req)
+    const returnWhere = buildStoreWhere(req, { status: 'Submitted' })
     const [ordersList, productsList, returnsList, customersList] = await Promise.all([
       Order.findAll({ where: orderWhere }),
-      Product.findAll({ where: { storeId: req.storeId } }),
-      Return.findAll({ where: { storeId: req.storeId, status: 'Submitted' } }),
+      Product.findAll({ where: productWhere }),
+      Return.findAll({ where: returnWhere }),
       Customer.findAll({ where: customerWhere }),
     ])
     
@@ -2070,9 +2132,9 @@ app.get('/api/metrics/low-stock-trend', authenticateToken, async (req, res) => {
     const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date()
     
-    // Fetch products by storeId
+    // Fetch products (superadmin sees all stores)
     const productsList = await Product.findAll({
-      where: { storeId: req.storeId },
+      where: buildStoreWhere(req),
     })
     
     const baseLowStockCount = productsList.filter(p => {
@@ -2276,11 +2338,12 @@ const sendCsv = (res, filename, headers, rows) => {
 }
 
 // User routes
-app.get('/api/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
+app.get('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
-    // Fetch users by storeId
+    // Fetch users (superadmin sees all, admin sees only their store)
+    const where = buildStoreWhere(req)
     const usersList = await User.findAll({
-      where: { storeId: req.storeId },
+      where,
       order: [['createdAt', 'DESC']],
     })
     return res.json(usersList.map((user) => {
@@ -2410,9 +2473,16 @@ app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, 
       }
     }
     
-    const targetStoreId = storeId || req.storeId
+    // Superadmin can create users for any store, regular admin only for their store
+    const targetStoreId = req.isSuperAdmin ? (storeId || req.storeId) : req.storeId
     if (!targetStoreId) {
       return res.status(400).json({ message: 'Store ID is required.' })
+    }
+    
+    // Verify store exists
+    const targetStore = await Store.findByPk(targetStoreId)
+    if (!targetStore) {
+      return res.status(404).json({ message: 'Store not found.' })
     }
 
     const newUser = await User.create({
@@ -2442,15 +2512,15 @@ app.post('/api/users', authenticateToken, authorizeRole('admin'), validateUser, 
   }
 })
 
-app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUser, async (req, res) => {
+app.put('/api/users/:id', authenticateToken, authorizeRole('admin', 'superadmin'), validateUser, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id)
     if (!user) {
       return res.status(404).json({ message: 'User not found.' })
     }
 
-    // Verify user belongs to same store
-    if (user.storeId !== req.storeId) {
+    // Verify user belongs to same store (superadmin can manage any user)
+    if (!req.isSuperAdmin && user.storeId !== req.storeId) {
       return res.status(403).json({ message: 'User does not belong to your store.' })
     }
 
@@ -2458,7 +2528,9 @@ app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUse
 
     if (name) user.name = String(name).trim()
     if (email && normalizeEmail(email) !== normalizeEmail(user.email)) {
-      const existingUser = await findUserByEmail(email, req.storeId)
+      // Check email uniqueness (superadmin checks globally, admin checks within their store)
+      const checkStoreId = req.isSuperAdmin ? null : req.storeId
+      const existingUser = await findUserByEmail(email, checkStoreId)
       if (existingUser && existingUser.id !== user.id) {
         return res.status(409).json({ message: 'Email already in use.' })
       }
@@ -2499,15 +2571,15 @@ app.put('/api/users/:id', authenticateToken, authorizeRole('admin'), validateUse
   }
 })
 
-app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+app.delete('/api/users/:id', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id)
     if (!user) {
       return res.status(404).json({ message: 'User not found.' })
     }
 
-    // Verify user belongs to same store
-    if (user.storeId !== req.storeId) {
+    // Verify user belongs to same store (superadmin can manage any user)
+    if (!req.isSuperAdmin && user.storeId !== req.storeId) {
       return res.status(403).json({ message: 'User does not belong to your store.' })
     }
 
@@ -2528,16 +2600,25 @@ app.delete('/api/users/:id', authenticateToken, authorizeRole('admin'), async (r
 // Public endpoint for logo, dashboard name, currency, and country (used in customer portal and public pages)
 app.get('/api/settings/business/public', async (req, res) => {
   try {
-    // Get storeId from query param or use first store as default
-    let storeId = req.query.storeId
+    // Get storeId from query param
+    // If no storeId provided, return generic settings (for public pages like login/signup)
+    const storeId = req.query.storeId
+    
     if (!storeId) {
-      const firstStore = await Store.findOne({ order: [['name', 'ASC']] })
-      storeId = firstStore ? firstStore.id : null
+      // Return generic settings for public pages (no store-specific branding)
+      return res.json({
+        logoUrl: null,
+        dashboardName: 'Shopify Admin Dashboard',
+        defaultCurrency: 'PKR',
+        country: 'PK',
+      })
     }
+    
+    // If storeId provided, return store-specific settings (for store-specific public pages)
     const storeSettings = await getStoreSettings(storeId)
     
     if (!storeSettings) {
-      // Return default settings if no store found (Pakistan/PKR defaults)
+      // Return default settings if store not found
       return res.json({
         logoUrl: null,
         dashboardName: 'Shopify Admin Dashboard',
@@ -2553,10 +2634,16 @@ app.get('/api/settings/business/public', async (req, res) => {
   }
 })
 
-app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), async (req, res) => {
+app.get('/api/settings/business', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
+    // Superadmin can specify storeId in query, regular admin uses their store
+    const targetStoreId = req.isSuperAdmin && req.query.storeId ? req.query.storeId : req.storeId
+    if (!targetStoreId) {
+      return res.status(400).json({ message: 'Store ID is required.' })
+    }
+    
     // Return store-specific settings
-    const storeSettings = await getStoreSettings(req.storeId)
+    const storeSettings = await getStoreSettings(targetStoreId)
     if (!storeSettings) {
       return res.status(404).json({ message: 'Store settings not found.' })
     }
@@ -2567,9 +2654,15 @@ app.get('/api/settings/business', authenticateToken, authorizeRole('admin'), asy
   }
 })
 
-app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), validateBusinessSettings, async (req, res) => {
+app.put('/api/settings/business', authenticateToken, authorizeRole('admin', 'superadmin'), validateBusinessSettings, async (req, res) => {
   try {
-    const store = await findStoreById(req.storeId)
+    // Superadmin can specify storeId in body, regular admin uses their store
+    const targetStoreId = req.isSuperAdmin && req.body.storeId ? req.body.storeId : req.storeId
+    if (!targetStoreId) {
+      return res.status(400).json({ message: 'Store ID is required.' })
+    }
+    
+    const store = await findStoreById(targetStoreId)
     if (!store) {
       return res.status(404).json({ message: 'Store not found.' })
     }
@@ -2586,17 +2679,17 @@ app.put('/api/settings/business', authenticateToken, authorizeRole('admin'), val
     await store.update(updateData)
     
     // Also update Setting if it exists
-    let setting = await Setting.findOne({ where: { storeId: req.storeId } })
+    let setting = await Setting.findOne({ where: { storeId: targetStoreId } })
     if (setting) {
       await setting.update(updateData)
     } else {
       await Setting.create({
-        storeId: req.storeId,
+        storeId: targetStoreId,
         ...updateData,
       })
     }
     
-    const storeSettings = await getStoreSettings(req.storeId)
+    const storeSettings = await getStoreSettings(targetStoreId)
     return res.json(storeSettings)
   } catch (error) {
     logger.error('[ERROR] /api/settings/business:', error)
@@ -2644,7 +2737,7 @@ app.get('/api/products/public', async (req, res) => {
 
 app.get('/api/products', authenticateToken, async (req, res) => {
   try {
-    const where = { storeId: req.storeId }
+    const where = buildStoreWhere(req)
     const lowStockOnly = req.query.lowStock === 'true'
 
     if (lowStockOnly) {
@@ -2681,12 +2774,11 @@ app.get('/api/products/low-stock', authenticateToken, async (req, res) => {
   try {
     const { Sequelize } = require('sequelize')
     const productsList = await Product.findAll({
-      where: {
-        storeId: req.storeId,
+      where: buildStoreWhere(req, {
         [Op.and]: [
           Sequelize.literal('stockQuantity <= reorderThreshold')
         ]
-      },
+      }),
       order: [['name', 'ASC']],
     })
 
@@ -2714,8 +2806,8 @@ app.get('/api/products/:id', authenticateToken, async (req, res) => {
     
     const productData = product.toJSON ? product.toJSON() : product
     
-    // Verify product belongs to user's store
-    if (productData.storeId !== req.storeId) {
+    // Verify product belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && productData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Product does not belong to your store.' })
     }
     
@@ -2732,12 +2824,18 @@ app.get('/api/products/:id', authenticateToken, async (req, res) => {
   }
 })
 
-app.post('/api/products', authenticateToken, authorizeRole('admin'), validateProduct, async (req, res) => {
+app.post('/api/products', authenticateToken, authorizeRole('admin', 'superadmin'), validateProduct, async (req, res) => {
   try {
-    const { name, description, price, stockQuantity, reorderThreshold, category, imageUrl, status } = req.body
+    const { name, description, price, stockQuantity, reorderThreshold, category, imageUrl, status, storeId } = req.body
+
+    // Superadmin can specify storeId, regular admin uses their store
+    const targetStoreId = req.isSuperAdmin && storeId ? storeId : req.storeId
+    if (!targetStoreId) {
+      return res.status(400).json({ message: 'Store ID is required.' })
+    }
 
     const newProduct = await Product.create({
-      storeId: req.storeId, // Assign to user's store
+      storeId: targetStoreId,
       name: String(name).trim(),
       description: description ? String(description).trim() : '',
       price: Number(price),
@@ -2761,7 +2859,7 @@ app.post('/api/products', authenticateToken, authorizeRole('admin'), validatePro
   }
 })
 
-app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validateProduct, async (req, res) => {
+app.put('/api/products/:id', authenticateToken, authorizeRole('admin', 'superadmin'), validateProduct, async (req, res) => {
   try {
     const product = await findProductById(req.params.id)
     if (!product) {
@@ -2770,8 +2868,8 @@ app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validate
 
     const productData = product.toJSON ? product.toJSON() : product
 
-    // Verify product belongs to user's store
-    if (productData.storeId !== req.storeId) {
+    // Verify product belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && productData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Product does not belong to your store.' })
     }
 
@@ -2800,7 +2898,7 @@ app.put('/api/products/:id', authenticateToken, authorizeRole('admin'), validate
   }
 })
 
-app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), async (req, res) => {
+app.delete('/api/products/:id', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     const product = await findProductById(req.params.id)
     if (!product) {
@@ -2809,8 +2907,8 @@ app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), async
 
     const productData = product.toJSON ? product.toJSON() : product
 
-    // Verify product belongs to user's store
-    if (productData.storeId !== req.storeId) {
+    // Verify product belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && productData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Product does not belong to your store.' })
     }
 
@@ -2822,7 +2920,7 @@ app.delete('/api/products/:id', authenticateToken, authorizeRole('admin'), async
   }
 })
 
-app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin'), async (req, res) => {
+app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     const product = await findProductById(req.params.id)
     if (!product) {
@@ -2831,8 +2929,8 @@ app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin'),
     
     const productData = product.toJSON ? product.toJSON() : product
     
-    // Verify product belongs to user's store
-    if (productData.storeId !== req.storeId) {
+    // Verify product belongs to user's store (superadmin can access any store)
+    if (!req.isSuperAdmin && productData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Product does not belong to your store.' })
     }
     
@@ -2889,37 +2987,34 @@ app.get('/api/reports/growth', authenticateToken, async (req, res) => {
 
     const filterOrders = async (start, end) => {
       return await Order.findAll({
-        where: {
-          storeId: req.storeId,
+        where: buildStoreWhere(req, {
           createdAt: {
             [Op.gte]: start,
             [Op.lte]: end,
           },
-        },
+        }),
       })
     }
 
     const filterReturns = async (start, end) => {
       return await Return.findAll({
-        where: {
-          storeId: req.storeId,
+        where: buildStoreWhere(req, {
           dateRequested: {
             [Op.gte]: start,
             [Op.lte]: end,
           },
-        },
+        }),
       })
     }
 
     const filterCustomers = async (start, end) => {
       return await Customer.findAll({
-        where: {
-          storeId: req.storeId,
+        where: buildStoreWhere(req, {
           createdAt: {
             [Op.gte]: start,
             [Op.lte]: end,
           },
-        },
+        }),
       })
     }
 
@@ -2995,13 +3090,12 @@ app.get('/api/reports/trends', authenticateToken, async (req, res) => {
 
     if (metric === 'sales' || metric === 'orders') {
       const ordersList = await Order.findAll({
-        where: {
-          storeId: req.storeId,
+        where: buildStoreWhere(req, {
           createdAt: {
             [Op.gte]: startDate,
             [Op.lte]: endDate,
           },
-        },
+        }),
       })
 
       ordersList.forEach((order) => {
@@ -3018,13 +3112,12 @@ app.get('/api/reports/trends', authenticateToken, async (req, res) => {
 
     if (metric === 'customers') {
       const customersList = await Customer.findAll({
-        where: {
-          storeId: req.storeId,
+        where: buildStoreWhere(req, {
           createdAt: {
             [Op.gte]: startDate,
             [Op.lte]: endDate,
           },
-        },
+        }),
       })
 
       customersList.forEach((customer) => {
@@ -3076,7 +3169,7 @@ app.get('/api/export/orders', authenticateToken, async (req, res) => {
     ]
     
     const ordersList = await Order.findAll({
-      where: { storeId: req.storeId },
+      where: buildStoreWhere(req),
       order: [['createdAt', 'DESC']],
     })
     
@@ -3117,7 +3210,7 @@ app.get('/api/export/products', authenticateToken, async (req, res) => {
     ]
     
     const productsList = await Product.findAll({
-      where: { storeId: req.storeId },
+      where: buildStoreWhere(req),
       order: [['name', 'ASC']],
     })
     
@@ -3373,8 +3466,40 @@ async function startServer() {
           },
           permissions: user.permissions || {},
           active: user.active !== undefined ? user.active : true,
-          passwordChangedAt: null, // Force password change on first login
+          passwordChangedAt: new Date(), // Set to current date to skip password change requirement (for testing)
         })))
+        
+        // Create superadmin user
+        const superAdminPassword = bcrypt.hashSync('superadmin123', 10)
+        const superAdminExists = await User.findOne({ where: { email: 'superadmin@shopifyadmin.pk' } })
+        if (!superAdminExists) {
+          await User.create({
+            email: 'superadmin@shopifyadmin.pk',
+            passwordHash: superAdminPassword,
+            name: 'Super Admin',
+            role: 'superadmin',
+            storeId: null, // Superadmin doesn't belong to any store
+            fullName: 'Super Administrator',
+            phone: '+92-300-0000000',
+            profilePictureUrl: null,
+            defaultDateRangeFilter: 'last7',
+            notificationPreferences: {
+              newOrders: true,
+              lowStock: true,
+              returnsPending: true,
+            },
+            permissions: {
+              viewOrders: true, editOrders: true, deleteOrders: true,
+              viewProducts: true, editProducts: true, deleteProducts: true,
+              viewCustomers: true, editCustomers: true,
+              viewReturns: true, processReturns: true,
+              viewReports: true, manageUsers: true, manageSettings: true,
+            },
+            active: true,
+            passwordChangedAt: new Date(), // Set to current date to skip password change requirement (for testing)
+          })
+          logger.info('[INIT] Superadmin user created: superadmin@shopifyadmin.pk / superadmin123')
+        }
         
         // Seed products
         await Product.bulkCreate(multiStoreData.products.map(product => ({

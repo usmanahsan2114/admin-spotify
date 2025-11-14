@@ -133,7 +133,7 @@ const validateUser = [
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters'),
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('role').isIn(['admin', 'staff']).withMessage('Role must be admin or staff'),
+  body('role').isIn(['admin', 'staff', 'superadmin']).withMessage('Role must be admin, staff, or superadmin'),
   handleValidationErrors,
 ]
 

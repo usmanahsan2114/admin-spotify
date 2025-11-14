@@ -8,12 +8,12 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 
 ## Features
 
-- **Multi-Store System**: Support for 5 independent stores with complete data isolation. Each store has its own admin, staff, products, customers, orders, and settings.
-- **Authentication & Roles**: JWT-based login with protected routes, admin/staff roles, persistent sessions, and logout from header/sidebar. Store-specific authentication with `storeId` in JWT tokens.
+- **Multi-Store System**: Support for 6 stores (5 client stores + 1 demo store) with complete data isolation. Each store has its own admin, staff, products, customers, orders, and settings.
+- **Authentication & Roles**: JWT-based login with protected routes, admin/staff/superadmin roles, persistent sessions, and logout from header/sidebar. Store-specific authentication with `storeId` in JWT tokens. Superadmin role provides global access to all stores and users.
 - **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls. Includes time-based filtering with date range picker, mini area chart showing orders by day, and growth comparison summaries. Store-specific data filtering.
 - **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions. Features stock trend charts and time-based filtering. Store-specific product catalogs.
 - **Returns & Refunds**: Track return requests, update statuses, and monitor stock impact. Includes returns-by-status pie chart and time-based filtering. Store-specific returns management.
-- **Users**: Admin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion. Granular permission management with 13 permission types (view/edit/delete orders, products, customers, returns, reports, user management, settings) allowing fine-grained access control per user. Store-specific user management.
+- **Users**: Admin/Superadmin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion. Granular permission management with 13 permission types (view/edit/delete orders, products, customers, returns, reports, user management, settings) allowing fine-grained access control per user. Store-specific user management. Superadmin can manage users across all stores.
 - **Settings/Profile**: Comprehensive settings page with three sections: My Profile (upload profile picture, update full name/phone, set default date filter, configure notification preferences), Preferences (theme toggle, default settings), and Business Settings (admin only: upload logo, set brand color, default currency PKR, country Pakistan PK, manage order statuses). Fully responsive with mobile-first design using tabs on desktop and accordions on mobile. Store-specific business settings.
 - **Dashboard Analytics**: Summary tiles, sales over time line chart, period comparison bar chart, 7-day order trend line, status distribution pie chart, and low stock trends using Recharts. All charts support time-based filtering with date range selection. Store-specific metrics and reports.
 - **Growth & Progress Reporting**: Comprehensive growth metrics with KPI cards showing sales, orders, average order value, and return rate with period-over-period growth percentages. Trend charts for sales, orders, and customers over time. Period selector (Last 7 days, This month, This quarter). Downloadable CSV reports. Fully responsive with mobile-optimized charts (area charts on mobile, line charts on desktop). **Store-specific growth metrics** - each store has independent reports.
@@ -25,7 +25,7 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 ## Tech Stack
 
 - **Frontend**: React 19 (TypeScript), Vite, Material UI, MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
-- **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with MySQL** (database migration in progress - 35% complete). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
+- **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with MySQL** (fully migrated). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
 - **Tooling**: npm-run-all for concurrent dev servers, nodemon for backend reloads, ESLint.
 
 ## Getting Started
@@ -95,7 +95,7 @@ This launches Vite (`http://localhost:5173`) and Express (`http://localhost:5000
 
 **Note**: 
 - Ensure MySQL is running before starting the backend
-- Database will auto-seed with 5 stores and sample data on first run (development mode)
+- Database will auto-seed with 6 stores (5 client stores + 1 demo store) and comprehensive Pakistan-based test data on first run (development mode)
 - Ensure frontend is running on `http://localhost:5173/` and backend on `http://localhost:5000/` for proper API communication
 
 ### Production Build
@@ -149,15 +149,20 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 - Business settings (logo, currency, country)
 - Complete data isolation via `storeId` scoping
 
+**Superadmin Account (Global Access):**
+- **Super Admin**: `superadmin@shopifyadmin.pk` / `superadmin123`
+  - Can access all stores and manage all users across the platform
+
 **Client Store Accounts:**
-- **TechHub Electronics**: `admin@techhub.com` / `admin123`
-- **Fashion Forward**: `admin@fashionforward.com` / `admin123`
-- **Home & Living Store**: `admin@homeliving.com` / `admin123`
-- **Fitness Gear Pro**: `admin@fitnessgear.com` / `admin123`
-- **Beauty Essentials**: `admin@beautyessentials.com` / `admin123`
+**Important:** All emails use `.pk` domain (Pakistan), NOT `.com`
+- **TechHub Electronics**: `admin@techhub.pk` / `admin123`
+- **Fashion Forward**: `admin@fashionforward.pk` / `admin123`
+- **Home & Living Store**: `admin@homeliving.pk` / `admin123`
+- **Fitness Gear Pro**: `admin@fitnessgear.pk` / `admin123`
+- **Beauty Essentials**: `admin@beautyessentials.pk` / `admin123`
 
 **Demo Store Account:**
-- **Demo Store**: `demo@demo.shopifyadmin.com` / `demo123` (read-only access, limited permissions)
+- **Demo Store**: `demo@demo.shopifyadmin.pk` / `demo123` (read-only access, limited permissions)
 
 ### Client Onboarding
 
@@ -183,9 +188,9 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 - Store branding (logo, name) is displayed in dashboard header
 
 **Client Stores Management:**
-- Admin users can view all stores and their metrics via `/client-stores` page
+- Superadmin and admin users can view all stores and their metrics via `/client-stores` page
 - Shows user count, order count, product count, customer count per store
-- Accessible only to admin role users
+- Superadmin sees all stores; admin users see their own store only
 
 See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for complete login credentials and all application URLs.
 
@@ -286,7 +291,7 @@ See **[SECURITY_TESTING.md](./SECURITY_TESTING.md)** for comprehensive security 
 
 **Security Features:**
 - ✅ JWT authentication with strong secret (32+ chars in production)
-- ✅ Role-based access control (Admin, Staff, Demo)
+- ✅ Role-based access control (Superadmin, Admin, Staff)
 - ✅ Store isolation (all queries filtered by `storeId` from token)
 - ✅ Password hashing (bcrypt with salt rounds 10)
 - ✅ Input validation (express-validator on all endpoints)
@@ -452,11 +457,13 @@ See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) imp
 
 ## Future Enhancements
 
-- Complete database migration (remaining endpoints)
+- ✅ Database migration complete (all endpoints migrated)
 - Add email-based invite/password reset flows
 - Expand analytics (conversion metrics, revenue overlays)
 - Integrate real-time notifications for incoming orders
 - Add comprehensive test coverage (unit, integration, E2E)
+- Multi-language support (i18n)
+- Advanced reporting and analytics
 - Add monitoring and error tracking (Sentry, LogRocket)
 
 ---

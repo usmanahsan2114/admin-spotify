@@ -42,7 +42,7 @@ scenarios:
       - post:
           url: "/api/login"
           json:
-            email: "{{ $randomString() }}@techhub.com"
+            email: "{{ $randomString() }}@techhub.pk"
             password: "admin123"
           capture:
             - json: "$.token"
@@ -87,7 +87,7 @@ scenarios:
       - post:
           url: "/api/login"
           json:
-            email: "admin@techhub.com"
+            email: "admin@techhub.pk"
             password: "admin123"
           capture:
             - json: "$.token"
@@ -111,7 +111,7 @@ scenarios:
       - post:
           url: "/api/login"
           json:
-            email: "admin@techhub.com"
+            email: "admin@techhub.pk"
             password: "admin123"
           capture:
             - json: "$.token"

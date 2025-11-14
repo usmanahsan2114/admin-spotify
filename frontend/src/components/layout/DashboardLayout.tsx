@@ -147,7 +147,17 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
       const items = [...baseNavItems]
       
       // Add Client Stores menu item for admin users only
-      if (user?.role === 'admin') {
+      if (user?.role === 'superadmin') {
+        // Superadmin sees all stores and all users
+        const usersIndex = items.findIndex(item => item.label === 'Users')
+        if (usersIndex !== -1) {
+          items.splice(usersIndex + 1, 0, {
+            label: 'All Stores',
+            to: '/client-stores',
+            icon: <StoreIcon />,
+          })
+        }
+      } else if (user?.role === 'admin') {
         const clientStoresIndex = items.findIndex(item => item.label === 'Users')
         if (clientStoresIndex !== -1) {
           items.splice(clientStoresIndex + 1, 0, {
