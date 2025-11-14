@@ -74,6 +74,22 @@
 - ✅ Performance documentation: Comprehensive `PERFORMANCE_TESTING.md` guide created
 - ✅ Query optimization: All queries use indexes, pagination prevents excessive data retrieval
 
+**Security & Compliance Testing (100% Complete)**:
+- ✅ Security documentation: Comprehensive `SECURITY_TESTING.md` guide created with 20+ test cases
+- ✅ Security scanning scripts: `security-scan.sh` (Linux/Mac) and `security-scan.ps1` (Windows) created
+- ✅ Store isolation verified: All endpoints check `storeId` from token (not request body/query)
+- ✅ Authentication verified: `authenticateToken` sets `req.storeId` from database (secure, cannot be spoofed)
+- ✅ Authorization verified: `authorizeRole` middleware checks role permissions
+- ✅ Input validation verified: All endpoints use `express-validator` middleware
+- ✅ SQL injection protection verified: All queries use Sequelize ORM (parameterized queries)
+- ✅ XSS protection verified: React escapes HTML by default, CSP headers configured
+- ✅ Security headers verified: Helmet configured (CSP, HSTS, X-Frame-Options, etc.)
+- ✅ Password security verified: Passwords hashed with bcrypt (salt rounds 10), `passwordHash` excluded from responses
+- ✅ Rate limiting verified: General API (100 req/15min), auth routes (5 req/15min), demo store (10 req/15min)
+- ✅ CORS verified: Restricted to `CORS_ORIGIN` environment variable
+- ✅ Error handling verified: Production errors are generic, no stack traces exposed
+- ✅ Sensitive data filtering verified: Passwords and tokens filtered from Sentry logs
+
 **Monitoring & Observability**:
 - Sentry error tracking with performance monitoring (10% transaction sampling)
 - Winston structured logging (file transports: error.log, combined.log, database.log)

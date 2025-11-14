@@ -207,6 +207,30 @@ See **[PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md)** for comprehensive per
 - Dashboard metrics: <1s (p95)
 - Low stock query: <500ms (p95)
 
+## Security & Compliance Testing
+
+See **[SECURITY_TESTING.md](./SECURITY_TESTING.md)** for comprehensive security and compliance testing guide.
+
+**Quick Security Checks:**
+- Run security scan: `bash backend/scripts/security-scan.sh` (Linux/Mac) or `powershell backend/scripts/security-scan.ps1` (Windows)
+- Check dependency vulnerabilities: `npm audit` (backend and frontend)
+- Verify security headers: `curl -I http://localhost:5000/api/health`
+- Test store isolation: Login as Store A admin, verify cannot access Store B data
+
+**Security Features:**
+- ✅ JWT authentication with strong secret (32+ chars in production)
+- ✅ Role-based access control (Admin, Staff, Demo)
+- ✅ Store isolation (all queries filtered by `storeId` from token)
+- ✅ Password hashing (bcrypt with salt rounds 10)
+- ✅ Input validation (express-validator on all endpoints)
+- ✅ SQL injection protection (Sequelize ORM with parameterized queries)
+- ✅ XSS protection (React escapes HTML, CSP headers)
+- ✅ Security headers (Helmet: CSP, HSTS, X-Frame-Options, etc.)
+- ✅ Rate limiting (general API, auth routes, demo store)
+- ✅ CORS restrictions (only allowed origins)
+- ✅ Error handling (no stack traces in production)
+- ✅ Sensitive data filtering (passwords, tokens excluded from logs/Sentry)
+
 ## Testing
 
 ### Comprehensive Test Plan
