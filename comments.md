@@ -13,7 +13,19 @@
 - Global footer credits "Design & Developed by" Apex IT Solutions and Apex Marketings with links for brand visibility.
 - Customers entity is linked to orders by email; new submissions auto-create or enrich CRM records so marketing and support teams see order history instantly.
 
-## December 2024 - Login Email Matching Fix
+## December 2024 - Bug Fixes
+
+### JSON Field Parsing Fix
+
+**Issue:** `customer.alternativeNames.map is not a function` error on customer detail page.
+
+**Root Cause:** When Sequelize retrieves JSON fields from MySQL, they may be stored as JSON strings instead of arrays. The frontend code was trying to call `.map()` on a string value.
+
+**Fix:** Added `ensureArray()` helper function that safely converts JSON fields to arrays. Updated `serializeCustomer()` and `getOrdersForCustomer()` functions to use `ensureArray()` for all JSON fields (alternativeEmails, alternativeNames, alternativeAddresses).
+
+**Status:** ✅ **FIXED** - Customer detail page now loads without errors.
+
+### Login Email Matching Fix
 
 **Issue:** All login attempts were failing with "Invalid email or password" error.
 

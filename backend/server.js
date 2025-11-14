@@ -586,6 +586,21 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
 }
 
 // Serialize customer with orders (using Sequelize)
+// Helper function to ensure JSON fields are arrays
+const ensureArray = (value) => {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  if (value === null || value === undefined) return []
+  return []
+}
+
 const serializeCustomer = async (customer) => {
   if (!customer) return null
   const ordersForCustomer = await getOrdersForCustomer(customer)
@@ -598,9 +613,9 @@ const serializeCustomer = async (customer) => {
     phone: customerData.phone || 'Not provided',
     address: customerData.address || null,
     alternativePhone: customerData.alternativePhone || null,
-    alternativeEmails: customerData.alternativeEmails || [],
-    alternativeNames: customerData.alternativeNames || [],
-    alternativeAddresses: customerData.alternativeAddresses || [],
+    alternativeEmails: ensureArray(customerData.alternativeEmails),
+    alternativeNames: ensureArray(customerData.alternativeNames),
+    alternativeAddresses: ensureArray(customerData.alternativeAddresses),
     createdAt: customerData.createdAt || new Date().toISOString(),
     orderCount: ordersForCustomer.length,
     lastOrderDate: lastOrder ? lastOrder.createdAt : null,
@@ -612,21 +627,25 @@ const serializeCustomer = async (customer) => {
 const getOrdersForCustomer = async (customer) => {
   if (!customer || !customer.id) return []
   
+  // Ensure alternativeEmails is an array
+  const customerData = customer.toJSON ? customer.toJSON() : customer
+  const alternativeEmails = ensureArray(customerData.alternativeEmails)
+  
   const customerEmails = [
-    customer.email,
-    ...(customer.alternativeEmails || [])
+    customerData.email,
+    ...alternativeEmails
   ].filter(Boolean).map(normalizeEmail)
   
   const customerPhones = [
-    customer.phone,
-    customer.alternativePhone,
+    customerData.phone,
+    customerData.alternativePhone,
   ].filter(Boolean).map(normalizePhone)
   
   // Build where clause
   const where = {
-    storeId: customer.storeId,
+    storeId: customerData.storeId,
     [Op.or]: [
-      { customerId: customer.id },
+      { customerId: customerData.id },
       ...(customerEmails.length > 0 ? [{ email: { [Op.in]: customerEmails } }] : []),
       ...(customerPhones.length > 0 ? [{ phone: { [Op.like]: `%${customerPhones[0]}%` } }] : []),
     ],
