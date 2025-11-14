@@ -1107,13 +1107,37 @@ app.post('/api/login', validateLogin, async (req, res) => {
     const { email, password } = req.body
 
     const normalizedEmail = normalizeEmail(email)
+    
+    // Check if database has any users (for debugging)
+    const userCount = await User.count()
+    if (userCount === 0) {
+      logger.error('[LOGIN] Database has no users! Database may not be seeded.')
+      return res.status(500).json({ 
+        message: 'Database not initialized. Please restart the backend server to seed the database.' 
+      })
+    }
+    
+    // Use exact match for email (already normalized to lowercase)
+    // MySQL's default collation handles case-insensitive matching, but we normalize anyway
     const user = await User.findOne({
-      where: { email: normalizedEmail },
+      where: {
+        email: normalizedEmail, // Direct match - email is already normalized
+      },
     })
 
     // Debug logging
     if (!user) {
       logger.warn(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
+      logger.debug(`[LOGIN] Total users in database: ${userCount}`)
+      // List first few user emails for debugging (in development only)
+      if (NODE_ENV === 'development') {
+        const sampleUsers = await User.findAll({ 
+          limit: 5, 
+          attributes: ['email', 'role', 'storeId'],
+          raw: true 
+        })
+        logger.debug(`[LOGIN] Sample users in database:`, sampleUsers)
+      }
       return res.status(401).json({ message: 'Invalid email or password.' })
     }
 
@@ -3428,7 +3452,22 @@ async function startServer() {
     // Seed database if empty (only in development)
     if (process.env.NODE_ENV === 'development') {
       const storeCount = await Store.count()
-      if (storeCount === 0) {
+      const userCount = await User.count()
+      
+      // Seed if no stores OR no users (in case stores exist but users don't)
+      if (storeCount === 0 || userCount === 0) {
+        if (storeCount > 0 && userCount === 0) {
+          logger.warn('[INIT] Stores exist but no users found. Clearing and re-seeding database...')
+          // Clear existing data to ensure clean seed
+          await Order.destroy({ where: {}, force: true })
+          await Return.destroy({ where: {}, force: true })
+          await Customer.destroy({ where: {}, force: true })
+          await Product.destroy({ where: {}, force: true })
+          await User.destroy({ where: {}, force: true })
+          await Setting.destroy({ where: {}, force: true })
+          await Store.destroy({ where: {}, force: true })
+        }
+        
         logger.info('[INIT] Database is empty, seeding initial data...')
         const { generateMultiStoreData } = require('./generateMultiStoreData')
         const multiStoreData = generateMultiStoreData()
@@ -3579,7 +3618,12 @@ async function startServer() {
         }))
         await Setting.bulkCreate(settings)
         
-        logger.info('[INIT] Database seeded successfully')
+        const finalStoreCount = await Store.count()
+        const finalUserCount = await User.count()
+        logger.info(`[INIT] Database seeded successfully: ${finalStoreCount} stores, ${finalUserCount} users`)
+        logger.info('[INIT] Login credentials available - see STORE_CREDENTIALS_AND_URLS.md')
+      } else {
+        logger.info(`[INIT] Database already seeded: ${storeCount} stores, ${userCount} users`)
       }
     }
     
