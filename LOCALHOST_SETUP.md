@@ -259,6 +259,14 @@ On first run, the backend will automatically:
 
 ## Step 7: Login Credentials
 
+**Login Process:**
+1. Go to `http://localhost:5173/login`
+2. Enter your email and password
+3. Click "Sign in" - system auto-detects your user type and store
+4. Or click "Try Demo Account" button for quick demo access
+
+**Note:** Login page uses email/password only - no store selection needed. The backend automatically detects your user type (superadmin/admin/staff/demo) and store from your credentials.
+
 After the database is seeded, you can login with:
 
 ### Superadmin Account (Global Access):

@@ -1256,6 +1256,45 @@ The codebase follows React and TypeScript best practices with:
 
 **Next Steps**: Execute production build verification, deploy to staging and run smoke tests, test backup/restore procedures, configure monitoring and alerts, verify SSL/CORS/caching, complete client onboarding checklist, test rollback procedure, declare production readiness, invite clients and monitor first 24-48 hours.
 
+## Step 40: Login Page Simplification & Comprehensive Test Data
+
+### Implementation Summary
+
+**Login Page Simplification:**
+- Removed store selection dropdown - login page now uses email/password only
+- Backend auto-detects user type (superadmin/admin/staff/demo) and store from credentials
+- Added clickable "Try Demo Account" button for quick demo access
+- Simplified UX - users just enter email/password, system handles the rest
+
+**Comprehensive Test Data:**
+- Increased data volumes for all 5 stores:
+  * Products: 80-120 per store (was 35-45)
+  * Customers: 800-1200 per store (was 300-400)
+  * Orders: 1500-2500 per store (was 600-800)
+  * Staff: 8-12 per store (was 4-6)
+  * Returns: ~8% of orders (automatically scaled)
+
+**Store Admin Permissions:**
+- Verified store admins can manage users in their own store
+- Updated POST /api/users to allow both 'admin' and 'superadmin' roles
+- Store admins can create/edit/delete users within their store
+- Superadmin can manage users across all stores
+
+**Documentation Updates:**
+- Updated STORE_CREDENTIALS_AND_URLS.md with new data volumes
+- Updated LOGIN_INSTRUCTIONS.md with simplified login process
+- Updated README.md with login page changes
+- Updated comments.md and history.md
+
+**Git:**
+- Created branch: `feature/comprehensive-test-data-and-permissions`
+- Committed all changes
+- Pushed to remote repository
+
+**Impact**: Simplified login flow improves UX, comprehensive test data enables thorough testing, store admin permissions verified, production ready for both localhost and Hostinger hosting.
+
+**Status**: ✅ Complete - Login page simplified, test data volumes increased, store admin permissions verified, all documentation updated, code pushed to git.
+
 ### Future Improvements
 
 See `IMPROVEMENTS.md` for detailed recommendations. All Tier 1, Tier 2, and Tier 3 improvements have been completed.

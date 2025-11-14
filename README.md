@@ -182,10 +182,11 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 - Demo store data can be reset via `POST /api/demo/reset-data` (admin only)
 - Demo mode banner is displayed for demo users throughout the application
 
-**Store Selection:**
-- Login page includes store selection dropdown
-- Users login with email/password; storeId comes from their account
-- Store branding (logo, name) is displayed in dashboard header
+**Login & Authentication:**
+- Login page uses email/password only (no store selection needed)
+- Backend auto-detects user type (superadmin/admin/staff/demo) and store from credentials
+- Store branding (logo, name) is displayed in dashboard header after login
+- Demo account has a clickable "Try Demo Account" button for quick access
 
 **Client Stores Management:**
 - Superadmin and admin users can view all stores and their metrics via `/client-stores` page

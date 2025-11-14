@@ -2,17 +2,21 @@
 
 ## How to Login
 
-### Method 1: Using Store Selection (Easiest)
+### Simple Login Process
 
-1. **Select a store** from the dropdown (optional, but shows credentials)
-2. **Click "Use [Store] Credentials"** button to auto-fill email/password
-3. **Click "Sign in"**
+1. **Go to** `http://localhost:5173/login`
+2. **Enter your email** (e.g., `admin@techhub.pk`)
+3. **Enter your password** (e.g., `admin123`)
+4. **Click "Sign in"** or press Enter
 
-### Method 2: Manual Entry
+**That's it!** The system automatically detects:
+- Your user type (superadmin/admin/staff/demo)
+- Which store you belong to
+- Your permissions and access level
 
-1. **Enter your email** (e.g., `admin@techhub.pk`)
-2. **Enter your password** (e.g., `admin123`)
-3. **Click "Sign in"**
+### Demo Account Quick Access
+
+Click the **"Try Demo Account"** button for instant demo access (no typing needed!)
 
 ---
 
@@ -22,7 +26,7 @@
 - **Email:** `superadmin@shopifyadmin.pk`
 - **Password:** `superadmin123`
 - **Access:** Can access ALL stores and manage ALL users
-- **Note:** Shows in development mode, or select "Superadmin" from store dropdown
+- **Note:** Shows in development mode on login page
 
 ### Store Admin Accounts
 
@@ -46,27 +50,34 @@
 - Email: `admin@beautyessentials.pk`
 - Password: `admin123`
 
+### Staff Accounts
+
+Each store has **8-12 staff accounts**:
+- **Format:** `staff1@[store-domain].pk`, `staff2@[store-domain].pk`, etc.
+- **Password:** `staff123` (for all staff accounts)
+- **Example:** `staff1@techhub.pk` / `staff123`
+
 ### Demo Store
 - **Email:** `demo@demo.shopifyadmin.pk`
 - **Password:** `demo123`
 - **Access:** Read-only, limited permissions
+- **Quick Access:** Click "Try Demo Account" button on login page
 
 ---
 
 ## 📝 Important Notes
 
-### Store Selection
-- **Store dropdown is OPTIONAL** - it's just for convenience to see credentials
-- **Login is based on EMAIL/PASSWORD**, not store selection
-- The backend automatically determines which store you belong to based on your email
-- **Superadmin** doesn't belong to any store - can access all stores
+### Email Domain
+- **All emails use `.pk` domain** (Pakistan), NOT `.com`
+- **Correct:** `admin@techhub.pk`
+- **Wrong:** `admin@techhub.com`
 
-### How Store Selection Works
-1. **Select a store** from dropdown → Shows credentials for that store
-2. **Click "Use Credentials"** → Auto-fills email/password fields
-3. **Login** → Backend authenticates and determines your store access
+### Auto-Detection
+- **No store selection needed** - system detects your store from your email
+- **User type detected automatically** - superadmin/admin/staff/demo determined from credentials
+- **Permissions set automatically** - based on your role and store
 
-### Switching Stores
+### Store Access
 - **Regular users:** Can only access their own store (determined by email)
 - **Superadmin:** Can access all stores - no need to switch
 - **To switch stores:** Logout and login with different store's admin credentials
@@ -95,16 +106,18 @@ node backend/scripts/update-password-changed-at.js
 - **Correct:** `admin@techhub.pk`
 - **Wrong:** `admin@techhub.com`
 
-### Can't See Store Dropdown
-- Store dropdown only shows if stores are loaded from backend
-- If empty, you can still login manually with email/password
-
 ### Can't Access Other Stores
 - **Regular users** can only access their own store
 - **Superadmin** can access all stores
 - To access different store, logout and login with that store's admin credentials
 
+### 401 Unauthorized Error
+- Check backend terminal for error messages
+- Verify database is connected and seeded
+- Try superadmin credentials first: `superadmin@shopifyadmin.pk` / `superadmin123`
+
 ---
 
 **Last Updated:** December 2024
 
+**Status:** ✅ Login page simplified - email/password only, auto-detects user type and store

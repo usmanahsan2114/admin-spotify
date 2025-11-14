@@ -13,31 +13,31 @@
 ### Store 1: TechHub Electronics
 - **Admin Email:** `admin@techhub.pk`
 - **Admin Password:** `admin123`
-- **Staff Emails:** `staff1@techhub.pk`, `staff2@techhub.pk`, `staff3@techhub.pk`, `staff4@techhub.pk`, `staff5@techhub.pk`
+- **Staff Emails:** `staff1@techhub.pk`, `staff2@techhub.pk`, `staff3@techhub.pk`, `staff4@techhub.pk`, `staff5@techhub.pk`, `staff6@techhub.pk`, `staff7@techhub.pk`, `staff8@techhub.pk` (and more up to staff12)
 - **Staff Password:** `staff123`
 
 ### Store 2: Fashion Forward
 - **Admin Email:** `admin@fashionforward.pk`
 - **Admin Password:** `admin123`
-- **Staff Emails:** `staff1@fashionforward.pk`, `staff2@fashionforward.pk`, `staff3@fashionforward.pk`, `staff4@fashionforward.pk`
+- **Staff Emails:** `staff1@fashionforward.pk`, `staff2@fashionforward.pk`, `staff3@fashionforward.pk`, `staff4@fashionforward.pk`, `staff5@fashionforward.pk`, `staff6@fashionforward.pk`, `staff7@fashionforward.pk`, `staff8@fashionforward.pk` (and more up to staff12)
 - **Staff Password:** `staff123`
 
 ### Store 3: Home & Living Store
 - **Admin Email:** `admin@homeliving.pk`
 - **Admin Password:** `admin123`
-- **Staff Emails:** `staff1@homeliving.pk`, `staff2@homeliving.pk`, `staff3@homeliving.pk`, `staff4@homeliving.pk`
+- **Staff Emails:** `staff1@homeliving.pk`, `staff2@homeliving.pk`, `staff3@homeliving.pk`, `staff4@homeliving.pk`, `staff5@homeliving.pk`, `staff6@homeliving.pk`, `staff7@homeliving.pk`, `staff8@homeliving.pk` (and more up to staff12)
 - **Staff Password:** `staff123`
 
 ### Store 4: Fitness Gear Pro
 - **Admin Email:** `admin@fitnessgear.pk`
 - **Admin Password:** `admin123`
-- **Staff Emails:** `staff1@fitnessgear.pk`, `staff2@fitnessgear.pk`, `staff3@fitnessgear.pk`, `staff4@fitnessgear.pk`
+- **Staff Emails:** `staff1@fitnessgear.pk`, `staff2@fitnessgear.pk`, `staff3@fitnessgear.pk`, `staff4@fitnessgear.pk`, `staff5@fitnessgear.pk`, `staff6@fitnessgear.pk`, `staff7@fitnessgear.pk`, `staff8@fitnessgear.pk` (and more up to staff12)
 - **Staff Password:** `staff123`
 
 ### Store 5: Beauty Essentials
 - **Admin Email:** `admin@beautyessentials.pk`
 - **Admin Password:** `admin123`
-- **Staff Emails:** `staff1@beautyessentials.pk`, `staff2@beautyessentials.pk`, `staff3@beautyessentials.pk`, `staff4@beautyessentials.pk`
+- **Staff Emails:** `staff1@beautyessentials.pk`, `staff2@beautyessentials.pk`, `staff3@beautyessentials.pk`, `staff4@beautyessentials.pk`, `staff5@beautyessentials.pk`, `staff6@beautyessentials.pk`, `staff7@beautyessentials.pk`, `staff8@beautyessentials.pk` (and more up to staff12)
 - **Staff Password:** `staff123`
 
 ### Demo Store
@@ -129,11 +129,11 @@
 ## 📊 Data Per Store
 
 Each store contains:
-- **300-400 customers** with comprehensive Pakistan-based data
-- **600-800 orders** distributed over the full year from today (40% in last 3 months, 60% in first 9 months)
-- **35-45 products** specific to the store's category with detailed descriptions
-- **Returns** (~8% of orders)
-- **1 admin account** + **4-6 staff accounts**
+- **800-1200 customers** with comprehensive Pakistan-based data
+- **1500-2500 orders** distributed over the full year from today (40% in last 3 months, 60% in first 9 months)
+- **80-120 products** specific to the store's category with detailed descriptions
+- **Returns** (~8% of orders, automatically scaled)
+- **1 admin account** + **8-12 staff accounts**
 - **All dates are relative to today** - orders span exactly one year from today
 
 ---

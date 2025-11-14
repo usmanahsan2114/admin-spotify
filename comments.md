@@ -46,8 +46,11 @@
 - ✅ Tenant isolation: All queries scoped by `storeId` (`where: { storeId: req.user.storeId }`)
 - ✅ Role/permission logic: Admin (full access), Staff (limited), Demo (view only)
 - ✅ Demo reset endpoint: `POST /api/demo/reset-data` (admin only) resets demo store data
-- ✅ Store selection dropdown: Login page shows all stores, auto-selects demo
+- ✅ Simplified login page: Email/password only, auto-detects user type and store from credentials
+- ✅ Demo account quick access: Clickable "Try Demo Account" button for instant demo login
 - ✅ Store branding: Logo + name displayed in dashboard header (from BusinessSettingsContext)
+- ✅ Store admin user management: Each store admin can fully manage users in their own store
+- ✅ Comprehensive test data: 80-120 products, 800-1200 customers, 1500-2500 orders, 8-12 staff per store
 - ✅ Client Stores list: `/client-stores` page for admin showing all stores and metrics
 - ✅ Demo credentials display: Shown on login page when demo store selected
 - ✅ Demo mode banner: Displayed for demo users throughout application
