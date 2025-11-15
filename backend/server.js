@@ -2847,12 +2847,14 @@ app.get('/api/products', authenticateToken, async (req, res) => {
       ]
     }
 
+    // Optimize: Fetch only needed fields, calculate lowStock in memory (fast for textual data)
     const productsList = await Product.findAll({
       where,
       order: [['name', 'ASC']],
+      attributes: ['id', 'name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'status', 'category', 'imageUrl', 'createdAt', 'updatedAt', 'storeId'],
     })
 
-    // Calculate lowStock flag for each product
+    // Calculate lowStock flag for each product (fast operation)
     const productsWithLowStock = productsList.map((p) => {
       const productData = p.toJSON ? p.toJSON() : p
       return {
