@@ -204,13 +204,11 @@ const RegularDashboard = () => {
         period: growthComparison.previous.period || 'Previous',
         value: growthComparison.previous.revenue || 0,
         orders: growthComparison.previous.orders || 0,
-        customers: growthComparison.previous.customers || 0,
       },
       {
         period: growthComparison.current.period || 'Current',
         value: growthComparison.current.revenue || 0,
         orders: growthComparison.current.orders || 0,
-        customers: growthComparison.current.customers || 0,
       },
     ]
   }, [growthComparison])
