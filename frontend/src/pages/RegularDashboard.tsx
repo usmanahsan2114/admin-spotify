@@ -556,11 +556,7 @@ const RegularDashboard = () => {
                 growthPct={growthReport.returnRateChangePct}
               />
             </Box>
-            <SystemStatusCard
-              lowStockCount={metrics?.lowStockCount || 0}
-              pendingReturns={metrics?.pendingReturnsCount || 0}
-              pendingOrders={metrics?.pendingOrdersCount || 0}
-            />
+            <SystemStatusCard />
           </Stack>
         </Box>
       )}
