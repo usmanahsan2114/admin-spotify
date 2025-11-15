@@ -24,7 +24,9 @@ const GrowthKPI = memo(({ label, value, growthPct, formatValue, size = 'medium' 
       ? theme.palette.error.main
       : theme.palette.text.secondary
 
-  const displayValue = formatValue ? formatValue(value) : value.toString()
+  const displayValue = value !== undefined && value !== null 
+    ? (formatValue ? formatValue(value) : value.toString())
+    : '—'
 
   return (
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>

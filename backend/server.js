@@ -2942,7 +2942,7 @@ app.get('/api/settings/business/public', async (req, res) => {
   }
 })
 
-app.get('/api/settings/business', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
+app.get('/api/settings/business', authenticateToken, authorizeRole('admin', 'superadmin', 'staff'), async (req, res) => {
   try {
     // Superadmin can specify storeId in query, regular admin uses their store
     // For superadmin without storeId, return default/generic settings
