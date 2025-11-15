@@ -1127,15 +1127,6 @@ app.post('/api/login', validateLogin, async (req, res) => {
 
     const normalizedEmail = normalizeEmail(email)
     
-    // Check if database has any users (for debugging)
-    const userCount = await User.count()
-    if (userCount === 0) {
-      logger.error('[LOGIN] Database has no users! Database may not be seeded.')
-      return res.status(500).json({ 
-        message: 'Database not initialized. Please restart the backend server to seed the database.' 
-      })
-    }
-    
     // Use exact match for email (already normalized to lowercase)
     // MySQL's default collation handles case-insensitive matching, but we normalize anyway
     const user = await User.findOne({
@@ -1147,16 +1138,7 @@ app.post('/api/login', validateLogin, async (req, res) => {
     // Debug logging
     if (!user) {
       logger.warn(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
-      logger.debug(`[LOGIN] Total users in database: ${userCount}`)
-      // List first few user emails for debugging (in development only)
-      if (NODE_ENV === 'development') {
-        const sampleUsers = await User.findAll({ 
-          limit: 5, 
-          attributes: ['email', 'role', 'storeId'],
-          raw: true 
-        })
-        logger.debug(`[LOGIN] Sample users in database:`, sampleUsers)
-      }
+      // Only log sample users in development if user lookup succeeds (to avoid extra DB calls)
       return res.status(401).json({ message: 'Invalid email or password.' })
     }
 
