@@ -389,23 +389,33 @@ const ClientStoresPage = () => {
     },
     {
       field: 'actions',
-      type: 'actions',
       headerName: 'Actions',
-      width: 150,
-      getActions: (params) => [
-        <GridActionsCellItem
-          key="edit"
-          icon={<EditIcon />}
-          label="Edit Store"
-          onClick={() => handleOpenStoreDialog(params.row)}
-        />,
-        <GridActionsCellItem
-          key="credentials"
-          icon={<VpnKeyIcon />}
-          label="Manage Credentials"
-          onClick={() => handleOpenCredentialsDialog(params.row)}
-        />,
-      ],
+      width: 200,
+      align: 'center',
+      headerAlign: 'center',
+      sortable: false,
+      renderCell: (params) => (
+        <Stack direction="row" spacing={1} justifyContent="center">
+          <Tooltip title="Edit Store">
+            <IconButton
+              size="small"
+              onClick={() => handleOpenStoreDialog(params.row)}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Manage Credentials">
+            <IconButton
+              size="small"
+              onClick={() => handleOpenCredentialsDialog(params.row)}
+              color="primary"
+            >
+              <VpnKeyIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      ),
     },
   ]
 
