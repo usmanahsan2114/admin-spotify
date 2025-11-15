@@ -1637,17 +1637,69 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, r
 // Customer routes
 app.get('/api/customers', authenticateToken, async (req, res) => {
   try {
-    // Fetch customers (superadmin sees all stores)
+    const storeWhere = buildStoreWhere(req)
+    
+    // Fetch customers with optimized query (no order serialization for list view)
     const customersList = await Customer.findAll({
-      where: buildStoreWhere(req),
+      where: storeWhere,
       order: [['createdAt', 'DESC']],
+      attributes: ['id', 'name', 'email', 'phone', 'address', 'alternativePhone', 'alternativeEmails', 'alternativeNames', 'alternativeAddresses', 'createdAt', 'storeId'],
     })
     
-    const payload = await Promise.all(
-      customersList.map(customer => serializeCustomer(customer))
-    )
+    // Use aggregation queries to get order counts and totals in bulk (much faster)
+    const customerIds = customersList.map(c => c.id)
     
-    return res.json(payload.filter(Boolean))
+    // Get order counts and totals per customer using aggregation
+    const orderStats = customerIds.length > 0 ? await Order.findAll({
+      where: {
+        ...storeWhere,
+        customerId: { [Op.in]: customerIds },
+      },
+      attributes: [
+        'customerId',
+        [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'orderCount'],
+        [db.sequelize.fn('SUM', db.sequelize.col('total')), 'totalSpent'],
+        [db.sequelize.fn('MAX', db.sequelize.col('createdAt')), 'lastOrderDate'],
+      ],
+      group: ['customerId'],
+      raw: true,
+    }) : []
+    
+    // Create a map for quick lookup
+    const statsMap = new Map()
+    orderStats.forEach(stat => {
+      if (stat.customerId) {
+        statsMap.set(stat.customerId, {
+          orderCount: parseInt(stat.orderCount) || 0,
+          totalSpent: parseFloat(stat.totalSpent) || 0,
+          lastOrderDate: stat.lastOrderDate || null,
+        })
+      }
+    })
+    
+    // Serialize customers with pre-calculated stats (no individual queries)
+    const payload = customersList.map(customer => {
+      const customerData = customer.toJSON ? customer.toJSON() : customer
+      const stats = statsMap.get(customerData.id) || { orderCount: 0, totalSpent: 0, lastOrderDate: null }
+      
+      return {
+        id: customerData.id,
+        name: customerData.name || 'Unknown',
+        email: customerData.email || '',
+        phone: customerData.phone || 'Not provided',
+        address: customerData.address || null,
+        alternativePhone: customerData.alternativePhone || null,
+        alternativeEmails: ensureArray(customerData.alternativeEmails),
+        alternativeNames: ensureArray(customerData.alternativeNames),
+        alternativeAddresses: ensureArray(customerData.alternativeAddresses),
+        createdAt: customerData.createdAt || new Date().toISOString(),
+        orderCount: stats.orderCount,
+        lastOrderDate: stats.lastOrderDate,
+        totalSpent: stats.totalSpent,
+      }
+    })
+    
+    return res.json(payload)
   } catch (error) {
     logger.error('[ERROR] /api/customers:', error)
     return res.status(500).json({ message: 'Failed to fetch customers', error: error.message })
