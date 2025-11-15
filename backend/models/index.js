@@ -3,7 +3,7 @@ const { Sequelize } = require('sequelize')
 require('dotenv').config()
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'shopify_admin',
+  process.env.DB_NAME || 'shopify_admin_dev',
   process.env.DB_USER || 'root',
   process.env.DB_PASSWORD || '',
   {

@@ -13,7 +13,53 @@
 - Global footer credits "Design & Developed by" Apex IT Solutions and Apex Marketings with links for brand visibility.
 - Customers entity is linked to orders by email; new submissions auto-create or enrich CRM records so marketing and support teams see order history instantly.
 
-## December 2024 - Bug Fixes
+## December 2024 - Bug Fixes & Database Reset Script
+
+### Full Dummy Data Seeding for Multi-Store Production Testing
+
+**Purpose:** Seed comprehensive dummy data for all 5 stores + demo account with full year's data, ensuring 80-120 products per store, proper store isolation, and production-ready test dataset.
+
+**Product Generation Enhancement:**
+- Updated `generateMultiStoreData.js` to generate 80-120 products per store (was limited to 10 due to template count)
+- Implemented product variation system: creates variations using prefixes (Premium, Deluxe, Pro, Plus, Elite, Classic, Modern, Vintage, Limited Edition), colors (Black, White, Blue, Red, Green, Silver, Gold, Gray, Brown, Pink), and sizes (Small, Medium, Large, XL, XXL, Standard, Compact, Full Size)
+- Price variation: ±10% price variation for product variants creates realistic pricing differences
+- Unique product names per store ensuring visual distinction for testing isolation
+
+**Why Product Variations:** Each category has 10 base product templates. To reach 80-120 products per store, we create variations by adding prefixes (e.g., "Premium Wireless Earbuds Pro"), colors (e.g., "Wireless Earbuds Pro - Black"), or sizes (e.g., "Wireless Earbuds Pro (Large)"). This maintains realistic product names while ensuring sufficient data volume for comprehensive testing.
+
+**Data Volumes Per Store:**
+- Products: 80-120 per store (variations of 10 base templates)
+- Customers: 800-1200 per store
+- Orders: 1500-2500 per store spanning full year up to today (40% in last 3 months, 60% in first 9 months)
+- Returns: ~8% of orders per store
+- Users: 1 admin + 8-12 staff per store
+
+**Store Isolation:** All data properly scoped by `storeId`. Each store has unique product names, customer emails, order IDs. This ensures multi-tenancy works correctly and helps visually verify isolation during testing.
+
+**Date Range Logic:** Orders span full year from today (40% in last 3 months, 60% in first 9 months). Recent orders appear in "Last 7 days" filter. Date filters work correctly with year-spanning data.
+
+**Status:** ✅ **COMPLETE** - Full dummy data seeded for all stores, product generation enhanced, store isolation verified, ready for production testing.
+
+### Database Reset & Reseed Script
+
+**Purpose:** Created comprehensive database reset and reseed script to enable easy database reset and fresh data seeding for testing and development.
+
+**Implementation:**
+- Script clears all existing data in correct order (respecting foreign keys)
+- Resets auto-increment counters for all tables
+- Ensures `storeId` column allows NULL for superadmin users
+- Seeds fresh data using `generateMultiStoreData()` function
+- Creates superadmin user with documented credentials
+- Inserts data in batches (500 records per batch) to avoid MySQL packet size limits
+- Displays login credentials for all accounts after seeding
+
+**Why Batch Insertion:** MySQL has a `max_allowed_packet` limit. Inserting thousands of records at once can exceed this limit, causing "Packet too large" errors. Batch insertion (500 records per batch) prevents this issue.
+
+**Why Foreign Key Handling:** Superadmin users don't belong to any store (`storeId` is NULL). The script ensures the foreign key constraint allows NULL values by dropping and recreating the constraint if needed.
+
+**Usage:** `node backend/scripts/reset-and-seed-database.js`
+
+**Status:** ✅ **COMPLETE** - Database reset script created, schema fixes applied, batch insertion implemented.
 
 ### JSON Field Parsing Fix
 

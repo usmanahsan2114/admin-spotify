@@ -883,13 +883,42 @@ const generateMultiStoreData = () => {
       staffUsers.push(staffUser)
     }
     
-    // Generate products for this store (35-45 products with detailed descriptions)
+    // Generate products for this store (80-120 products with detailed descriptions)
     const productTemplates = productTemplatesByCategory[template.category] || productTemplatesByCategory.Electronics
-    const productCount = Math.min(Math.floor(Math.random() * 41) + 80, productTemplates.length) // 80-120 products (increased for comprehensive testing)
+    const productCount = Math.floor(Math.random() * 41) + 80 // 80-120 products (increased for comprehensive testing)
     const storeProducts = []
-    const selectedTemplates = productTemplates.slice(0, productCount)
     
-    selectedTemplates.forEach((prodTemplate, index) => {
+    // Generate variations of templates to reach target count
+    const variations = ['Standard', 'Premium', 'Deluxe', 'Pro', 'Plus', 'Elite', 'Classic', 'Modern', 'Vintage', 'Limited Edition']
+    const colors = ['Black', 'White', 'Blue', 'Red', 'Green', 'Silver', 'Gold', 'Gray', 'Brown', 'Pink']
+    const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL', 'Standard', 'Compact', 'Full Size']
+    
+    for (let i = 0; i < productCount; i++) {
+      const templateIndex = i % productTemplates.length
+      const prodTemplate = productTemplates[templateIndex]
+      
+      // Create variations by adding prefixes/suffixes
+      let productName = prodTemplate.name
+      if (i >= productTemplates.length) {
+        // Add variation after first set of templates
+        const variation = variations[Math.floor(i / productTemplates.length) % variations.length]
+        const color = colors[i % colors.length]
+        const size = sizes[i % sizes.length]
+        
+        // Add variation based on position
+        if (i % 3 === 0) {
+          productName = `${variation} ${prodTemplate.name}`
+        } else if (i % 3 === 1) {
+          productName = `${prodTemplate.name} - ${color}`
+        } else {
+          productName = `${prodTemplate.name} (${size})`
+        }
+      }
+      
+      // Vary price slightly (±10-20%)
+      const priceVariation = 1 + (Math.random() * 0.2 - 0.1) // ±10%
+      const variedPrice = Math.round(prodTemplate.price * priceVariation)
+      
       const baseStock = Math.floor(Math.random() * 150) + 20
       const lowStock = baseStock <= prodTemplate.reorderThreshold
       // Products created between store creation and now
@@ -899,21 +928,21 @@ const generateMultiStoreData = () => {
       const product = {
         id: crypto.randomUUID(),
         storeId: storeId,
-        name: prodTemplate.name,
-        description: prodTemplate.description,
-        price: prodTemplate.price,
+        name: productName,
+        description: prodTemplate.description + (i >= productTemplates.length ? ` Available in multiple variants.` : ''),
+        price: variedPrice,
         stockQuantity: baseStock,
         reorderThreshold: prodTemplate.reorderThreshold,
         lowStock: lowStock,
         status: Math.random() > 0.1 ? 'active' : 'inactive',
         category: template.category,
-        imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + index}?auto=format&fit=crop&w=800&q=60`,
+        imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + i}?auto=format&fit=crop&w=800&q=60`,
         createdAt: createdAt.toISOString(),
         updatedAt: updatedAt.toISOString(),
       }
       storeProducts.push(product)
       allProducts.push(product)
-    })
+    }
     
     // Generate customers for this store (300-400 customers with comprehensive data)
     const customerCount = Math.floor(Math.random() * 401) + 800 // 800-1200 customers (increased for comprehensive testing)

@@ -83,7 +83,11 @@ cd backend
 npx sequelize-cli db:migrate
 
 # 3. Database will auto-seed on first server start (development mode)
+# OR manually reset and seed using:
+node backend/scripts/reset-and-seed-database.js
 ```
+
+**Note:** The database will automatically seed with test data on first server start in development mode. If you need to reset the database and reseed with fresh data, run the reset script above.
 
 ### Development
 
@@ -97,6 +101,45 @@ This launches Vite (`http://localhost:5173`) and Express (`http://localhost:5000
 - Ensure MySQL is running before starting the backend
 - Database will auto-seed with 6 stores (5 client stores + 1 demo store) and comprehensive Pakistan-based test data on first run (development mode)
 - Ensure frontend is running on `http://localhost:5173/` and backend on `http://localhost:5000/` for proper API communication
+
+### Login Credentials
+
+After database seeding, you can login with:
+
+**Superadmin (Global Access):**
+- Email: `superadmin@shopifyadmin.pk`
+- Password: `superadmin123`
+
+**Store Admins (for each store):**
+- TechHub Electronics: `admin@techhub.pk` / `admin123`
+- Fashion Forward: `admin@fashionforward.pk` / `admin123`
+- Home & Living Store: `admin@homeliving.pk` / `admin123`
+- Fitness Gear Pro: `admin@fitnessgear.pk` / `admin123`
+- Beauty Essentials: `admin@beautyessentials.pk` / `admin123`
+
+**Staff Accounts:**
+- Staff emails follow pattern: `staff1@[store-domain]`, `staff2@[store-domain]`, etc.
+- Password: `staff123`
+
+**Demo Store:**
+- Email: `demo@demo.shopifyadmin.pk`
+- Password: `demo123`
+
+**See [STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md) for complete credentials list.**
+
+### Database Reset
+
+To reset the database and reseed with fresh data:
+
+```bash
+cd backend
+node scripts/reset-and-seed-database.js
+```
+
+This will:
+- Clear all existing data (orders, products, customers, returns, users, settings, stores)
+- Reseed with fresh test data for all stores
+- Display login credentials for all accounts
 
 ### Production Build
 
