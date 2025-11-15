@@ -99,12 +99,28 @@ const OrderDetailsPage = () => {
       setLoading(true)
       setError(null)
       const data = await fetchOrderById(orderId)
-      setOrder(data)
-      setStatus(data.status ?? 'Pending')
-      setNotes(data.notes ?? '')
-      setIsPaid(Boolean(data.isPaid))
-      setQuantity(data.quantity)
-      setPhone(data.phone ?? '')
+      // Ensure timeline is always an array (handle JSON string or null/undefined)
+      const normalizedData = {
+        ...data,
+        timeline: Array.isArray(data.timeline) 
+          ? data.timeline 
+          : (typeof data.timeline === 'string' 
+              ? (() => {
+                  try {
+                    const parsed = JSON.parse(data.timeline)
+                    return Array.isArray(parsed) ? parsed : []
+                  } catch {
+                    return []
+                  }
+                })()
+              : [])
+      }
+      setOrder(normalizedData)
+      setStatus(normalizedData.status ?? 'Pending')
+      setNotes(normalizedData.notes ?? '')
+      setIsPaid(Boolean(normalizedData.isPaid))
+      setQuantity(normalizedData.quantity)
+      setPhone(normalizedData.phone ?? '')
     } catch (err) {
       setError(handleError(err, 'Unable to load order details.'))
     } finally {
@@ -134,11 +150,14 @@ const OrderDetailsPage = () => {
     const statusOrder = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
     const currentIndex = statusOrder.indexOf(order.status)
     
+    // Ensure timeline is an array
+    const timeline = Array.isArray(order.timeline) ? order.timeline : []
+    
     return statusOrder.map((status, index) => ({
       status,
       progress: index <= currentIndex ? 100 : 0,
       isCurrent: index === currentIndex,
-      date: order.timeline?.find((t) => t.description.toLowerCase().includes(status.toLowerCase()))?.timestamp || null,
+      date: timeline.find((t) => t?.description?.toLowerCase().includes(status.toLowerCase()))?.timestamp || null,
     }))
   }, [order])
 
@@ -606,7 +625,7 @@ const OrderDetailsPage = () => {
             </CardContent>
           </Card>
 
-          {order.timeline && order.timeline.length > 0 && (
+          {order.timeline && Array.isArray(order.timeline) && order.timeline.length > 0 && (
             <Card>
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600}>
@@ -617,7 +636,7 @@ const OrderDetailsPage = () => {
                   {order.timeline
                     .slice()
                     .reverse()
-                    .map((entry) => (
+                    .map((entry, index) => (
                       <Box key={entry.id}>
                         <Typography fontWeight={600}>
                           {entry.description}
