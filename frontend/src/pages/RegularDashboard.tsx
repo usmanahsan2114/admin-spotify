@@ -512,7 +512,7 @@ const RegularDashboard = () => {
         </Stack>
       </Box>
 
-      {/* Growth KPI and System Status */}
+      {/* Growth KPI */}
       {growthReport && (
         <Box mb={{ xs: 3, sm: 4 }}>
           <Box mb={{ xs: 2, sm: 2.5 }}>
@@ -537,58 +537,57 @@ const RegularDashboard = () => {
               Key metrics compared to previous period
             </Typography>
           </Box>
-          <Stack spacing={{ xs: 2, sm: 3 }} direction={{ xs: 'column', lg: 'row' }}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { 
-                  xs: '1fr', 
-                  sm: 'repeat(2, 1fr)', 
-                  md: 'repeat(2, 1fr)',
-                  lg: 'repeat(4, 1fr)',
-                },
-                gap: { xs: 1.5, sm: 2 },
-                flex: 1,
-              }}
-            >
-              <GrowthKPI
-                label="Sales This Period"
-                value={growthReport.totalSales || 0}
-                growthPct={growthReport.growthSalesPct}
-                formatValue={(val) => formatCurrency(val as number)}
-              />
-              <GrowthKPI
-                label="Orders This Period"
-                value={growthReport.totalOrders || 0}
-                growthPct={growthReport.growthOrdersPct}
-              />
-              <GrowthKPI
-                label="Avg Order Value"
-                value={growthReport.averageOrderValue || 0}
-                growthPct={
-                  growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
-                    ? parseFloat(
-                        (
-                          (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
-                          (1 + growthReport.growthOrdersPct / 100)
-                        ).toFixed(1),
-                      )
-                    : undefined
-                }
-                formatValue={(val) => formatCurrency(val as number)}
-              />
-              <GrowthKPI
-                label="Return Rate"
-                value={`${growthReport.returnRatePct || 0}%`}
-                growthPct={growthReport.returnRateChangePct}
-              />
-            </Box>
-            <Box sx={{ width: { xs: '100%', lg: 'auto' }, minWidth: { lg: 300 } }}>
-              <SystemStatusCard />
-            </Box>
-          </Stack>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { 
+                xs: '1fr', 
+                sm: 'repeat(2, 1fr)', 
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(4, 1fr)',
+              },
+              gap: { xs: 1.5, sm: 2 },
+            }}
+          >
+            <GrowthKPI
+              label="Sales This Period"
+              value={growthReport.totalSales || 0}
+              growthPct={growthReport.growthSalesPct}
+              formatValue={(val) => formatCurrency(val as number)}
+            />
+            <GrowthKPI
+              label="Orders This Period"
+              value={growthReport.totalOrders || 0}
+              growthPct={growthReport.growthOrdersPct}
+            />
+            <GrowthKPI
+              label="Avg Order Value"
+              value={growthReport.averageOrderValue || 0}
+              growthPct={
+                growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
+                  ? parseFloat(
+                      (
+                        (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
+                        (1 + growthReport.growthOrdersPct / 100)
+                      ).toFixed(1),
+                    )
+                  : undefined
+              }
+              formatValue={(val) => formatCurrency(val as number)}
+            />
+            <GrowthKPI
+              label="Return Rate"
+              value={`${growthReport.returnRatePct || 0}%`}
+              growthPct={growthReport.returnRateChangePct}
+            />
+          </Box>
         </Box>
       )}
+
+      {/* System Status */}
+      <Box mb={{ xs: 3, sm: 4 }}>
+        <SystemStatusCard />
+      </Box>
 
       {/* Trend Report */}
       {trendReport && trendReport.data && trendReport.data.length > 0 && (
