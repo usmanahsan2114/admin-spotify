@@ -5,12 +5,12 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Grid,
   Stack,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
+import Grid from '@mui/material/Unstable_Grid2'
 import StoreIcon from '@mui/icons-material/Store'
 import PeopleIcon from '@mui/icons-material/People'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
