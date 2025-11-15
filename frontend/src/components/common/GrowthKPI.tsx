@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Box, Card, CardContent, Chip, Stack, Typography, useMediaQuery, useTheme, alpha } from '@mui/material'
+import { Box, Card, CardContent, Chip, Typography, useTheme, alpha } from '@mui/material'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import RemoveIcon from '@mui/icons-material/Remove'
@@ -20,12 +20,9 @@ type GrowthKPIProps = {
 
 const GrowthKPI = memo(({ label, value, growthPct, formatValue, size = 'medium', icon, color }: GrowthKPIProps) => {
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
   
   const isPositive = growthPct !== undefined && growthPct > 0
   const isNegative = growthPct !== undefined && growthPct < 0
-  const isNeutral = growthPct === undefined || growthPct === 0
 
   const growthColor = isPositive
     ? theme.palette.success.main
