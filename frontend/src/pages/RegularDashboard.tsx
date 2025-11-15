@@ -201,16 +201,16 @@ const RegularDashboard = () => {
     if (!growthComparison || !growthComparison.current || !growthComparison.previous) return []
     return [
       {
-        period: 'Previous',
-        value: growthComparison.previous.totalRevenue || 0,
-        orders: growthComparison.previous.totalOrders || 0,
-        customers: growthComparison.previous.newCustomers || 0,
+        period: growthComparison.previous.period || 'Previous',
+        value: growthComparison.previous.revenue || 0,
+        orders: growthComparison.previous.orders || 0,
+        customers: growthComparison.previous.customers || 0,
       },
       {
-        period: 'Current',
-        value: growthComparison.current.totalRevenue || 0,
-        orders: growthComparison.current.totalOrders || 0,
-        customers: growthComparison.current.newCustomers || 0,
+        period: growthComparison.current.period || 'Current',
+        value: growthComparison.current.revenue || 0,
+        orders: growthComparison.current.orders || 0,
+        customers: growthComparison.current.customers || 0,
       },
     ]
   }, [growthComparison])
@@ -349,7 +349,7 @@ const RegularDashboard = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
