@@ -58,6 +58,7 @@ import { alpha } from '@mui/material/styles'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
 import GrowthKPI from '../components/common/GrowthKPI'
 import SystemStatusCard from '../components/common/SystemStatusCard'
+import SuperAdminDashboard from './SuperAdminDashboard'
 
 const PIE_COLORS = ['#4CAF50', '#2196F3', '#FF9800', '#E91E63', '#9C27B0', '#607D8B']
 
@@ -69,6 +70,12 @@ type SummaryCard = {
 }
 
 const DashboardHome = () => {
+  const { user } = useAuth()
+  
+  // Show superadmin dashboard for superadmin users
+  if (user?.role === 'superadmin') {
+    return <SuperAdminDashboard />
+  }
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])

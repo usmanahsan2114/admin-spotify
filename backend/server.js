@@ -24,6 +24,8 @@ const {
   validateUser,
   validateUserProfile,
   validateBusinessSettings,
+  validateStore,
+  validateStoreAdminCredentials,
 } = require('./middleware/validation')
 const { initializeDatabase, db } = require('./db/init')
 
@@ -1014,21 +1016,64 @@ app.get('/api/stores', async (_req, res) => {
   }
 })
 
-// Get all stores with user counts (admin only)
-app.get('/api/stores/admin', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
+// Get all stores with user counts and revenue (superadmin only)
+app.get('/api/stores/admin', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
     const storesList = await Store.findAll({
-      attributes: ['id', 'name', 'dashboardName', 'domain', 'category', 'isDemo', 'createdAt'],
+      attributes: ['id', 'name', 'dashboardName', 'domain', 'category', 'isDemo', 'createdAt', 'defaultCurrency', 'country', 'logoUrl', 'brandColor'],
       order: [['name', 'ASC']],
     })
     
-    // Get user counts for each store
+    // Get comprehensive stats for each store including revenue
     const storesWithCounts = await Promise.all(
       storesList.map(async (store) => {
-        const userCount = await User.count({ where: { storeId: store.id } })
-        const orderCount = await Order.count({ where: { storeId: store.id } })
-        const productCount = await Product.count({ where: { storeId: store.id } })
-        const customerCount = await Customer.count({ where: { storeId: store.id } })
+        const storeId = store.id
+        
+        // Get counts
+        const userCount = await User.count({ where: { storeId } })
+        const orderCount = await Order.count({ where: { storeId } })
+        const productCount = await Product.count({ where: { storeId } })
+        const customerCount = await Customer.count({ where: { storeId } })
+        
+        // Get revenue (total from all orders)
+        const orders = await Order.findAll({
+          where: { storeId },
+          attributes: ['total'],
+          raw: true,
+        })
+        const totalRevenue = orders.reduce((sum, order) => {
+          const orderTotal = order.total != null ? parseFloat(order.total) || 0 : 0
+          return sum + orderTotal
+        }, 0)
+        
+        // Get pending orders count
+        const pendingOrdersCount = await Order.count({ 
+          where: { 
+            storeId,
+            status: 'Pending'
+          } 
+        })
+        
+        // Get low stock products count
+        const { Sequelize } = require('sequelize')
+        const lowStockCount = await Product.count({
+          where: {
+            storeId,
+            [Op.and]: [
+              Sequelize.literal('stockQuantity <= reorderThreshold')
+            ]
+          }
+        })
+        
+        // Get admin user for this store
+        const adminUser = await User.findOne({
+          where: {
+            storeId,
+            role: 'admin'
+          },
+          attributes: ['id', 'email', 'name', 'active'],
+          raw: true
+        })
         
         const storeData = store.toJSON ? store.toJSON() : store
         return {
@@ -1037,6 +1082,15 @@ app.get('/api/stores/admin', authenticateToken, authorizeRole('admin', 'superadm
           orderCount,
           productCount,
           customerCount,
+          totalRevenue,
+          pendingOrdersCount,
+          lowStockCount,
+          adminUser: adminUser ? {
+            id: adminUser.id,
+            email: adminUser.email,
+            name: adminUser.name,
+            active: adminUser.active
+          } : null,
         }
       })
     )
@@ -1045,6 +1099,162 @@ app.get('/api/stores/admin', authenticateToken, authorizeRole('admin', 'superadm
   } catch (error) {
     logger.error('[ERROR] /api/stores/admin:', error)
     return res.status(500).json({ message: 'Failed to fetch stores', error: error.message })
+  }
+})
+
+// Create new store (superadmin only)
+app.post('/api/stores', authenticateToken, authorizeRole('superadmin'), validateStore, async (req, res) => {
+  try {
+    const { name, dashboardName, domain, category, defaultCurrency, country, logoUrl, brandColor, isDemo } = req.body
+    
+    // Check if domain already exists
+    const existingStore = await Store.findOne({ where: { domain } })
+    if (existingStore) {
+      return res.status(409).json({ message: 'A store with this domain already exists.' })
+    }
+    
+    const newStore = await Store.create({
+      name: String(name).trim(),
+      dashboardName: String(dashboardName).trim(),
+      domain: String(domain).trim(),
+      category: String(category).trim(),
+      defaultCurrency: defaultCurrency || 'PKR',
+      country: country || 'PK',
+      logoUrl: logoUrl ? String(logoUrl).trim() : null,
+      brandColor: brandColor || '#1976d2',
+      isDemo: Boolean(isDemo),
+    })
+    
+    // Create default settings for the store
+    await Setting.create({
+      storeId: newStore.id,
+      defaultCurrency: defaultCurrency || 'PKR',
+      country: country || 'PK',
+    })
+    
+    const storeData = newStore.toJSON ? newStore.toJSON() : newStore
+    return res.status(201).json(storeData)
+  } catch (error) {
+    logger.error('[ERROR] /api/stores POST:', error)
+    return res.status(500).json({ message: 'Failed to create store', error: error.message })
+  }
+})
+
+// Update store (superadmin only)
+app.put('/api/stores/:id', authenticateToken, authorizeRole('superadmin'), validateStore, async (req, res) => {
+  try {
+    const store = await Store.findByPk(req.params.id)
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found.' })
+    }
+    
+    const { name, dashboardName, domain, category, defaultCurrency, country, logoUrl, brandColor, isDemo } = req.body
+    
+    // Check if domain is being changed and if new domain already exists
+    if (domain && domain !== store.domain) {
+      const existingStore = await Store.findOne({ where: { domain } })
+      if (existingStore) {
+        return res.status(409).json({ message: 'A store with this domain already exists.' })
+      }
+    }
+    
+    const updateData = {}
+    if (name !== undefined) updateData.name = String(name).trim()
+    if (dashboardName !== undefined) updateData.dashboardName = String(dashboardName).trim()
+    if (domain !== undefined) updateData.domain = String(domain).trim()
+    if (category !== undefined) updateData.category = String(category).trim()
+    if (defaultCurrency !== undefined) updateData.defaultCurrency = defaultCurrency
+    if (country !== undefined) updateData.country = country
+    if (logoUrl !== undefined) updateData.logoUrl = logoUrl ? String(logoUrl).trim() : null
+    if (brandColor !== undefined) updateData.brandColor = brandColor
+    if (isDemo !== undefined) updateData.isDemo = Boolean(isDemo)
+    
+    await store.update(updateData)
+    await store.reload()
+    
+    const storeData = store.toJSON ? store.toJSON() : store
+    return res.json(storeData)
+  } catch (error) {
+    logger.error('[ERROR] /api/stores PUT:', error)
+    return res.status(500).json({ message: 'Failed to update store', error: error.message })
+  }
+})
+
+// Create or update store admin credentials (superadmin only)
+app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('superadmin'), validateStoreAdminCredentials, async (req, res) => {
+  try {
+    const store = await Store.findByPk(req.params.id)
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found.' })
+    }
+    
+    const { email, password, name } = req.body
+    
+    // Check if admin user already exists for this store
+    let adminUser = await User.findOne({
+      where: {
+        storeId: store.id,
+        role: 'admin'
+      }
+    })
+    
+    if (adminUser) {
+      // Update existing admin
+      const updateData = {}
+      if (email) {
+        // Check if email is being changed and if new email already exists
+        if (email.toLowerCase() !== adminUser.email.toLowerCase()) {
+          const existingUser = await User.findOne({ where: { email: email.toLowerCase() } })
+          if (existingUser && existingUser.id !== adminUser.id) {
+            return res.status(409).json({ message: 'An account with this email already exists.' })
+          }
+        }
+        updateData.email = email.toLowerCase()
+      }
+      if (password) {
+        updateData.passwordHash = await bcrypt.hash(password, 10)
+        updateData.passwordChangedAt = new Date()
+      }
+      if (name) updateData.name = String(name).trim()
+      
+      await adminUser.update(updateData)
+      await adminUser.reload()
+    } else {
+      // Create new admin user
+      if (!password) {
+        return res.status(400).json({ message: 'Password is required for new admin account.' })
+      }
+      
+      const passwordHash = await bcrypt.hash(password, 10)
+      adminUser = await User.create({
+        storeId: store.id,
+        email: email.toLowerCase(),
+        name: name || `Admin - ${store.name}`,
+        role: 'admin',
+        passwordHash,
+        active: true,
+        permissions: {
+          viewOrders: true, editOrders: true, deleteOrders: true,
+          viewProducts: true, editProducts: true, deleteProducts: true,
+          viewCustomers: true, editCustomers: true,
+          viewReturns: true, processReturns: true,
+          viewReports: true, manageUsers: true, manageSettings: true,
+        },
+      })
+    }
+    
+    const userData = adminUser.toJSON ? adminUser.toJSON() : adminUser
+    return res.json({
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      role: userData.role,
+      active: userData.active,
+      storeId: userData.storeId,
+    })
+  } catch (error) {
+    logger.error('[ERROR] /api/stores/:id/admin-credentials:', error)
+    return res.status(500).json({ message: 'Failed to create/update admin credentials', error: error.message })
   }
 })
 

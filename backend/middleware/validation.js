@@ -224,6 +224,35 @@ const validateBusinessSettings = [
   handleValidationErrors,
 ]
 
+/**
+ * Validation rules for store creation/update
+ */
+const validateStore = [
+  body('name').trim().notEmpty().withMessage('Store name is required'),
+  body('dashboardName').trim().notEmpty().withMessage('Dashboard name is required'),
+  body('domain').trim().notEmpty().withMessage('Domain is required'),
+  body('category').trim().notEmpty().withMessage('Category is required'),
+  body('defaultCurrency').optional().isString().withMessage('Currency must be a string'),
+  body('country').optional().isString().withMessage('Country must be a string'),
+  body('logoUrl').optional().isURL().withMessage('Logo URL must be a valid URL'),
+  body('brandColor').optional().matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Brand color must be a valid hex color'),
+  body('isDemo').optional().isBoolean().withMessage('isDemo must be a boolean'),
+  handleValidationErrors,
+]
+
+/**
+ * Validation rules for store admin credentials
+ */
+const validateStoreAdminCredentials = [
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  body('password')
+    .optional()
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters'),
+  body('name').optional().trim().notEmpty().withMessage('Name is required if provided'),
+  handleValidationErrors,
+]
+
 module.exports = {
   validateLogin,
   validateSignup,
@@ -236,5 +265,7 @@ module.exports = {
   validateUser,
   validateUserProfile,
   validateBusinessSettings,
+  validateStore,
+  validateStoreAdminCredentials,
 }
 
