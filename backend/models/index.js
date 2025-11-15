@@ -14,11 +14,11 @@ const sequelize = new Sequelize(
     pool: {
       max: process.env.NODE_ENV === 'production' 
         ? parseInt(process.env.DB_POOL_MAX || '20', 10) 
-        : 5,
+        : parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for large datasets
       min: process.env.NODE_ENV === 'production' 
         ? parseInt(process.env.DB_POOL_MIN || '5', 10) 
-        : 0,
-      acquire: parseInt(process.env.DB_POOL_ACQUIRE || '30000', 10),
+        : parseInt(process.env.DB_POOL_MIN || '2', 10),
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10), // Increased timeout for large datasets
       idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
       evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Check for idle connections every second
     },

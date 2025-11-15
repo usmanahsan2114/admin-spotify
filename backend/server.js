@@ -2102,11 +2102,24 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
     // Fetch data from database (superadmin sees all stores)
     const productWhere = buildStoreWhere(req)
     const returnWhere = buildStoreWhere(req, { status: 'Submitted' })
+    // Optimize: Use count queries instead of loading all data for metrics
     const [ordersList, productsList, returnsList, customersList] = await Promise.all([
-      Order.findAll({ where: orderWhere }),
-      Product.findAll({ where: productWhere }),
-      Return.findAll({ where: returnWhere }),
-      Customer.findAll({ where: customerWhere }),
+      Order.findAll({ 
+        where: orderWhere,
+        attributes: ['id', 'status', 'total', 'createdAt'], // Only fetch needed fields
+      }),
+      Product.findAll({ 
+        where: productWhere,
+        attributes: ['id', 'stockQuantity', 'reorderThreshold'], // Only fetch needed fields
+      }),
+      Return.findAll({ 
+        where: returnWhere,
+        attributes: ['id'], // Only need count
+      }),
+      Customer.findAll({ 
+        where: customerWhere,
+        attributes: ['id', 'createdAt'], // Only fetch needed fields
+      }),
     ])
     
     const totalOrders = ordersList.length
@@ -2131,10 +2144,13 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
       return customerDate >= dateStart && customerDate <= dateEnd
     }).length
 
-    // Calculate total revenue from filtered orders
+    // Calculate total revenue from filtered orders (ensure proper number conversion)
     const totalRevenue = ordersList.reduce((acc, order) => {
       const oData = order.toJSON ? order.toJSON() : order
-      return acc + (oData.total ?? 0)
+      const orderTotal = oData.total
+      // Handle DECIMAL type from MySQL (may be string) and null/undefined
+      const numTotal = orderTotal != null ? parseFloat(orderTotal) || 0 : 0
+      return acc + numTotal
     }, 0)
 
     return res.json({
@@ -2211,15 +2227,15 @@ app.get('/api/metrics/sales-over-time', authenticateToken, async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1)
     }
     
-    // Fetch orders by storeId
-    const ordersList = await Order.findAll({
-      where: {
-        storeId: req.storeId,
-        createdAt: {
-          [Op.gte]: startDate,
-          [Op.lte]: endDate,
-        },
+    // Fetch orders by storeId (superadmin sees all stores)
+    const orderWhere = buildStoreWhere(req, {
+      createdAt: {
+        [Op.gte]: startDate,
+        [Op.lte]: endDate,
       },
+    })
+    const ordersList = await Order.findAll({
+      where: orderWhere,
     })
     
     ordersList.forEach((order) => {
@@ -2229,7 +2245,9 @@ app.get('/api/metrics/sales-over-time', authenticateToken, async (req, res) => {
       const dateKey = orderDate.toISOString().split('T')[0]
       if (dailyData[dateKey]) {
         dailyData[dateKey].orders += 1
-        dailyData[dateKey].revenue += oData.total ?? 0
+        // Handle DECIMAL type from MySQL (may be string) and null/undefined
+        const orderTotal = oData.total != null ? parseFloat(oData.total) || 0 : 0
+        dailyData[dateKey].revenue += orderTotal
       }
     })
     
@@ -2293,14 +2311,14 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
     }
     
     const getPeriodData = async (start, end) => {
-      const periodOrders = await Order.findAll({
-        where: {
-          storeId: req.storeId,
-          createdAt: {
-            [Op.gte]: start,
-            [Op.lte]: end,
-          },
+      const orderWhere = buildStoreWhere(req, {
+        createdAt: {
+          [Op.gte]: start,
+          [Op.lte]: end,
         },
+      })
+      const periodOrders = await Order.findAll({
+        where: orderWhere,
       })
       
       const ordersData = periodOrders.map(o => o.toJSON ? o.toJSON() : o)
@@ -2308,7 +2326,10 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
       
       return {
         orders: ordersData.length,
-        revenue: ordersData.reduce((sum, order) => sum + (order.total ?? 0), 0),
+        revenue: ordersData.reduce((sum, order) => {
+          const orderTotal = order.total != null ? parseFloat(order.total) || 0 : 0
+          return sum + orderTotal
+        }, 0),
         customers: uniqueEmails.size,
       }
     }
@@ -3054,11 +3075,17 @@ app.get('/api/reports/growth', authenticateToken, async (req, res) => {
     const currentOrders = currentOrdersList.map(o => o.toJSON ? o.toJSON() : o)
     const previousOrders = previousOrdersList.map(o => o.toJSON ? o.toJSON() : o)
 
-    const totalSales = currentOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+    const totalSales = currentOrders.reduce((sum, order) => {
+      const orderTotal = order.total != null ? parseFloat(order.total) || 0 : 0
+      return sum + orderTotal
+    }, 0)
     const totalOrders = currentOrders.length
     const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0
 
-    const previousSales = previousOrders.reduce((sum, order) => sum + (order.total ?? 0), 0)
+    const previousSales = previousOrders.reduce((sum, order) => {
+      const orderTotal = order.total != null ? parseFloat(order.total) || 0 : 0
+      return sum + orderTotal
+    }, 0)
     const previousOrdersCount = previousOrders.length
     const previousAverageOrderValue = previousOrdersCount > 0 ? previousSales / previousOrdersCount : 0
 
@@ -3130,7 +3157,9 @@ app.get('/api/reports/trends', authenticateToken, async (req, res) => {
         const dateKey = orderDate.toISOString().split('T')[0]
         if (dailyData[dateKey]) {
           dailyData[dateKey].orders += 1
-          dailyData[dateKey].sales += oData.total ?? 0
+          // Handle DECIMAL type from MySQL (may be string) and null/undefined
+          const orderTotal = oData.total != null ? parseFloat(oData.total) || 0 : 0
+          dailyData[dateKey].sales += orderTotal
         }
       })
     }

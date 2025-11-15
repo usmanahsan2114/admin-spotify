@@ -67,15 +67,17 @@ const ClientStoresPage = () => {
       }
     }
 
-    if (user?.role === 'admin' || user?.role === 'superadmin') {
+    // Only superadmin can load stores
+    if (user?.role === 'superadmin') {
       loadStores()
     }
   }, [user, handleError])
 
-  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
+  // Only superadmin can access this page
+  if (user?.role !== 'superadmin') {
     return (
       <Box p={3}>
-        <Alert severity="error">You do not have permission to view this page.</Alert>
+        <Alert severity="error">You do not have permission to view this page. Superadmin access required.</Alert>
       </Box>
     )
   }
