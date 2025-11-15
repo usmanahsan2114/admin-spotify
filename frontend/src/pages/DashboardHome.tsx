@@ -70,12 +70,17 @@ type SummaryCard = {
 }
 
 const DashboardHome = () => {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const theme = useTheme()
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
+  const chartHeight = isDesktop ? 360 : 400
   
   // Show superadmin dashboard for superadmin users
   if (user?.role === 'superadmin') {
     return <SuperAdminDashboard />
   }
+  
+  // Regular dashboard for admin/staff/demo users
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
@@ -98,10 +103,6 @@ const DashboardHome = () => {
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { logout } = useAuth()
-  const theme = useTheme()
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
-  const chartHeight = isDesktop ? 360 : 400
 
   const resolveError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
