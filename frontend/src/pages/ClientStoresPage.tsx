@@ -108,12 +108,7 @@ const ClientStoresPage = () => {
 
   const [isUpdatingCredentials, setIsUpdatingCredentials] = useState(false)
 
-  const {
-    control: credentialsControl,
-    handleSubmit: handleCredentialsSubmit,
-    reset: resetCredentialsForm,
-    formState: { errors: credentialsErrors },
-  } = useForm<StoreAdminCredentialsPayload>({
+  const credentialsForm = useForm<StoreAdminCredentialsPayload>({
     resolver: yupResolver(createCredentialsSchema(isUpdatingCredentials)),
     defaultValues: {
       email: '',
@@ -121,6 +116,18 @@ const ClientStoresPage = () => {
       name: '',
     },
   })
+
+  const {
+    control: credentialsControl,
+    handleSubmit: handleCredentialsSubmit,
+    reset: resetCredentialsForm,
+    formState: { errors: credentialsErrors },
+  } = credentialsForm
+
+  // Update resolver when isUpdatingCredentials changes
+  useEffect(() => {
+    credentialsForm.clearErrors()
+  }, [isUpdatingCredentials, credentialsForm])
 
   const loadStores = async () => {
     try {
