@@ -62,14 +62,15 @@ const storeSchema = yup.object({
   isDemo: yup.boolean().default(false),
 })
 
-const createCredentialsSchema = (isUpdate: boolean) =>
-  yup.object({
-    email: yup.string().email('Valid email is required').required('Email is required'),
-    password: isUpdate
-      ? yup.string().min(6, 'Password must be at least 6 characters').optional()
-      : yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-    name: yup.string().required('Name is required'),
-  })
+const credentialsSchema = yup.object({
+  email: yup.string().email('Valid email is required').required('Email is required'),
+  password: yup
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .optional()
+    .transform((value) => (value === '' ? undefined : value)),
+  name: yup.string().required('Name is required'),
+})
 
 const ClientStoresPage = () => {
   const { user } = useAuth()
@@ -108,26 +109,19 @@ const ClientStoresPage = () => {
 
   const [isUpdatingCredentials, setIsUpdatingCredentials] = useState(false)
 
-  const credentialsForm = useForm<StoreAdminCredentialsPayload>({
-    resolver: yupResolver(createCredentialsSchema(isUpdatingCredentials)),
+  const {
+    control: credentialsControl,
+    handleSubmit: handleCredentialsSubmit,
+    reset: resetCredentialsForm,
+    formState: { errors: credentialsErrors },
+  } = useForm<StoreAdminCredentialsPayload>({
+    resolver: yupResolver(credentialsSchema),
     defaultValues: {
       email: '',
       password: '',
       name: '',
     },
   })
-
-  const {
-    control: credentialsControl,
-    handleSubmit: handleCredentialsSubmit,
-    reset: resetCredentialsForm,
-    formState: { errors: credentialsErrors },
-  } = credentialsForm
-
-  // Update resolver when isUpdatingCredentials changes
-  useEffect(() => {
-    credentialsForm.clearErrors()
-  }, [isUpdatingCredentials, credentialsForm])
 
   const loadStores = async () => {
     try {
@@ -219,6 +213,13 @@ const ClientStoresPage = () => {
 
   const onCredentialsSubmit = async (data: StoreAdminCredentialsPayload) => {
     if (!selectedStore) return
+    
+    // Validate password for new admin accounts
+    if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 6)) {
+      setError('Password is required and must be at least 6 characters for new admin accounts.')
+      return
+    }
+    
     try {
       setSaving(true)
       setError(null)
@@ -658,11 +659,11 @@ const ClientStoresPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={selectedStore?.adminUser ? 'New Password (leave empty to keep current)' : 'Password'}
+                    label={isUpdatingCredentials ? 'New Password (leave empty to keep current)' : 'Password'}
                     type="password"
-                    required={!selectedStore?.adminUser}
+                    required={!isUpdatingCredentials}
                     error={!!credentialsErrors.password}
-                    helperText={credentialsErrors.password?.message}
+                    helperText={credentialsErrors.password?.message || (isUpdatingCredentials ? 'Leave empty to keep current password' : '')}
                     fullWidth
                   />
                 )}
