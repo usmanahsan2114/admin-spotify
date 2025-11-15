@@ -515,11 +515,38 @@ const RegularDashboard = () => {
       {/* Growth KPI and System Status */}
       {growthReport && (
         <Box mb={{ xs: 3, sm: 4 }}>
+          <Box mb={{ xs: 2, sm: 2.5 }}>
+            <Typography 
+              variant="h6" 
+              fontWeight={600}
+              sx={{ 
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                color: 'text.primary',
+              }}
+            >
+              Performance Metrics
+            </Typography>
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ 
+                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                mt: 0.5,
+              }}
+            >
+              Key metrics compared to previous period
+            </Typography>
+          </Box>
           <Stack spacing={{ xs: 2, sm: 3 }} direction={{ xs: 'column', lg: 'row' }}>
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+                gridTemplateColumns: { 
+                  xs: '1fr', 
+                  sm: 'repeat(2, 1fr)', 
+                  md: 'repeat(2, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                },
                 gap: { xs: 1.5, sm: 2 },
                 flex: 1,
               }}
@@ -556,7 +583,9 @@ const RegularDashboard = () => {
                 growthPct={growthReport.returnRateChangePct}
               />
             </Box>
-            <SystemStatusCard />
+            <Box sx={{ width: { xs: '100%', lg: 'auto' }, minWidth: { lg: 300 } }}>
+              <SystemStatusCard />
+            </Box>
           </Stack>
         </Box>
       )}
