@@ -390,47 +390,46 @@ const RegularDashboard = () => {
       {growthReport && (
         <Box mb={4}>
           <Stack spacing={3} direction={{ xs: 'column', lg: 'row' }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
-                <GrowthKPI
-                  label="Sales This Period"
-                  value={growthReport.totalSales || 0}
-                  growthPct={growthReport.growthSalesPct}
-                  formatValue={(val) => formatCurrency(val as number)}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <GrowthKPI
-                  label="Orders This Period"
-                  value={growthReport.totalOrders || 0}
-                  growthPct={growthReport.growthOrdersPct}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <GrowthKPI
-                  label="Avg Order Value"
-                  value={growthReport.averageOrderValue || 0}
-                  growthPct={
-                    growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
-                      ? parseFloat(
-                          (
-                            (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
-                            (1 + growthReport.growthOrdersPct / 100)
-                          ).toFixed(1),
-                        )
-                      : undefined
-                  }
-                  formatValue={(val) => formatCurrency(val as number)}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <GrowthKPI
-                  label="Return Rate"
-                  value={`${growthReport.returnRatePct || 0}%`}
-                  growthPct={growthReport.returnRateChangePct}
-                />
-              </Grid>
-            </Grid>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+                gap: 2,
+                flex: 1,
+              }}
+            >
+              <GrowthKPI
+                label="Sales This Period"
+                value={growthReport.totalSales || 0}
+                growthPct={growthReport.growthSalesPct}
+                formatValue={(val) => formatCurrency(val as number)}
+              />
+              <GrowthKPI
+                label="Orders This Period"
+                value={growthReport.totalOrders || 0}
+                growthPct={growthReport.growthOrdersPct}
+              />
+              <GrowthKPI
+                label="Avg Order Value"
+                value={growthReport.averageOrderValue || 0}
+                growthPct={
+                  growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
+                    ? parseFloat(
+                        (
+                          (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
+                          (1 + growthReport.growthOrdersPct / 100)
+                        ).toFixed(1),
+                      )
+                    : undefined
+                }
+                formatValue={(val) => formatCurrency(val as number)}
+              />
+              <GrowthKPI
+                label="Return Rate"
+                value={`${growthReport.returnRatePct || 0}%`}
+                growthPct={growthReport.returnRateChangePct}
+              />
+            </Box>
             <SystemStatusCard
               lowStockCount={metrics?.lowStockCount || 0}
               pendingReturns={metrics?.pendingReturnsCount || 0}
