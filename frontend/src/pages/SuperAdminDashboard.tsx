@@ -209,7 +209,7 @@ const SuperAdminDashboard = () => {
       {/* Aggregated Stats Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {statCards.map((stat, index) => (
-          <Grid item xs={6} sm={4} md={3} key={index}>
+          <Grid size={{ xs: 6, sm: 4, md: 3 }} key={index}>
             <Card
               component={stat.to ? RouterLink : Box}
               to={stat.to}
@@ -284,7 +284,7 @@ const SuperAdminDashboard = () => {
           </Box>
           <Grid container spacing={2}>
             {stores.slice(0, 6).map((store) => (
-              <Grid item xs={12} sm={6} md={4} key={store.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={store.id}>
                 <Card
                   variant="outlined"
                   sx={{

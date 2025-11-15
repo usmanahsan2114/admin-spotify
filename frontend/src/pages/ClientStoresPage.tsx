@@ -22,7 +22,7 @@ import {
   Divider,
   Tooltip,
 } from '@mui/material'
-import { DataGrid, type GridColDef, type GridActionsCellItem } from '@mui/x-data-grid'
+import { DataGrid, type GridColDef, GridActionsCellItem } from '@mui/x-data-grid'
 import { useAuth } from '../context/AuthContext'
 import { useApiErrorHandler } from '../hooks/useApiErrorHandler'
 import { useCurrency } from '../hooks/useCurrency'

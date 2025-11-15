@@ -144,20 +144,17 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   const navItems = useMemo(
     () => {
-      const items = [...baseNavItems]
-      
-      // Add All Stores menu item for superadmin only
+      // Superadmin only sees: Dashboard, All Stores, Settings
       if (user?.role === 'superadmin') {
-        // Superadmin sees all stores and all users
-        const usersIndex = items.findIndex(item => item.label === 'Users')
-        if (usersIndex !== -1) {
-          items.splice(usersIndex + 1, 0, {
-            label: 'All Stores',
-            to: '/client-stores',
-            icon: <StoreIcon />,
-          })
-        }
+        return [
+          { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
+          { label: 'All Stores', to: '/client-stores', icon: <StoreIcon /> },
+          { label: 'Settings', to: '/settings', icon: <SettingsIcon /> },
+        ]
       }
+      
+      // Regular users see all base nav items
+      const items = [...baseNavItems]
       
       return items.map((item) => {
         if (item.label === 'Returns') {

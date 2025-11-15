@@ -2945,6 +2945,17 @@ app.get('/api/settings/business/public', async (req, res) => {
 app.get('/api/settings/business', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     // Superadmin can specify storeId in query, regular admin uses their store
+    // For superadmin without storeId, return default/generic settings
+    if (req.isSuperAdmin && !req.query.storeId && !req.storeId) {
+      return res.json({
+        logoUrl: null,
+        dashboardName: 'Super Admin Dashboard',
+        defaultCurrency: 'PKR',
+        country: 'PK',
+        brandColor: '#1976d2',
+      })
+    }
+    
     const targetStoreId = req.isSuperAdmin && req.query.storeId ? req.query.storeId : req.storeId
     if (!targetStoreId) {
       return res.status(400).json({ message: 'Store ID is required.' })
