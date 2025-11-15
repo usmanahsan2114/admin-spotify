@@ -52,6 +52,8 @@ const SuperAdminDashboard = () => {
   const { user } = useAuth()
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
+  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
   const { formatCurrency } = useCurrency()
   const [stores, setStores] = useState<StoreWithStats[]>([])
   const [loading, setLoading] = useState(true)
@@ -197,17 +199,29 @@ const SuperAdminDashboard = () => {
 
   return (
     <Box>
-      <Box mb={3}>
-        <Typography variant="h4" component="h1" gutterBottom>
+      <Box mb={{ xs: 2, sm: 3 }}>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom
+          sx={{ 
+            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' },
+            fontWeight: 600,
+          }}
+        >
           Super Admin Dashboard
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography 
+          variant="body2" 
+          color="text.secondary"
+          sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+        >
           Overview of all stores across the platform with aggregated statistics
         </Typography>
       </Box>
 
       {/* Aggregated Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
+      <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 3, sm: 4 } }}>
         {statCards.map((stat, index) => (
           <Grid item xs={6} sm={4} md={3} key={index}>
             <Card
@@ -215,26 +229,31 @@ const SuperAdminDashboard = () => {
               to={stat.to}
               sx={{
                 height: '100%',
+                minHeight: { xs: 110, sm: 130 },
                 textDecoration: 'none',
                 transition: 'transform 0.2s, box-shadow 0.2s',
+                cursor: stat.to ? 'pointer' : 'default',
                 '&:hover': stat.to
                   ? {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[8],
+                      transform: { xs: 'none', sm: 'translateY(-4px)' },
+                      boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
                     }
                   : {},
                 borderLeft: `4px solid ${stat.color}`,
               }}
             >
-              <CardContent>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
                 <Stack spacing={1}>
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Box
                       sx={{
-                        p: 1,
+                        p: { xs: 0.75, sm: 1 },
                         borderRadius: 1,
                         backgroundColor: alpha(stat.color, 0.1),
                         color: stat.color,
+                        '& svg': {
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                        },
                       }}
                     >
                       {stat.icon}
@@ -242,18 +261,29 @@ const SuperAdminDashboard = () => {
                     {stat.intent === 'alert' && (
                       <Box
                         sx={{
-                          width: 8,
-                          height: 8,
+                          width: { xs: 6, sm: 8 },
+                          height: { xs: 6, sm: 8 },
                           borderRadius: '50%',
                           backgroundColor: stat.color,
                         }}
                       />
                     )}
                   </Box>
-                  <Typography variant="h5" fontWeight={600}>
+                  <Typography 
+                    variant="h5" 
+                    fontWeight={600}
+                    sx={{ 
+                      fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
+                      wordBreak: 'break-word',
+                    }}
+                  >
                     {stat.value}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                  >
                     {stat.label}
                   </Typography>
                 </Stack>
@@ -265,9 +295,20 @@ const SuperAdminDashboard = () => {
 
       {/* Stores Overview */}
       <Card>
-        <CardContent>
-          <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight={600}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+          <Box 
+            mb={{ xs: 1.5, sm: 2 }} 
+            display="flex" 
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between" 
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+            gap={1}
+          >
+            <Typography 
+              variant="h6" 
+              fontWeight={600}
+              sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+            >
               All Stores Overview
             </Typography>
             <Typography
@@ -276,13 +317,15 @@ const SuperAdminDashboard = () => {
               sx={{
                 color: 'primary.main',
                 textDecoration: 'none',
+                fontSize: { xs: '0.875rem', sm: '0.9375rem' },
+                fontWeight: 500,
                 '&:hover': { textDecoration: 'underline' },
               }}
             >
               Manage Stores →
             </Typography>
           </Box>
-          <Grid container spacing={2}>
+          <Grid container spacing={{ xs: 1.5, sm: 2 }}>
             {stores.slice(0, 6).map((store) => (
               <Grid item xs={12} sm={6} md={4} key={store.id}>
                 <Card

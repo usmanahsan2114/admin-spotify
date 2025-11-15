@@ -94,8 +94,10 @@ const RegularDashboard = () => {
   const [error, setError] = useState<string | null>(null)
   const { logout } = useAuth()
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
-  const chartHeight = isDesktop ? 360 : 400
+  const chartHeight = isMobile ? 250 : isTablet ? 300 : isDesktop ? 360 : 320
 
   const resolveError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -230,30 +232,58 @@ const RegularDashboard = () => {
   }
 
   return (
-    <Box>
-      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-        <Typography variant="h4" component="h1">
+    <Box sx={{ minWidth: 0, width: '100%' }}>
+      <Box 
+        mb={{ xs: 2, sm: 3 }} 
+        display="flex" 
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        gap={2}
+      >
+        <Typography 
+          variant="h4" 
+          component="h1"
+          sx={{ 
+            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' },
+            fontWeight: 600,
+          }}
+        >
           Dashboard
         </Typography>
-        <DateFilter value={dateRange} onChange={setDateRange} />
+        <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <DateFilter value={dateRange} onChange={setDateRange} />
+        </Box>
       </Box>
 
       {/* Summary Cards */}
-      <Box mb={4}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+      <Box mb={{ xs: 3, sm: 4 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)',
+            },
+            gap: { xs: 1.5, sm: 2 },
+          }}
+        >
           {summary.map((card, index) => (
             <Card
               key={index}
               component={card.to ? RouterLink : Box}
               to={card.to}
               sx={{
-                flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 16px)', md: '1 1 calc(33.333% - 22px)', lg: '1 1 calc(25% - 24px)' },
                 textDecoration: 'none',
                 transition: 'transform 0.2s, box-shadow 0.2s',
+                cursor: card.to ? 'pointer' : 'default',
+                minHeight: { xs: 100, sm: 120 },
                 '&:hover': card.to
                   ? {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[8],
+                      transform: { xs: 'none', sm: 'translateY(-4px)' },
+                      boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
                     }
                   : {},
                 borderLeft: `4px solid ${
@@ -265,30 +295,50 @@ const RegularDashboard = () => {
                 }`,
               }}
             >
-              <CardContent>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary" 
+                  gutterBottom
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                >
                   {card.label}
                 </Typography>
-                <Typography variant="h4" fontWeight={600}>
+                <Typography 
+                  variant="h4" 
+                  fontWeight={600}
+                  sx={{ 
+                    fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {card.value}
                 </Typography>
               </CardContent>
             </Card>
           ))}
-        </Stack>
+        </Box>
       </Box>
 
       {/* Charts Grid */}
-      <Box mb={4}>
-        <Stack spacing={3}>
+      <Box mb={{ xs: 3, sm: 4 }}>
+        <Stack spacing={{ xs: 2, sm: 3 }}>
           {/* Sales Over Time */}
           {salesOverTime && salesOverTime.data && salesOverTime.data.length > 0 && (
             <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ 
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    mb: { xs: 1.5, sm: 2 },
+                  }}
+                >
                   Sales Over Time
                 </Typography>
-                <ResponsiveContainer width="100%" height={chartHeight}>
+                <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                  <ResponsiveContainer width="100%" height={chartHeight}>
                   <AreaChart data={salesOverTime.data}>
                     <defs>
                       <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
@@ -297,9 +347,20 @@ const RegularDashboard = () => {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: isMobile ? 10 : 12 }}
+                      angle={isMobile ? -45 : 0}
+                      textAnchor={isMobile ? 'end' : 'middle'}
+                      height={isMobile ? 60 : 40}
+                    />
+                    <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        fontSize: isMobile ? '0.75rem' : '0.875rem',
+                        padding: isMobile ? '8px' : '12px',
+                      }}
+                    />
                     <Area
                       type="monotone"
                       dataKey="sales"
@@ -308,7 +369,8 @@ const RegularDashboard = () => {
                       fill="url(#colorSales)"
                     />
                   </AreaChart>
-                </ResponsiveContainer>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
           )}
@@ -316,19 +378,36 @@ const RegularDashboard = () => {
           {/* Growth Comparison */}
           {growthChartData.length > 0 && (
             <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ 
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    mb: { xs: 1.5, sm: 2 },
+                  }}
+                >
                   Growth Comparison
                 </Typography>
-                <ResponsiveContainer width="100%" height={chartHeight}>
-                  <BarChart data={growthChartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill={theme.palette.primary.main} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                  <ResponsiveContainer width="100%" height={chartHeight}>
+                    <BarChart data={growthChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="period" 
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                      />
+                      <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          fontSize: isMobile ? '0.75rem' : '0.875rem',
+                          padding: isMobile ? '8px' : '12px',
+                        }}
+                      />
+                      <Bar dataKey="value" fill={theme.palette.primary.main} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
           )}
@@ -336,30 +415,51 @@ const RegularDashboard = () => {
           {/* Order Status Distribution */}
           {statusDistribution.length > 0 && (
             <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ 
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    mb: { xs: 1.5, sm: 2 },
+                  }}
+                >
                   Order Status Distribution
                 </Typography>
-                <ResponsiveContainer width="100%" height={chartHeight}>
-                  <PieChart>
-                    <Pie
-                      data={statusDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {statusDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                  <ResponsiveContainer width="100%" height={chartHeight}>
+                    <PieChart>
+                      <Pie
+                        data={statusDistribution}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => 
+                          isMobile 
+                            ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
+                            : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
+                        }
+                        outerRadius={isMobile ? 60 : isTablet ? 70 : 80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {statusDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          fontSize: isMobile ? '0.75rem' : '0.875rem',
+                          padding: isMobile ? '8px' : '12px',
+                        }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
+                        iconType={isMobile ? 'line' : 'circle'}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
           )}
@@ -367,19 +467,45 @@ const RegularDashboard = () => {
           {/* Low Stock Trend */}
           {lowStockTrend.length > 0 && (
             <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                <Typography 
+                  variant="h6" 
+                  gutterBottom
+                  sx={{ 
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    mb: { xs: 1.5, sm: 2 },
+                  }}
+                >
                   Low Stock Trend
                 </Typography>
-                <ResponsiveContainer width="100%" height={chartHeight}>
-                  <LineChart data={lowStockTrend}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="count" stroke={theme.palette.warning.main} strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                  <ResponsiveContainer width="100%" height={chartHeight}>
+                    <LineChart data={lowStockTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        angle={isMobile ? -45 : 0}
+                        textAnchor={isMobile ? 'end' : 'middle'}
+                        height={isMobile ? 60 : 40}
+                      />
+                      <YAxis tick={{ fontSize: isMobile ? 10 : 12 }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          fontSize: isMobile ? '0.75rem' : '0.875rem',
+                          padding: isMobile ? '8px' : '12px',
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke={theme.palette.warning.main} 
+                        strokeWidth={isMobile ? 1.5 : 2}
+                        dot={{ r: isMobile ? 3 : 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
           )}
@@ -388,13 +514,13 @@ const RegularDashboard = () => {
 
       {/* Growth KPI and System Status */}
       {growthReport && (
-        <Box mb={4}>
-          <Stack spacing={3} direction={{ xs: 'column', lg: 'row' }}>
+        <Box mb={{ xs: 3, sm: 4 }}>
+          <Stack spacing={{ xs: 2, sm: 3 }} direction={{ xs: 'column', lg: 'row' }}>
             <Box
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-                gap: 2,
+                gap: { xs: 1.5, sm: 2 },
                 flex: 1,
               }}
             >
