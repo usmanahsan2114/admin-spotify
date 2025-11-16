@@ -1,0 +1,55 @@
+// Database initialization and connection test
+const db = require('../models')
+const winston = require('winston')
+
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.simple()
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'logs/database.log' }),
+  ],
+})
+
+async function initializeDatabase() {
+  try {
+    // Test database connection
+    await db.sequelize.authenticate()
+    logger.info('Database connection established successfully.')
+    
+    // Configure connection pool for production
+    if (process.env.NODE_ENV === 'production') {
+      const poolConfig = {
+        max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Max connections (default 20)
+        min: parseInt(process.env.DB_POOL_MIN || '5', 10), // Min connections (default 5)
+        idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10), // Idle timeout (default 10s)
+        acquire: parseInt(process.env.DB_POOL_ACQUIRE || '30000', 10), // Acquire timeout (default 30s)
+        evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Evict check interval (default 1s)
+      }
+      db.sequelize.connectionManager.pool.max = poolConfig.max
+      db.sequelize.connectionManager.pool.min = poolConfig.min
+      db.sequelize.connectionManager.pool.idle = poolConfig.idle
+      db.sequelize.connectionManager.pool.acquire = poolConfig.acquire
+      db.sequelize.connectionManager.pool.evict = poolConfig.evict
+      logger.info(`Database connection pool configured for production: max=${poolConfig.max}, min=${poolConfig.min}`)
+    }
+    
+    // Sync database (creates tables if they don't exist)
+    // In production, use migrations instead
+    if (process.env.NODE_ENV === 'development') {
+      await db.sequelize.sync({ alter: false }) // Use migrations in production
+      logger.info('Database synchronized.')
+    }
+    
+    return true
+  } catch (error) {
+    logger.error('Unable to connect to database:', error)
+    throw error
+  }
+}
+
+module.exports = { initializeDatabase, db }
+

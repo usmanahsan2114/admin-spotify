@@ -1,0 +1,344 @@
+#!/usr/bin/env node
+/**
+ * Database Reset and Seed Script
+ * 
+ * This script:
+ * 1. Clears all existing data (orders, returns, customers, products, users, settings, stores)
+ * 2. Resets auto-increment counters
+ * 3. Seeds fresh data for all stores with documented credentials
+ * 
+ * Usage: node backend/scripts/reset-and-seed-database.js
+ */
+
+require('dotenv').config()
+const { initializeDatabase, db } = require('../db/init')
+const { generateMultiStoreData } = require('../generateMultiStoreData')
+const bcrypt = require('bcryptjs')
+const crypto = require('crypto')
+
+const { Store, User, Product, Customer, Order, Return, Setting } = db
+
+async function resetAndSeedDatabase() {
+  try {
+    console.log('🔄 Initializing database connection...')
+    await initializeDatabase()
+    
+    console.log('🗑️  Clearing all existing data...')
+    
+    // Ensure storeId can be null for superadmin (drop FK, modify column, recreate FK)
+    try {
+      // Drop foreign key constraint if it exists
+      await db.sequelize.query(`
+        ALTER TABLE users DROP FOREIGN KEY IF EXISTS users_ibfk_1
+      `).catch(() => {
+        // Try alternative constraint name
+        return db.sequelize.query(`
+          ALTER TABLE users DROP FOREIGN KEY IF EXISTS users_storeId_fkey
+        `)
+      }).catch(() => {
+        // Ignore if constraint doesn't exist
+      })
+      
+      // Modify column to allow NULL
+      await db.sequelize.query(`
+        ALTER TABLE users 
+        MODIFY COLUMN storeId CHAR(36) NULL
+      `)
+      
+      // Recreate foreign key constraint
+      await db.sequelize.query(`
+        ALTER TABLE users 
+        ADD CONSTRAINT users_ibfk_1 
+        FOREIGN KEY (storeId) REFERENCES stores(id) 
+        ON UPDATE CASCADE ON DELETE CASCADE
+      `).catch(() => {
+        // Ignore if constraint already exists
+      })
+      
+      console.log('✅ Updated users table to allow null storeId for superadmin')
+    } catch (error) {
+      console.log(`ℹ️  storeId column update: ${error.message}`)
+      // Continue anyway - might already be nullable
+    }
+    
+    // Clear data in correct order (respecting foreign keys)
+    await Return.destroy({ where: {}, force: true })
+    await Order.destroy({ where: {}, force: true })
+    await Customer.destroy({ where: {}, force: true })
+    await Product.destroy({ where: {}, force: true })
+    await User.destroy({ where: {}, force: true })
+    await Setting.destroy({ where: {}, force: true })
+    await Store.destroy({ where: {}, force: true })
+    
+    console.log('✅ All data cleared')
+    
+    console.log('🌱 Generating fresh seed data...')
+    const multiStoreData = generateMultiStoreData()
+    
+    console.log(`📦 Seeding ${multiStoreData.stores.length} stores...`)
+    
+    // Seed stores
+    await Store.bulkCreate(multiStoreData.stores.map(store => ({
+      id: store.id,
+      name: store.name,
+      dashboardName: store.dashboardName,
+      domain: store.domain,
+      category: store.category,
+      defaultCurrency: store.defaultCurrency || 'PKR',
+      country: store.country || 'PK',
+      logoUrl: store.logoUrl || null,
+      brandColor: store.brandColor || '#1976d2',
+      isDemo: store.isDemo || false,
+    })))
+    
+    console.log(`👥 Seeding ${multiStoreData.users.length} users...`)
+    
+    // Seed users
+    await User.bulkCreate(multiStoreData.users.map(user => ({
+      id: user.id,
+      email: user.email,
+      passwordHash: user.passwordHash,
+      name: user.name,
+      role: user.role,
+      storeId: user.storeId,
+      fullName: user.fullName || user.name,
+      phone: user.phone || null,
+      profilePictureUrl: user.profilePictureUrl || null,
+      defaultDateRangeFilter: user.defaultDateRangeFilter || 'last7',
+      notificationPreferences: user.notificationPreferences || {
+        newOrders: true,
+        lowStock: true,
+        returnsPending: true,
+      },
+      permissions: user.permissions || {},
+      active: user.active !== undefined ? user.active : true,
+      passwordChangedAt: new Date(), // Set to current date to skip password change requirement
+      createdAt: user.createdAt || new Date(),
+      updatedAt: user.updatedAt || user.createdAt || new Date(),
+    })))
+    
+    // Create superadmin user (skip if already exists)
+    console.log('👑 Creating superadmin user...')
+    const superAdminExists = await User.findOne({ where: { email: 'superadmin@shopifyadmin.pk' } })
+    if (!superAdminExists) {
+      const superAdminPassword = bcrypt.hashSync('superadmin123', 10)
+      await User.create({
+      email: 'superadmin@shopifyadmin.pk',
+      passwordHash: superAdminPassword,
+      name: 'Super Admin',
+      role: 'superadmin',
+      storeId: null,
+      fullName: 'Super Administrator',
+      phone: '+92-300-0000000',
+      profilePictureUrl: null,
+      defaultDateRangeFilter: 'last7',
+      notificationPreferences: {
+        newOrders: true,
+        lowStock: true,
+        returnsPending: true,
+      },
+      permissions: {
+        viewOrders: true, editOrders: true, deleteOrders: true,
+        viewProducts: true, editProducts: true, deleteProducts: true,
+        viewCustomers: true, editCustomers: true,
+        viewReturns: true, processReturns: true,
+        viewReports: true, manageUsers: true, manageSettings: true,
+      },
+      active: true,
+      passwordChangedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      })
+      console.log('✅ Superadmin user created: superadmin@shopifyadmin.pk / superadmin123')
+    } else {
+      console.log('ℹ️  Superadmin user already exists, skipping creation')
+    }
+    
+    console.log(`📦 Seeding ${multiStoreData.products.length} products...`)
+    
+    // Seed products
+    await Product.bulkCreate(multiStoreData.products.map(product => ({
+      id: product.id,
+      storeId: product.storeId,
+      name: product.name,
+      description: product.description || '',
+      price: product.price || 0,
+      stockQuantity: product.stockQuantity || 0,
+      reorderThreshold: product.reorderThreshold || 10,
+      category: product.category || 'Uncategorized',
+      imageUrl: product.imageUrl || null,
+      status: product.status || 'active',
+      createdAt: product.createdAt || new Date(),
+      updatedAt: product.updatedAt || product.createdAt || new Date(),
+    })))
+    
+    console.log(`👤 Seeding ${multiStoreData.customers.length} customers...`)
+    
+    // Seed customers in batches to avoid packet size limits
+    const BATCH_SIZE = 500
+    const customerData = multiStoreData.customers.map(customer => ({
+      id: customer.id,
+      storeId: customer.storeId,
+      name: customer.name,
+      email: customer.email || null,
+      phone: customer.phone || null,
+      address: customer.address || null,
+      alternativeNames: customer.alternativeNames || [],
+      alternativeEmails: customer.alternativeEmails || [],
+      alternativePhones: customer.alternativePhones || [],
+      alternativeAddresses: customer.alternativeAddresses || [],
+    }))
+    
+    for (let i = 0; i < customerData.length; i += BATCH_SIZE) {
+      const batch = customerData.slice(i, i + BATCH_SIZE)
+      await Customer.bulkCreate(batch)
+      if ((i + BATCH_SIZE) % 1000 === 0 || i + BATCH_SIZE >= customerData.length) {
+        console.log(`   Processed ${Math.min(i + BATCH_SIZE, customerData.length)}/${customerData.length} customers...`)
+      }
+    }
+    
+    console.log(`📋 Seeding ${multiStoreData.orders.length} orders...`)
+    
+    // Seed orders in batches to avoid packet size limits
+    const orderData = multiStoreData.orders.map(order => ({
+      id: order.id,
+      storeId: order.storeId,
+      customerId: order.customerId || null,
+      orderNumber: order.orderNumber || `ORD-${order.id.substring(0, 8).toUpperCase()}`,
+      productName: order.productName,
+      customerName: order.customerName,
+      email: order.email,
+      phone: order.phone || null,
+      quantity: order.quantity || 1,
+      status: order.status || 'Pending',
+      isPaid: order.isPaid !== undefined ? order.isPaid : false,
+      total: order.total || 0,
+      notes: order.notes || null,
+      submittedBy: order.submittedBy || null,
+      timeline: order.timeline || [],
+      items: order.items || [],
+      shippingAddress: order.shippingAddress || null,
+      paymentStatus: order.paymentStatus || (order.isPaid ? 'paid' : 'pending'),
+    }))
+    
+    for (let i = 0; i < orderData.length; i += BATCH_SIZE) {
+      const batch = orderData.slice(i, i + BATCH_SIZE)
+      await Order.bulkCreate(batch)
+      if ((i + BATCH_SIZE) % 1000 === 0 || i + BATCH_SIZE >= orderData.length) {
+        console.log(`   Processed ${Math.min(i + BATCH_SIZE, orderData.length)}/${orderData.length} orders...`)
+      }
+    }
+    
+    console.log(`↩️  Seeding ${multiStoreData.returns.length} returns...`)
+    
+    // Seed returns
+    await Return.bulkCreate(multiStoreData.returns.map(returnItem => ({
+      id: returnItem.id,
+      storeId: returnItem.storeId,
+      orderId: returnItem.orderId,
+      customerId: returnItem.customerId || null,
+      productId: returnItem.productId || null,
+      reason: returnItem.reason,
+      returnedQuantity: returnItem.returnedQuantity || returnItem.quantity || 1,
+      status: returnItem.status || 'Submitted',
+      refundAmount: returnItem.refundAmount || 0,
+      history: returnItem.history || [],
+      dateRequested: returnItem.dateRequested || returnItem.createdAt || new Date().toISOString(),
+      createdAt: returnItem.createdAt || returnItem.dateRequested || new Date().toISOString(),
+      updatedAt: returnItem.updatedAt || returnItem.dateRequested || new Date().toISOString(),
+    })))
+    
+    console.log('⚙️  Seeding settings...')
+    
+    // Seed settings
+    const settings = multiStoreData.stores.map(store => ({
+      id: crypto.randomUUID(),
+      storeId: store.id,
+      logoUrl: store.logoUrl || null,
+      brandColor: store.brandColor || '#1976d2',
+      defaultCurrency: store.defaultCurrency || 'PKR',
+      country: store.country || 'PK',
+      dashboardName: store.dashboardName,
+      defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
+    }))
+    await Setting.bulkCreate(settings)
+    
+    // Print summary
+    const finalStoreCount = await Store.count()
+    const finalUserCount = await User.count()
+    const finalProductCount = await Product.count()
+    const finalCustomerCount = await Customer.count()
+    const finalOrderCount = await Order.count()
+    const finalReturnCount = await Return.count()
+    
+    console.log('\n✅ Database reset and seed completed successfully!')
+    console.log('\n📊 Summary:')
+    console.log(`   Stores: ${finalStoreCount}`)
+    console.log(`   Users: ${finalUserCount}`)
+    console.log(`   Products: ${finalProductCount}`)
+    console.log(`   Customers: ${finalCustomerCount}`)
+    console.log(`   Orders: ${finalOrderCount}`)
+    console.log(`   Returns: ${finalReturnCount}`)
+    
+    // Print login credentials
+    console.log('\n🔐 Login Credentials:')
+    console.log('\n   Superadmin:')
+    console.log('   Email: superadmin@shopifyadmin.pk')
+    console.log('   Password: superadmin123')
+    
+    console.log('\n   Store Admins (for each store):')
+    const stores = await Store.findAll({ order: [['name', 'ASC']] })
+    for (const store of stores) {
+      const adminUser = await User.findOne({ 
+        where: { storeId: store.id, role: 'admin' },
+        attributes: ['email', 'name']
+      })
+      if (adminUser) {
+        console.log(`\n   ${store.name} (${store.domain}):`)
+        console.log(`   Admin Email: ${adminUser.email}`)
+        console.log(`   Admin Password: admin123`)
+        
+        // Find staff users
+        const staffUsers = await User.findAll({
+          where: { storeId: store.id, role: 'staff' },
+          attributes: ['email', 'name'],
+          limit: 3
+        })
+        if (staffUsers.length > 0) {
+          console.log(`   Staff Emails: ${staffUsers.map(u => u.email).join(', ')}`)
+          console.log(`   Staff Password: staff123`)
+        }
+      }
+    }
+    
+    // Demo store credentials
+    const demoStore = await Store.findOne({ where: { isDemo: true } })
+    if (demoStore) {
+      const demoUser = await User.findOne({
+        where: { storeId: demoStore.id },
+        attributes: ['email', 'name']
+      })
+      if (demoUser) {
+        console.log(`\n   Demo Store:`)
+        console.log(`   Email: ${demoUser.email}`)
+        console.log(`   Password: demo123`)
+      }
+    }
+    
+    console.log('\n📝 See STORE_CREDENTIALS_AND_URLS.md for complete credentials list')
+    console.log('\n✨ You can now login with any of the above credentials!\n')
+    
+    process.exit(0)
+  } catch (error) {
+    console.error('❌ Error resetting and seeding database:', error)
+    process.exit(1)
+  }
+}
+
+// Run if called directly
+if (require.main === module) {
+  resetAndSeedDatabase()
+}
+
+module.exports = { resetAndSeedDatabase }
+
