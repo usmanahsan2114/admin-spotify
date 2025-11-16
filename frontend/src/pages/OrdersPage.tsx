@@ -85,9 +85,9 @@ const OrdersPage = () => {
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
-  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
   const [growthComparison, setGrowthComparison] = useState<GrowthComparisonResponse | null>(null)
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
 
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -106,9 +106,11 @@ const OrdersPage = () => {
     try {
       setLoading(true)
       setError(null)
+      const startDate = dateRange.startDate || undefined
+      const endDate = dateRange.endDate || undefined
       const [data, growthData] = await Promise.all([
-        fetchOrders(dateRange.startDate || undefined, dateRange.endDate || undefined),
-        fetchGrowthComparison('month'),
+        fetchOrders(startDate, endDate),
+        fetchGrowthComparison('month', startDate, endDate),
       ])
       setOrders(
         data.map((order) => ({
@@ -145,7 +147,26 @@ const OrdersPage = () => {
 
   const ordersByDay = useMemo(() => {
     const dailyData: Record<string, number> = {}
-    orders.forEach((order) => {
+    // Filter orders by date range if provided
+    let filteredOrders = orders
+    if (dateRange.startDate || dateRange.endDate) {
+      filteredOrders = orders.filter((order) => {
+        if (!order.createdAt) return false
+        const orderDate = new Date(order.createdAt)
+        if (dateRange.startDate) {
+          const start = new Date(dateRange.startDate)
+          start.setHours(0, 0, 0, 0)
+          if (orderDate < start) return false
+        }
+        if (dateRange.endDate) {
+          const end = new Date(dateRange.endDate)
+          end.setHours(23, 59, 59, 999)
+          if (orderDate > end) return false
+        }
+        return true
+      })
+    }
+    filteredOrders.forEach((order) => {
       if (!order.createdAt) return
       const dateKey = dayjs(order.createdAt).format('YYYY-MM-DD')
       dailyData[dateKey] = (dailyData[dateKey] || 0) + 1
@@ -157,12 +178,23 @@ const OrdersPage = () => {
         orders: count,
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
-  }, [orders])
+  }, [orders, dateRange.startDate, dateRange.endDate])
+
+  // Calculate dynamic Y-axis domain for orders chart
+  const ordersByDayDomain = useMemo(() => {
+    if (ordersByDay.length === 0) return [0, 10]
+    const values = ordersByDay.map(d => d.orders || 0)
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const padding = (max - min) * 0.1 || max * 0.1 || 1
+    return [Math.max(0, min - padding), max + padding]
+  }, [ordersByDay])
 
   const filteredOrders = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     let result = orders
 
+    // Apply search query filter
     if (query) {
       result = result.filter((order) => {
         return (
@@ -174,6 +206,7 @@ const OrdersPage = () => {
       })
     }
 
+    // Apply status filter
     if (statusFilter !== 'All') {
       result = result.filter((order) => order.status === statusFilter)
     }
@@ -336,8 +369,12 @@ const OrdersPage = () => {
             </Stack>
           </Stack>
 
+          {/* Date Filter */}
+          <Box mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
+          </Box>
+
           <Stack spacing={2} mt={3}>
-            <DateFilter value={dateRange} onChange={setDateRange} />
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
@@ -392,8 +429,17 @@ const OrdersPage = () => {
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={ordersByDay}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                  <XAxis dataKey="dateLabel" />
-                  <YAxis allowDecimals={false} />
+                  <XAxis 
+                    dataKey="dateLabel"
+                    tick={{ fontSize: isSmall ? 10 : 12 }}
+                    angle={isSmall ? -45 : 0}
+                    textAnchor={isSmall ? 'end' : 'middle'}
+                    height={isSmall ? 60 : 40}
+                  />
+                  <YAxis 
+                    allowDecimals={false}
+                    domain={ordersByDayDomain}
+                  />
                   <RechartsTooltip />
                   <Area
                     type="monotone"
@@ -408,9 +454,6 @@ const OrdersPage = () => {
             {growthComparison && (
               <Typography variant="body2" color="text.secondary" mt={2}>
                 You processed <strong>{orders.length}</strong> orders
-                {dateRange.startDate && dateRange.endDate
-                  ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
-                  : ' in the selected period'}
                 {growthComparison?.change?.ordersPercent !== undefined && growthComparison.change.ordersPercent !== 0 && (
                   <>
                     {' '}
@@ -494,7 +537,7 @@ const OrdersPage = () => {
                     <Typography color="text.secondary" textAlign="center">
                       {loading
                         ? 'Loading orders...'
-                        : searchQuery || statusFilter !== 'All' || dateRange.startDate || dateRange.endDate
+                        : searchQuery || statusFilter !== 'All'
                           ? 'No orders match the current filters.'
                           : 'No orders yet. Submit a test order to get started.'}
                     </Typography>

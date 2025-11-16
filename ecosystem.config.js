@@ -4,11 +4,13 @@ module.exports = {
       name: 'shopify-admin-backend',
       script: './backend/server.js',
       cwd: process.cwd(),
-      instances: 2,
-      exec_mode: 'cluster',
+      // Use single instance for shared hosting (Hostinger)
+      // Change to 2+ instances only if you have VPS/dedicated server
+      instances: process.env.PM2_INSTANCES || 1,
+      exec_mode: process.env.PM2_INSTANCES > 1 ? 'cluster' : 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: process.env.PORT || 5000
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
@@ -20,6 +22,10 @@ module.exports = {
       // Health check for PM2
       health_check_grace_period: 3000,
       health_check_interval: 30000,
+      // Graceful shutdown
+      kill_timeout: 5000,
+      wait_ready: true,
+      listen_timeout: 10000,
     }
   ]
 }

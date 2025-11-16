@@ -1,7 +1,13 @@
 import { apiDownload, apiFetch } from './apiClient'
 import type { Customer, CustomerDetail, CustomerPayload } from '../types/customer'
 
-export const fetchCustomers = () => apiFetch<Customer[]>('/api/customers')
+export const fetchCustomers = (startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  const query = params.toString()
+  return apiFetch<Customer[]>(`/api/customers${query ? `?${query}` : ''}`)
+}
 
 export const createCustomer = (payload: CustomerPayload) =>
   apiFetch<Customer>('/api/customers', {

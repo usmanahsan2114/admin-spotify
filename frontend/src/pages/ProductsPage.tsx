@@ -59,14 +59,14 @@ import dayjs from 'dayjs'
 const canEditProduct = (user: ReturnType<typeof useAuth>['user']) => {
   if (!user) return false
   if (user.role === 'admin') return true
-  if (user.role === 'demo') return false
+  if (user.role === 'superadmin') return true
   return user.permissions?.editProducts !== false
 }
 
 const canDeleteProduct = (user: ReturnType<typeof useAuth>['user']) => {
   if (!user) return false
   if (user.role === 'admin') return true
-  if (user.role === 'demo') return false
+  if (user.role === 'superadmin') return true
   return user.permissions?.deleteProducts !== false
 }
 
@@ -184,7 +184,9 @@ const ProductsPage = () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchProducts()
+      const startDate = dateRange.startDate || undefined
+      const endDate = dateRange.endDate || undefined
+      const data = await fetchProducts(false, startDate, endDate)
       setProducts(data)
       setFilteredProducts(data)
     } catch (err) {
@@ -196,7 +198,7 @@ const ProductsPage = () => {
 
   useEffect(() => {
     loadProducts()
-  }, [])
+  }, [dateRange.startDate, dateRange.endDate])
 
   const handleExport = async () => {
     try {
@@ -283,14 +285,17 @@ const ProductsPage = () => {
     const query = searchQuery.trim().toLowerCase()
     let result = products
 
+    // Apply search query filter
     if (query) {
       result = result.filter(
         (product) =>
           product.name.toLowerCase().includes(query) ||
-          (product.category ?? '').toLowerCase().includes(query),
+          (product.category ?? '').toLowerCase().includes(query) ||
+          (product.description ?? '').toLowerCase().includes(query),
       )
     }
 
+    // Apply low stock filter
     if (showLowStockOnly) {
       result = result.filter((product) => product.lowStock)
     }
@@ -489,6 +494,21 @@ const ProductsPage = () => {
       },
     },
     {
+      field: 'createdAt',
+      headerName: 'Created',
+      flex: 0.8,
+      minWidth: 150,
+      valueGetter: (_value, row: Product) => row.createdAt || null,
+      valueFormatter: ({ value }) => {
+        if (!value) return '—'
+        try {
+          return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value as string))
+        } catch {
+          return '—'
+        }
+      },
+    },
+    {
       field: 'actions',
       headerName: 'Actions',
       sortable: false,
@@ -570,7 +590,7 @@ const ProductsPage = () => {
               >
                 {exporting ? 'Exporting…' : 'Export products'}
               </Button>
-              {user?.role !== 'demo' && (
+              {user && (
                 <Button
                   variant="outlined"
                   startIcon={
@@ -595,8 +615,13 @@ const ProductsPage = () => {
             </Stack>
           </Stack>
 
+          {/* Date Filter */}
+          <Box mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
+          </Box>
+
           <Stack spacing={2} mt={3}>
-            <DateFilter value={dateRange} onChange={setDateRange} />
+
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
@@ -651,11 +676,29 @@ const ProductsPage = () => {
       )}
 
       {products.length > 0 && (() => {
-        const stockTrend = products
+        // Filter products by date range if provided
+        let filteredProductsForTrend = products
+        if (dateRange.startDate || dateRange.endDate) {
+          filteredProductsForTrend = products.filter((p) => {
+            if (!p.createdAt) return false
+            const productDate = new Date(p.createdAt)
+            if (dateRange.startDate) {
+              const start = new Date(dateRange.startDate)
+              start.setHours(0, 0, 0, 0)
+              if (productDate < start) return false
+            }
+            if (dateRange.endDate) {
+              const end = new Date(dateRange.endDate)
+              end.setHours(23, 59, 59, 999)
+              if (productDate > end) return false
+            }
+            return true
+          })
+        }
+
+        const stockTrend = filteredProductsForTrend
           .filter((p) => {
             if (!p.createdAt) return false
-            if (dateRange.startDate && new Date(p.createdAt) < new Date(dateRange.startDate)) return false
-            if (dateRange.endDate && new Date(p.createdAt) > new Date(dateRange.endDate)) return false
             return true
           })
           .reduce((acc, p) => {
@@ -672,7 +715,18 @@ const ProductsPage = () => {
           }))
           .sort((a, b) => a.date.localeCompare(b.date))
 
-        const currentTotal = products.reduce((sum, p) => sum + (p.stockQuantity || 0), 0)
+        // Calculate dynamic Y-axis domain
+        const stockTrendDomain = trendData.length > 0
+          ? (() => {
+              const values = trendData.map(d => d.totalStock || 0)
+              const min = Math.min(...values)
+              const max = Math.max(...values)
+              const padding = (max - min) * 0.1 || max * 0.1 || 1
+              return [Math.max(0, min - padding), max + padding]
+            })()
+          : [0, 100]
+
+        const currentTotal = filteredProductsForTrend.reduce((sum, p) => sum + (p.stockQuantity || 0), 0)
         const previousTotal = currentTotal * 1.08 // Simulated previous period (8% increase)
         const changePercent = previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal * 100).toFixed(1) : '0.0'
 
@@ -687,8 +741,17 @@ const ProductsPage = () => {
                   <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                      <XAxis dataKey="dateLabel" />
-                      <YAxis allowDecimals={false} />
+                      <XAxis 
+                        dataKey="dateLabel"
+                        tick={{ fontSize: isSmall ? 10 : 12 }}
+                        angle={isSmall ? -45 : 0}
+                        textAnchor={isSmall ? 'end' : 'middle'}
+                        height={isSmall ? 60 : 40}
+                      />
+                      <YAxis 
+                        allowDecimals={false}
+                        domain={stockTrendDomain}
+                      />
                       <RechartsTooltip />
                       <Line
                         type="monotone"
@@ -712,9 +775,7 @@ const ProductsPage = () => {
                     increased by {changePercent}%
                   </Typography>
                 )}{' '}
-                {dateRange.startDate && dateRange.endDate
-                  ? `from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
-                  : 'in the selected period'}
+                
                 .
               </Typography>
             </CardContent>

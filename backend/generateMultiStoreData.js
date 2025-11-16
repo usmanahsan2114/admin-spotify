@@ -496,10 +496,10 @@ const randomPakistanAddress = (cityInfo) => {
   return `${streetNum} ${area} ${streetName}, ${cityInfo.city}, ${postalCode}, Pakistan`
 }
 
-// Generate order number
-const generateOrderNumber = (storeIndex, orderIndex) => {
+// Generate order number with unique date from orderDate
+const generateOrderNumber = (storeIndex, orderIndex, orderDate) => {
   const storePrefix = ['TH', 'FF', 'HL', 'FG', 'BE', 'DM'][storeIndex]
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const date = new Date(orderDate).toISOString().slice(0, 10).replace(/-/g, '')
   const orderNum = String(orderIndex + 1).padStart(6, '0')
   return `${storePrefix}-${date}-${orderNum}`
 }
@@ -602,16 +602,15 @@ const generateReturnHistory = (returnDate, status) => {
 
 // Generate comprehensive multi-store data
 const generateMultiStoreData = () => {
-  const now = new Date()
-  // Set to end of today for accurate date calculations
-  now.setHours(23, 59, 59, 999)
+  // Fixed date range: January 1, 2025 to November 15, 2025 (current date)
+  const startDate = new Date('2025-01-01T00:00:00.000Z')
+  const now = new Date('2025-11-15T23:59:59.999Z') // November 15, 2025 - current date
+  const endDate = now // Use November 15, 2025 as end date
   
-  // Calculate date ranges - full year from today
-  const oneYearAgo = new Date(now)
-  oneYearAgo.setFullYear(now.getFullYear() - 1)
-  oneYearAgo.setHours(0, 0, 0, 0) // Start of day one year ago
-  const threeMonthsAgo = new Date(now)
-  threeMonthsAgo.setMonth(now.getMonth() - 3)
+  // Calculate date ranges - from Jan 1, 2025 to November 15, 2025
+  const oneYearAgo = startDate // January 1, 2025
+  // Last 3 months: 90 days ago from November 15, 2025 (approximately August 17, 2025)
+  const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
   threeMonthsAgo.setHours(0, 0, 0, 0)
   
   const stores = []
@@ -621,10 +620,13 @@ const generateMultiStoreData = () => {
   const allOrders = []
   const allReturns = []
   
-  // Generate stores
+    // Generate stores
   storeTemplates.forEach((template, storeIndex) => {
     const storeId = crypto.randomUUID()
-    const storeCreatedAt = template.isDemo ? now.toISOString() : randomDate(oneYearAgo, threeMonthsAgo).toISOString()
+    // Store created dates: spread across early 2025 (Jan-Mar) for non-demo stores
+    const storeCreatedAt = template.isDemo 
+      ? now.toISOString() 
+      : randomDate(new Date('2025-01-01T00:00:00.000Z'), new Date('2025-03-31T23:59:59.999Z')).toISOString()
     const cityInfo = pakistanCities.find(c => c.city === template.city) || pakistanCities[0]
     
     const store = {
@@ -734,7 +736,7 @@ const generateMultiStoreData = () => {
           alternativeEmails: Math.random() > 0.8 ? [randomEmail(name, 'gmail.com')] : [],
           alternativeNames: [],
           alternativeAddresses: altAddress ? [altAddress] : [],
-          createdAt: randomDate(threeMonthsAgo, now).toISOString(),
+          createdAt: randomDate(oneYearAgo, now).toISOString(),
           orderIds: [],
         }
         demoCustomers.push(customer)
@@ -746,7 +748,7 @@ const generateMultiStoreData = () => {
       let orderIndex = 0
       
       for (let i = 0; i < 50; i++) {
-        const orderDate = randomDate(threeMonthsAgo, now)
+        const orderDate = randomDate(oneYearAgo, now)
         const product = demoStoreProducts[Math.floor(Math.random() * demoStoreProducts.length)]
         const customer = demoCustomers[Math.floor(Math.random() * demoCustomers.length)]
         const quantity = Math.floor(Math.random() * 3) + 1
@@ -756,7 +758,7 @@ const generateMultiStoreData = () => {
         const order = {
           id: crypto.randomUUID(),
           storeId: storeId,
-          orderNumber: generateOrderNumber(storeIndex, orderIndex++),
+          orderNumber: generateOrderNumber(storeIndex, orderIndex++, orderDate),
           productName: product.name,
           customerName: customer.name,
           email: customer.email,
@@ -867,8 +869,8 @@ const generateMultiStoreData = () => {
           viewReports: true, manageUsers: false, manageSettings: false,
         },
         // Staff created after store, distributed over time
-        createdAt: randomDate(new Date(store.createdAt), threeMonthsAgo).toISOString(),
-        updatedAt: randomDate(new Date(store.createdAt), threeMonthsAgo).toISOString(),
+        createdAt: randomDate(new Date(store.createdAt), now).toISOString(),
+        updatedAt: randomDate(new Date(store.createdAt), now).toISOString(),
         profilePictureUrl: null,
         fullName: staffFullName,
         phone: randomPakistanPhone(),
@@ -884,45 +886,54 @@ const generateMultiStoreData = () => {
     }
     
     // Generate products for this store (80-120 products with detailed descriptions)
+    // Each store gets unique product variations based on storeIndex
     const productTemplates = productTemplatesByCategory[template.category] || productTemplatesByCategory.Electronics
-    const productCount = Math.floor(Math.random() * 41) + 80 // 80-120 products (increased for comprehensive testing)
+    const productCount = Math.floor(Math.random() * 61) + 100 // 100-160 products (increased from 80-120)
     const storeProducts = []
     
     // Generate variations of templates to reach target count
+    // Use storeIndex to ensure unique variations per store
     const variations = ['Standard', 'Premium', 'Deluxe', 'Pro', 'Plus', 'Elite', 'Classic', 'Modern', 'Vintage', 'Limited Edition']
     const colors = ['Black', 'White', 'Blue', 'Red', 'Green', 'Silver', 'Gold', 'Gray', 'Brown', 'Pink']
     const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL', 'Standard', 'Compact', 'Full Size']
     
     for (let i = 0; i < productCount; i++) {
-      const templateIndex = i % productTemplates.length
+      // Shift template index per store to ensure uniqueness
+      const templateIndex = (i + storeIndex * 10) % productTemplates.length
       const prodTemplate = productTemplates[templateIndex]
       
-      // Create variations by adding prefixes/suffixes
+      // Create variations by adding prefixes/suffixes - unique per store
       let productName = prodTemplate.name
       if (i >= productTemplates.length) {
-        // Add variation after first set of templates
-        const variation = variations[Math.floor(i / productTemplates.length) % variations.length]
-        const color = colors[i % colors.length]
-        const size = sizes[i % sizes.length]
+        // Add variation after first set of templates - use storeIndex for uniqueness
+        const variationIndex = (Math.floor(i / productTemplates.length) + storeIndex) % variations.length
+        const variation = variations[variationIndex]
+        const colorIndex = (i + storeIndex * 5) % colors.length
+        const color = colors[colorIndex]
+        const sizeIndex = (i + storeIndex * 3) % sizes.length
+        const size = sizes[sizeIndex]
         
-        // Add variation based on position
-        if (i % 3 === 0) {
+        // Add variation based on position - different pattern per store
+        const variationType = (i + storeIndex) % 3
+        if (variationType === 0) {
           productName = `${variation} ${prodTemplate.name}`
-        } else if (i % 3 === 1) {
+        } else if (variationType === 1) {
           productName = `${prodTemplate.name} - ${color}`
         } else {
           productName = `${prodTemplate.name} (${size})`
         }
       }
       
-      // Vary price slightly (±10-20%)
-      const priceVariation = 1 + (Math.random() * 0.2 - 0.1) // ±10%
+      // Vary price slightly (±10-20%) - add storeIndex to seed for uniqueness
+      const priceSeed = (Math.random() + storeIndex * 0.1) % 1
+      const priceVariation = 1 + (priceSeed * 0.2 - 0.1) // ±10% with store variation
       const variedPrice = Math.round(prodTemplate.price * priceVariation)
       
-      const baseStock = Math.floor(Math.random() * 150) + 20
+      // Stock quantity varies per store
+      const baseStock = Math.floor(Math.random() * 150) + 20 + (storeIndex * 5)
       const lowStock = baseStock <= prodTemplate.reorderThreshold
-      // Products created between store creation and now
-      const createdAt = randomDate(new Date(store.createdAt), now)
+      // Products created throughout 2025
+      const createdAt = randomDate(oneYearAgo, now)
       const updatedAt = randomDate(createdAt, now)
       
       const product = {
@@ -945,7 +956,7 @@ const generateMultiStoreData = () => {
     }
     
     // Generate customers for this store (300-400 customers with comprehensive data)
-    const customerCount = Math.floor(Math.random() * 401) + 800 // 800-1200 customers (increased for comprehensive testing)
+    const customerCount = Math.floor(Math.random() * 601) + 1000 // 1000-1600 customers (increased from 800-1200)
     const storeCustomers = []
     const customerMap = new Map() // email -> customer
     
@@ -956,10 +967,10 @@ const generateMultiStoreData = () => {
       // Avoid duplicates
       if (customerMap.has(email)) continue
       
-      // Customers created throughout the year, more in recent months
-      const customerCreatedAt = Math.random() > 0.4 
-        ? randomDate(threeMonthsAgo, now) // 60% in last 3 months
-        : randomDate(oneYearAgo, threeMonthsAgo) // 40% earlier
+      // Customers created throughout 2025, more in recent months for better filter results
+      const customerCreatedAt = Math.random() > 0.3 
+        ? randomDate(threeMonthsAgo, now) // 70% in last 3 months (recent activity)
+        : randomDate(oneYearAgo, threeMonthsAgo) // 30% earlier (Jan-Sep 2025)
       
       // Generate alternative contact info (30% chance)
       const hasAltPhone = Math.random() > 0.7
@@ -986,14 +997,19 @@ const generateMultiStoreData = () => {
       allCustomers.push(customer)
     }
     
-    // Generate orders for this store (600-800 orders) - distributed over full year from today
-    const orderCount = Math.floor(Math.random() * 1001) + 1500 // 1500-2500 orders (increased for comprehensive testing)
+    // Generate orders for this store - distributed over full year 2025
+    // Increased to ensure more data per store
+    const orderCount = Math.floor(Math.random() * 1501) + 2000 // 2000-3500 orders (increased from 1500-2500)
     const storeOrders = []
     let orderIndex = 0
     
-    // Distribute orders: 40% in last 3 months, 60% in first 9 months
-    const recentOrders = Math.floor(orderCount * 0.4) // Last 3 months
-    const olderOrders = orderCount - recentOrders // First 9 months
+    // Distribute orders across 2025 with emphasis on recent months for better graph visibility
+    // 30% in October-November 2025 (most recent), 20% in August-September, 50% in earlier months
+    const octNovStart = new Date('2025-10-01T00:00:00.000Z')
+    const augStart = new Date('2025-08-01T00:00:00.000Z')
+    const recentOrders = Math.floor(orderCount * 0.3) // October-November 2025
+    const midRecentOrders = Math.floor(orderCount * 0.2) // August-September 2025
+    const olderOrders = orderCount - recentOrders - midRecentOrders // January-July 2025
     
     // Helper function to create an order
     const createOrder = (orderDate) => {
@@ -1080,7 +1096,7 @@ const generateMultiStoreData = () => {
       const order = {
         id: crypto.randomUUID(),
         storeId: storeId,
-        orderNumber: generateOrderNumber(storeIndex, orderIndex++),
+        orderNumber: generateOrderNumber(storeIndex, orderIndex++, orderDate),
         productName: product.name,
         customerName: customer.name,
         email: customer.email,
@@ -1110,15 +1126,21 @@ const generateMultiStoreData = () => {
       allOrders.push(order)
     }
     
-    // Generate orders for last 3 months (more recent activity)
+    // Generate orders for October-November 2025 (most recent - 30% of orders)
     for (let i = 0; i < recentOrders; i++) {
-      const orderDate = randomDate(threeMonthsAgo, now)
+      const orderDate = randomDate(octNovStart, now)
       createOrder(orderDate)
     }
     
-    // Generate orders for first 9 months (older activity)
+    // Generate orders for August-September 2025 (mid-recent - 20% of orders)
+    for (let i = 0; i < midRecentOrders; i++) {
+      const orderDate = randomDate(augStart, octNovStart)
+      createOrder(orderDate)
+    }
+    
+    // Generate orders for January-July 2025 (older - 50% of orders)
     for (let i = 0; i < olderOrders; i++) {
-      const orderDate = randomDate(oneYearAgo, threeMonthsAgo)
+      const orderDate = randomDate(oneYearAgo, augStart)
       createOrder(orderDate)
     }
     
@@ -1155,18 +1177,31 @@ const generateMultiStoreData = () => {
         status = Math.random() > 0.1 ? 'Refunded' : (Math.random() > 0.5 ? 'Approved' : 'Rejected')
       }
       
-      const customer = customerMap.get(order.email) || storeCustomers.find(c => c.email === order.email)
+      // Ensure customer is found - orders should always have a customer
+      let customer = customerMap.get(order.email) || storeCustomers.find(c => c.email === order.email)
+      
+      // If customer still not found, try to find by customerId from order
+      if (!customer && order.customerId) {
+        customer = storeCustomers.find(c => c.id === order.customerId)
+      }
+      
+      // If still not found, use the first customer as fallback (shouldn't happen, but ensures data integrity)
+      if (!customer && storeCustomers.length > 0) {
+        customer = storeCustomers[0]
+      }
       
       const returnRequest = {
         id: crypto.randomUUID(),
         storeId: storeId,
         orderId: order.id,
-        customerId: customer?.id || null,
+        customerId: customer?.id || order.customerId || null,
         reason: returnReasons[Math.floor(Math.random() * returnReasons.length)],
         returnedQuantity: Math.min(Math.floor(Math.random() * order.quantity) + 1, order.quantity),
         dateRequested: returnDate.toISOString(),
         status,
         history: generateReturnHistory(returnDate, status),
+        createdAt: returnDate.toISOString(),
+        updatedAt: returnDate.toISOString(),
       }
       
       allReturns.push(returnRequest)

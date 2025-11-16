@@ -6,6 +6,10 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 
 **New to the app?** Check out **[USER_GUIDE.md](./USER_GUIDE.md)** for a simple, easy-to-understand explanation of all features, modules, and how to use the app. Perfect for non-technical users!
 
+## 🔧 Code Review & Improvements
+
+**Planning to deploy?** Check out **[IMPROVEMENTS_AND_RECOMMENDATIONS.md](./IMPROVEMENTS_AND_RECOMMENDATIONS.md)** for a comprehensive code review covering security, performance, production readiness, and Hostinger-specific deployment recommendations.
+
 ## Features
 
 - **Multi-Store System**: Support for 6 stores (5 client stores + 1 demo store) with complete data isolation. Each store has its own admin, staff, products, customers, orders, and settings.
@@ -19,7 +23,7 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 - **Growth & Progress Reporting**: Comprehensive growth metrics with KPI cards showing sales, orders, average order value, and return rate with period-over-period growth percentages. Trend charts for sales, orders, and customers over time. Period selector (Last 7 days, This month, This quarter). Downloadable CSV reports. Fully responsive with mobile-optimized charts (area charts on mobile, line charts on desktop). **Store-specific growth metrics** - each store has independent reports.
 - **Time-Based Filtering**: Reusable DateFilter component with quick links (Last 7 days, This month, Last month) and custom date range picker. Available on Dashboard, Orders, Products, and Returns pages. Fully responsive with mobile-first design.
 - **Dark Mode**: Theme toggle with preference persistence via `ThemeModeProvider`.
-- **Public Pages**: Store selection page and store-specific order tracking and test order forms. No authentication required for public pages.
+- **Public Pages**: Only 3 public pages available - Login, Track Order (for customers to track orders without login), and Test Order (for placing orders). Each store has its own URLs (`/store/:storeId/track-order` and `/store/:storeId/test-order`) to differentiate orders and make it easier to manage all customer orders without requiring login.
 - **Dummy Order Form**: `/store/:storeId/test-order` route for marketing-site integration testing (store-specific).
 
 ## Tech Stack
@@ -100,6 +104,7 @@ This launches Vite (`http://localhost:5173`) and Express (`http://localhost:5000
 **Note**: 
 - Ensure MySQL is running before starting the backend
 - Database will auto-seed with 6 stores (5 client stores + 1 demo store) and comprehensive Pakistan-based test data on first run (development mode)
+- Data spans from January 1, 2025 to November 15, 2025 with optimized distribution for graph visibility
 - Ensure frontend is running on `http://localhost:5173/` and backend on `http://localhost:5000/` for proper API communication
 
 ### Login Credentials
@@ -181,8 +186,7 @@ CORS_ORIGIN=https://admin.yourdomain.com,https://techhub.yourdomain.com
 SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id  # Optional: for error tracking
 ```
 
-**See `PRODUCTION_DEPLOYMENT.md` for complete deployment instructions.**
-**See `ROLLBACK_PLAN.md` for rollback procedures.**
+**See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions, database setup, and rollback procedures.**
 
 ## Multi-Store System
 
@@ -236,13 +240,14 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 - Shows user count, order count, product count, customer count per store
 - Superadmin sees all stores; admin users see their own store only
 
-See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for complete login credentials and all application URLs.
+See **[STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md)** for complete login credentials and all application URLs.  
+See **[USER_GUIDE.md](./USER_GUIDE.md)** for comprehensive user guide with login instructions, all pages, features, and troubleshooting.
 
 **Default Currency & Country:** All stores default to **PKR (Pakistani Rupee)** and **Pakistan (PK)**.
 
-## Performance Testing
+## Testing
 
-See **[PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md)** for comprehensive performance, load, and stress testing guide.
+See **[TESTING.md](./TESTING.md)** for comprehensive testing guide covering functional testing, performance testing, security testing, accessibility testing, and deployment testing.
 
 **Quick Performance Checks:**
 - Run database indexes migration: `cd backend && npx sequelize-cli db:migrate`
@@ -256,9 +261,6 @@ See **[PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md)** for comprehensive per
 - Dashboard metrics: <1s (p95)
 - Low stock query: <500ms (p95)
 
-## Accessibility & Cross-Browser Testing
-
-See **[ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md)** for comprehensive accessibility, cross-browser compatibility, and mobile responsiveness testing guide.
 
 **Quick Accessibility Checks:**
 - Run Lighthouse audit: Chrome DevTools → Lighthouse → Accessibility (target: >90)
@@ -294,9 +296,6 @@ See **[ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md)** for comprehensive
 - ✅ No horizontal scrolling on main content
 - ✅ Touch targets are accessible (48x48px minimum)
 
-## Deployment & Production Launch Testing
-
-See **[DEPLOYMENT_LAUNCH_TESTING.md](./DEPLOYMENT_LAUNCH_TESTING.md)** for comprehensive deployment readiness and production launch verification guide.
 
 **Quick Deployment Checks:**
 - Production build: `cd frontend && npm run build` (verify `dist` folder created)
@@ -306,7 +305,7 @@ See **[DEPLOYMENT_LAUNCH_TESTING.md](./DEPLOYMENT_LAUNCH_TESTING.md)** for compr
 - CORS: Verify only production domains allowed
 - Monitoring: Verify Sentry configured, uptime monitoring active
 - Backup: Test backup/restore procedures
-- Rollback: Test rollback procedure documented in `ROLLBACK_PLAN.md`
+- Rollback: Test rollback procedure documented in [DEPLOYMENT.md](./DEPLOYMENT.md)
 
 **Deployment Features:**
 - ✅ Production build optimization (Terser minification, console.log removal, code splitting)
@@ -319,13 +318,8 @@ See **[DEPLOYMENT_LAUNCH_TESTING.md](./DEPLOYMENT_LAUNCH_TESTING.md)** for compr
 - ✅ Rollback procedures (quick rollback, full rollback)
 - ✅ Client onboarding (6 stores configured, credentials prepared)
 
-**See `PRODUCTION_DEPLOYMENT.md` for complete deployment instructions.**
-**See `CLIENT_ACCESS_GUIDE.md` for client onboarding instructions.**
-**See `ROLLBACK_PLAN.md` for rollback procedures.**
+**See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions, client onboarding, and rollback procedures.**
 
-## Security & Compliance Testing
-
-See **[SECURITY_TESTING.md](./SECURITY_TESTING.md)** for comprehensive security and compliance testing guide.
 
 **Quick Security Checks:**
 - Run security scan: `bash backend/scripts/security-scan.sh` (Linux/Mac) or `powershell backend/scripts/security-scan.ps1` (Windows)
@@ -347,11 +341,6 @@ See **[SECURITY_TESTING.md](./SECURITY_TESTING.md)** for comprehensive security 
 - ✅ Error handling (no stack traces in production)
 - ✅ Sensitive data filtering (passwords, tokens excluded from logs/Sentry)
 
-## Testing
-
-### Comprehensive Test Plan
-
-See **[TEST_PLAN.md](./TEST_PLAN.md)** for complete functional and E2E workflow testing documentation.
 
 **Quick Testing Checklist:**
 
@@ -396,12 +385,12 @@ See **[TEST_PLAN.md](./TEST_PLAN.md)** for complete functional and E2E workflow 
    - Verify tables scroll horizontally
    - Test on actual mobile device (recommended)
 
-**See `TEST_PLAN.md` for detailed test cases and expected results.**
+**See [TESTING.md](./TESTING.md) for detailed test cases and expected results.**
 
 ## Project Structure
 
 ```
-backend/      # Express server, in-memory data, JWT auth
+backend/      # Express server, MySQL database, JWT auth
 frontend/     # React app (Vite + TS + MUI)
   src/
     components/layout/
@@ -411,9 +400,13 @@ frontend/     # React app (Vite + TS + MUI)
     services/
     types/
 docs/
-  completeworkflow.md  # Step-by-step build log
-  comments.md          # Implementation notes
-  history.md           # Milestone history
+  DEVELOPMENT.md              # Development workflow, history, implementation notes
+  DEPLOYMENT.md               # Deployment guide, database setup, rollback procedures
+  TESTING.md                  # Testing guide (functional, performance, security, accessibility)
+  USER_GUIDE.md               # User guide with login instructions and all pages
+  STORE_CREDENTIALS_AND_URLS.md  # Complete credentials and URLs reference
+  REGENERATE_DATABASE.md      # Database reset and reseed instructions
+  DOCUMENTATION_SUMMARY.md    # Documentation structure overview
 ```
 
 ## Code Quality & Improvements
@@ -443,7 +436,7 @@ docs/
 - **Fixed Settings page 404 error**: Enhanced error handling in SettingsPage and improved `/api/users/me` endpoint validation. Fixed user ID consistency by using fixed UUIDs for default users to prevent 404 errors after server restarts.
 - **Fixed Settings page 400 errors**: Added missing `/api/users/me` GET and PUT endpoints and `/api/settings/business` GET and PUT endpoints. Fixed validation middleware to properly handle optional/nullable fields (profilePictureUrl, logoUrl) using `optional({ nullable: true, checkFalsy: true })` and custom validation functions.
 - **Fixed dark theme background colors**: Removed hardcoded CSS that conflicted with MUI theme. Added explicit background colors to all pages to ensure consistent dark mode backgrounds, especially on mobile view.
-- **Fixed desktop alignment**: Login/signup pages are now left-aligned on desktop (better UX) while remaining centered on mobile. All dashboard pages remain centered for optimal readability.
+- **Fixed desktop alignment**: Login page is now left-aligned on desktop (better UX) while remaining centered on mobile. All dashboard pages remain centered for optimal readability.
 
 ### ✅ Tier 3 Improvements (Completed)
 - **Retry logic**: Implemented automatic retry mechanism for failed API requests with exponential backoff (3 retries by default)
@@ -452,7 +445,7 @@ docs/
 - **Error tracking**: Basic error logging and request monitoring middleware
 - **Performance**: Added React.memo to GrowthKPI component and enhanced memoization
 
-See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) improvements.
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development workflow, history, and code quality improvements.
 
 ## Production Status
 
@@ -477,7 +470,7 @@ See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) imp
 - ✅ Auto-seeding on server start (development)
 - ✅ CORS security configured
 - ✅ **All API endpoints migrated to Sequelize**:
-  - ✅ Authentication endpoints (login, signup)
+  - ✅ Authentication endpoints (login)
   - ✅ User management endpoints (GET/POST/PUT/DELETE `/api/users`, `/api/users/me`)
   - ✅ Order endpoints (GET/POST/PUT `/api/orders`, `/api/orders/:id`, `/api/orders/search/by-contact`)
   - ✅ Product endpoints (GET/POST/PUT/DELETE `/api/products`, `/api/products/:id`, `/api/products/low-stock`, `/api/products/public`)
@@ -496,8 +489,7 @@ See `IMPROVEMENTS.md` for detailed recommendations including Tier 3 (future) imp
 - ✅ Legacy customer authentication endpoints removed (not part of admin dashboard scope)
 
 **All endpoints now use persistent database storage. Data persists across server restarts.**
-**See `PRODUCTION_MIGRATION_STATUS.md` for detailed migration status.**
-**See `PRODUCTION_DEPLOYMENT.md` for complete deployment guide.**
+**See [DEPLOYMENT.md](./DEPLOYMENT.md) for database migration status and complete deployment guide.**
 
 ## Future Enhancements
 

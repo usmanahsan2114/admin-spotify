@@ -1,4 +1,16 @@
-# Shopify Admin Dashboard - User Guide
+# User Guide
+
+Complete guide for using the Shopify Admin Dashboard, including login instructions, all pages, features, and troubleshooting.
+
+## Table of Contents
+1. [What is This App?](#what-is-this-app)
+2. [Getting Started](#getting-started)
+3. [Login Instructions](#login-instructions)
+4. [All Pages & Features](#all-pages--features)
+5. [Troubleshooting](#troubleshooting)
+6. [Client Access Guide](#client-access-guide)
+
+---
 
 ## What is This App?
 
@@ -11,7 +23,7 @@ A **store management system** that helps you manage your online business in one 
 ## Getting Started
 
 ### Login
-1. Go to `http://localhost:5173/login`
+1. Go to `http://localhost:5173/login` (or your production URL)
 2. Enter your email and password
 3. You'll see the Dashboard with your business overview
 
@@ -22,10 +34,116 @@ A **store management system** that helps you manage your online business in one 
 
 ---
 
-## Main Features
+## Login Instructions
 
-### 🏠 Dashboard (Home Page)
-**Quick overview of your business**
+### Simple Login Process
+
+1. **Go to** `http://localhost:5173/login`
+2. **Enter your email** (e.g., `admin@techhub.pk`)
+3. **Enter your password** (e.g., `admin123`)
+4. **Click "Sign in"** or press Enter
+
+**That's it!** The system automatically detects:
+- Your user type (superadmin/admin/staff/demo)
+- Which store you belong to
+- Your permissions and access level
+
+### Demo Account Quick Access
+
+Click the **"Try Demo Account"** button for instant demo access (no typing needed!)
+
+### Available Login Credentials
+
+**See [STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md) for complete credentials list.**
+
+**Important:** All emails use `.pk` domain (Pakistan), NOT `.com`
+
+**Superadmin Account (Global Access):**
+- Email: `superadmin@shopifyadmin.pk`
+- Password: `superadmin123`
+- Access: Can access ALL stores and manage ALL users
+
+**Store Admin Accounts:**
+- TechHub Electronics: `admin@techhub.pk` / `admin123`
+- Fashion Forward: `admin@fashionforward.pk` / `admin123`
+- Home & Living Store: `admin@homeliving.pk` / `admin123`
+- Fitness Gear Pro: `admin@fitnessgear.pk` / `admin123`
+- Beauty Essentials: `admin@beautyessentials.pk` / `admin123`
+
+**Staff Accounts:**
+- Pattern: `staff1@[store-domain].pk` through `staff12@[store-domain].pk`
+- Password: `staff123`
+
+**Demo Store:**
+- Email: `demo@demo.shopifyadmin.pk`
+- Password: `demo123`
+
+---
+
+## All Pages & Features
+
+### Public Pages (No Login Required)
+
+**Only 3 public pages are available:**
+
+#### Login (`/login`)
+**Purpose:** Admin/Staff/Superadmin authentication to access dashboard
+
+**What you see:**
+- Email and password fields
+- "Sign in" button
+- "Try Demo Account" button for quick demo access
+
+#### Track Order (`/track-order`)
+**Purpose:** For customers who have placed orders to track their order without login
+
+**What you see:**
+- Store selection page to choose a store
+- After selecting a store, navigate to `/store/:storeId/track-order` for order tracking
+
+#### Test Order (`/test-order`)
+**Purpose:** For placing orders for any store
+
+**What you see:**
+- Store selection page to choose a store
+- After selecting a store, navigate to `/store/:storeId/test-order` to place orders
+
+#### Order Tracking (Store-specific) (`/store/:storeId/track-order`)
+**Purpose:** Public order tracking by Order ID, Email, or Phone
+
+**Inputs:**
+- Order ID (text field)
+- Email (text field, optional)
+- Phone (text field, optional)
+- Search type selector (orderId/email/phone)
+
+**Outputs:**
+- Order details: Order ID, Product Name, Customer Name, Email, Phone, Quantity, Status, Total amount, Created date
+- Order timeline/status steps
+- Payment status
+- Multiple orders if found by email/phone
+
+#### Test Order Form (`/store/:storeId/test-order`)
+**Purpose:** Public form to submit test orders
+
+**Inputs:**
+- Product (autocomplete dropdown - required)
+- Customer Name (text - required)
+- Email (email - required)
+- Phone (tel - optional)
+- Address (text - optional)
+- Alternative Phone (tel - optional)
+- Quantity (number - required, min: 1)
+- Notes (textarea - optional)
+
+**Outputs:**
+- Success message with Order ID
+- Submitted order details
+
+### Dashboard Pages (Login Required)
+
+#### Dashboard Home (`/`)
+**Purpose:** Quick overview of your business
 
 **What you see:**
 - **System Status** - Real-time health monitoring (database status, API latency, server uptime, memory usage)
@@ -38,286 +156,304 @@ A **store management system** that helps you manage your online business in one 
 - **New Customers** - New customers in last 7 days
 
 **Charts:**
-- **Orders Over Time** - Daily order trends
+- **Sales Over Time** - Daily order and revenue trends (dual Y-axis)
+- **Period Comparison** - Compare current period to previous period
 - **Orders by Status** - Pie chart showing order status breakdown
-- **Sales & Growth** - Compare this period to previous period
 - **Low Stock Trends** - Track inventory alerts over time
+- **Growth & Progress** - KPI cards showing sales, orders, average order value, return rate with growth percentages
+- **Trend Charts** - Sales, orders, or customers over time
 
-**Date Filter:** Use dropdown to view data for Last 7 days, This month, Last month, or Custom range.
+**Date Filter:** Use dropdown to view data for Today, Yesterday, Last 7 days, This week, This month, Last month, This year, or Custom range.
 
----
+**Superadmin Dashboard:**
+- Shows aggregated statistics across all stores
+- Displays overview of all stores with key metrics
+- Link to manage stores (`/client-stores`)
 
-### 📦 Orders Management
+#### Orders List (`/orders`)
+**Purpose:** View, search, filter, and manage all orders
 
-**View All Orders:**
+**Features:**
 - See every order in a table
 - Click column headers to sort
 - Use pagination (10, 25, or 50 per page)
+- Search by customer name, product name, email, or order ID
+- Filter by status (Pending, Paid, Shipped, Completed, etc.)
+- Filter by date range
+- Click any order row to see full details
+- Change status using dropdown
+- Export orders to CSV
 
-**Search & Filter:**
-- **Search bar** - Find by customer name, product name, email, or order ID
-- **Status filter** - Show only Pending, Paid, Shipped, Completed, etc.
-- **Date filter** - View orders from specific time periods
+**Mobile:** Table scrolls horizontally, search and filters stack vertically
 
-**Manage Orders:**
-- **Click any order row** to see full details
-- **Change status** - Use dropdown: Pending → Paid → Accepted → Shipped → Completed
-- **Edit order** - Update quantity, phone number, payment status, add notes
-- **Order timeline** - See complete history of all changes
+#### Order Details (`/orders/:orderId`)
+**Purpose:** View and edit individual order details
 
-**Why it's useful:** Never lose track of an order. Quickly find orders when customers call. See what needs to be shipped today.
+**What you see:**
+- Complete order information (customer, product, quantity, total, status)
+- Order timeline showing all status changes
+- Payment status and notes
+- Return requests linked to this order
 
----
+**Actions:**
+- Change order status (Pending → Paid → Accepted → Shipped → Completed)
+- Edit order details (quantity, phone number, payment status, add notes)
+- View complete order history
 
-### 🛍️ Products Management
+#### Products (`/products`)
+**Purpose:** Manage product catalog
 
-**View Products:**
-- See all products in a table
+**Features:**
+- View all products in a table
 - Sort by name, price, stock, or category
 - Toggle "Low stock only" to see products needing reorder
-
-**Add Product:**
-1. Click "Add Product"
-2. Fill in: Name, Description, Price, Stock Quantity, Reorder Threshold, Category, Image URL
-3. Set Status: Active (visible) or Inactive (hidden)
-4. Click Save
-
-**Edit Product:**
-- Click any product row to edit
-- Update prices, stock, descriptions, categories
-- Change status to temporarily hide products
+- Search by name or description
+- Filter by date range
+- Add new product (name, description, price, stock, category, image)
+- Edit existing product
+- Delete product (with confirmation)
+- Import products from CSV/Excel file
+- Export product catalog to CSV
 
 **Stock Management:**
-- **Current stock** - See how many you have
-- **Reorder threshold** - Set minimum before you need to order more
+- Current stock - See how many you have
+- Reorder threshold - Set minimum before you need to order more
 - Products below threshold appear in Inventory Alerts
 
-**Import/Export:**
-- Import products from CSV/Excel file
-- Export product catalog for backup
+**Mobile:** Table scrolls horizontally, forms stack vertically
 
-**Why it's useful:** Keep catalog organized. Update prices instantly. Never run out of stock with reorder alerts.
+#### Customers (`/customers`)
+**Purpose:** List and manage all customers (CRM)
 
----
-
-### 👥 Customers Management
-
-**View Customers:**
-- See all customers in a table
-- Shows: Name, Email, Phone, Total Orders, Last Order Date, Total Spent
-- Sort by any column
-
-**Search:**
-- Find customers by name or email
-
-**Customer Details:**
-- Click any customer to see:
-  - Complete profile
-  - All order history (clickable links to orders)
-  - Statistics (total orders, total spent, average order value)
-
-**Add Customer:**
-- Click "Add Customer" to manually create a customer record
-- Useful for walk-in customers or phone orders
-
-**Export:**
-- Download customer list as CSV for email marketing or backup
-
-**Why it's useful:** Build customer relationships. Quickly find customer info when they call. Track your best customers.
-
----
-
-### ⚠️ Inventory Alerts
-
-**What it shows:**
-- Products that have reached or fallen below reorder threshold
-- Your "action needed" list
-
-**For each product:**
-- Current stock quantity
-- Reorder threshold
-- "Mark Ordered" button (click when you've placed supplier order)
-
-**How it works:**
-- Set reorder threshold when adding/editing products
-- System automatically monitors stock
-- Products appear here when stock drops to threshold
-- Update stock quantities when new inventory arrives
-
-**Why it's useful:** Never run out unexpectedly. Get alerts before stock hits zero. Focus only on products needing attention.
-
----
-
-### 🔄 Returns & Refunds
-
-**View Returns:**
-- See all return requests in a table
-- Filter by status: Submitted, Approved, Rejected, Refunded
+**Features:**
+- View all customers in a table
+- Search by name, email, or phone
 - Filter by date range
+- See order count and last order date for each customer
+- Create new customer
+- Edit customer information
+- Click customer row to see detailed view with order history
 
-**Create Return:**
-1. Click "New Return"
-2. Select original order
-3. Enter quantity being returned
-4. Enter reason
-5. Submit
+**Customer Details (`/customers/:customerId`):**
+- Complete customer information
+- All orders placed by this customer
+- Contact information (email, phone, address)
+- Customer since date
 
-**Process Return:**
-- Click any return to see details
-- Update status: Submitted → Approved → Refunded
-- Add notes for internal records
-- Stock automatically increases when approved/refunded
+#### Inventory Alerts (`/inventory-alerts`)
+**Purpose:** View low stock products and alerts
 
-**Why it's useful:** Handle returns professionally. Track return reasons to improve products. Automatic stock updates keep inventory accurate.
+**Features:**
+- See all products with low stock
+- Mark products as "reordered" when you've ordered more
+- Filter by category
+- Sort by stock quantity
+- Click product to edit
 
----
+#### Returns (`/returns`)
+**Purpose:** Manage product returns and refunds
 
-### 👤 User Management (Admin Only)
+**Features:**
+- View all return requests in a table
+- Filter by status (Submitted, Approved, Rejected, Refunded)
+- Filter by date range
+- Search by order ID or customer name
+- Create new return request
+- Approve return (stock automatically updated)
+- Reject return
+- Process refund
+- View return details with complete history
 
-**View Users:**
-- See all team members with access
-- Shows: Name, Email, Role (Admin/Staff), Status (Active/Inactive)
+**Return Details (`/returns/:returnId`):**
+- Complete return information
+- Linked order details
+- Customer information
+- Return history showing all status changes
+- Approve/reject/refund actions
 
-**Add User:**
-1. Click "Add User"
-2. Enter: Name, Email, Role, Password
-3. Set Status: Active or Inactive
-4. Save
+#### Users (`/users`)
+**Purpose:** Manage admin and staff accounts (Admin/Superadmin only)
 
-**Roles:**
-- **Admin** - Full access (can manage users, settings, everything)
-- **Staff** - Limited access (can manage orders/products/customers, cannot manage users or settings)
+**Features:**
+- View all users in a table
+- Create new user (name, email, password, role, permissions)
+- Edit user (name, role, permissions, active status)
+- Delete user (with confirmation)
+- Reset password
+- Toggle active/inactive status
+- Set granular permissions (13 permission types)
 
-**Edit User:**
-- Change name, email, role, password
-- Activate/deactivate accounts
-- Cannot delete primary admin account
+**Permissions:**
+- View/Edit/Delete Orders
+- View/Edit/Delete Products
+- View/Edit Customers
+- View/Process Returns
+- View Reports
+- Manage Users
+- Manage Settings
 
-**Why it's useful:** Build a team. Delegate order processing to staff without giving access to sensitive settings.
+**Superadmin:** Can manage users across all stores
 
----
+#### All Stores (`/client-stores`)
+**Purpose:** View all stores and metrics (Superadmin only)
 
-### ⚙️ Settings
+**Features:**
+- See all stores in a table
+- View metrics per store: revenue, orders, products, customers, users, pending orders, low stock
+- Create new store
+- Edit store information
+- Manage store admin credentials (email, password)
+- View admin email for each store
+
+#### Settings (`/settings`)
+**Purpose:** Configure business settings, logo, currency, country
+
+**Sections:**
 
 **My Profile:**
 - Upload profile picture
-- Update full name and phone
-- Set default date range filter (Last 7 days, This month, etc.)
-- Configure notifications (New Orders, Low Stock, Pending Returns)
+- Update full name
+- Email (read-only)
+- Phone number
+- Default date range filter
+- Notification preferences (new orders, low stock, pending returns)
 
 **Preferences:**
-- **Theme toggle** - Switch between Light and Dark mode
-- Preference is saved automatically
+- Theme toggle (light/dark mode)
+- Theme color selection
 
-**Business Settings (Admin Only):**
-- Upload business logo
+**Business Settings (Admin only):**
+- Upload company logo
 - Set brand color
-- Set default currency (PKR, USD, EUR, etc.)
-- Set country (Pakistan, US, etc.)
-- All changes apply immediately across the app
+- Choose default currency (PKR, USD, EUR, etc.)
+- View default order statuses
 
-**Why it's useful:** Personalize the app. Match your brand. Set preferences that save you time.
+**Mobile:** Tabs collapse into accordions on mobile
 
----
+### Error Pages
 
-## Daily Workflow
+#### 404 Not Found (`/*`)
+**Purpose:** Displays when route doesn't exist
 
-### Morning Routine
-1. **Check Dashboard** - See pending orders, low stock alerts, pending returns
-2. **Review Orders** - Process pending orders, update statuses
-3. **Check Inventory Alerts** - See what needs reordering
-
-### Processing Orders
-1. New orders appear with "Pending" status
-2. Click order to see details
-3. Mark as "Paid" when payment received
-4. Mark as "Accepted" when confirmed
-5. Mark as "Shipped" when sent (add tracking in notes)
-6. Mark as "Completed" when delivered
-
-### Managing Inventory
-1. Check Inventory Alerts page weekly
-2. Click "Mark Ordered" when you place supplier orders
-3. Update stock quantities when new inventory arrives
-4. Products automatically disappear from alerts when above threshold
-
-### Customer Service
-1. Customer calls with question
-2. Go to Customers page
-3. Search by name or email
-4. Click customer to see order history
-5. Answer question using order information
+**What you see:**
+- "Page Not Found" message
+- Link back to dashboard
 
 ---
 
-## Tips & Best Practices
+## Troubleshooting
 
-### Daily Habits
-- Check Dashboard first thing each morning
-- Process orders in batches (morning and afternoon)
-- Update order statuses immediately when shipping
-- Use search bar instead of scrolling through long lists
+### Login Issues
 
-### Weekly Habits
-- Review Inventory Alerts (set a day like Monday)
-- Update stock quantities promptly when inventory arrives
-- Check return requests daily for quick responses
-- Review business performance with date filters
+#### "Invalid email or password" Error
 
-### Setting Reorder Thresholds
-- Base on how fast products sell
-- Consider supplier lead time
-- Example: If product sells 5/week and supplier takes 2 weeks, set threshold to 15-20
+**Status:** ✅ **FIXED** - Email matching now uses exact match instead of pattern matching.
 
-### Using Notes
-- Add tracking numbers when shipping
-- Note special customer requests
-- Document issues or delays
-- Helps if customer calls later or another team member handles order
+**If you still see this error:**
+1. Check backend terminal for seeding messages: `[INIT] Database seeded successfully: X stores, Y users`
+2. Verify database has users: Check backend logs for "Sample users in database"
+3. Ensure you're using correct credentials (`.pk` domain, not `.com`)
+4. Restart backend server to trigger re-seeding if needed
 
----
+#### 401 Unauthorized Error
 
-## Quick Reference
+**Check Backend Terminal:**
+- Look for: `✅ Database connection established`
+- Look for: `✅ Database is empty, seeding initial data...`
+- Look for: `✅ Superadmin user created`
 
-### Order Status Flow
-Pending → Paid → Accepted → Shipped → Completed
+**Verify Credentials:**
+- All emails use `.pk` domain, NOT `.com`
+- Check password is correct (case-sensitive)
+- Verify user exists in database
 
-### Return Status Flow
-Submitted → Approved → Refunded (or Rejected)
+**Reset Database:**
+```bash
+cd backend
+node scripts/reset-and-seed-database.js
+```
 
-### User Roles
-- **Admin** - Can do everything
-- **Staff** - Can manage orders/products/customers, cannot manage users or settings
+### Common Issues
 
-### Date Filters
-- Last 7 days - Recent activity
-- This month - Current month data
-- Last month - Previous month comparison
-- Custom range - Any specific period
+#### Dashboard Shows Zero Values
+- Check date filter - may be filtering to a period with no data
+- Verify database has data: Check backend logs for seeded data counts
+- Reset database if needed: `node backend/scripts/reset-and-seed-database.js`
 
----
+#### Charts Not Loading
+- Check browser console for errors
+- Verify backend is running: `http://localhost:5000/api/health`
+- Check network tab for failed API requests
 
-## Need Help?
+#### Slow Loading Pages
+- Check database connection: `http://localhost:5000/api/health`
+- Verify database indexes are created: `cd backend && npx sequelize-cli db:migrate`
+- Check backend logs for slow queries
 
-- **Can't find something?** Use the search bar
-- **Want to see old data?** Use date filter
-- **Need more details?** Click on any order, product, or customer
-- **Want to undo something?** Most actions can be edited later
-
----
-
-## Summary
-
-This app helps you:
-- ✅ Track every order from start to finish
-- ✅ Manage products and inventory
-- ✅ Build customer relationships
-- ✅ Handle returns professionally
-- ✅ See business performance with charts
-- ✅ Work with a team efficiently
-
-Everything is designed to be **simple, fast, and easy to use** on computer, tablet, or phone.
+#### Date Filters Showing Same Values
+- Ensure database has data spanning different dates
+- Reset database to regenerate data with proper date distribution
+- Check backend logs for date filter queries
 
 ---
 
-*Built with ❤️ by Apex IT Solutions & Apex Marketings*
+## Client Access Guide
+
+### Superadmin Account (Global Access)
+
+**Dashboard Access:**
+- **URL:** `https://admin.yourdomain.com` (production) or `http://localhost:5173` (development)
+- **Email:** `superadmin@shopifyadmin.pk`
+- **Password:** `superadmin123` ⚠️ **MUST CHANGE ON FIRST LOGIN**
+
+**Capabilities:**
+- Can access all stores and manage all users across the platform
+- Can create users for any store
+- Can view all data across all stores
+- Can manage business settings for any store
+- Can create new stores
+- Can edit store information
+- Can manage store admin credentials
+
+### Store Access Information
+
+Each store has:
+- **Admin Account:** Full access to store data and settings
+- **Staff Accounts:** Limited access (8-12 staff accounts per store)
+- **Public Pages:** Order tracking and test order form
+
+**Store Admin Capabilities:**
+- Manage all store data (orders, products, customers, returns)
+- Manage staff users in their store
+- Configure business settings (logo, brand color, currency)
+- View reports and analytics
+
+**Staff Capabilities:**
+- View and edit orders, products, customers
+- Process returns
+- View reports
+- Cannot manage users or change business settings
+
+**Demo Store:**
+- Read-only access
+- Limited permissions
+- Cannot edit or delete data
+- Can view all pages but actions are disabled
+
+### Client Onboarding Checklist
+
+For each store:
+- [ ] Store created in system
+- [ ] Admin user created with credentials
+- [ ] Staff users created (if needed)
+- [ ] Store branding configured (logo, color)
+- [ ] Default currency set (PKR)
+- [ ] Default country set (Pakistan)
+- [ ] Login credentials provided to client
+- [ ] Client can login and access dashboard
+- [ ] Client can manage their store data
+
+---
+
+**Last Updated**: December 2024  
+**Status**: ✅ Complete - Comprehensive user guide covering all features, pages, and troubleshooting.

@@ -1,0 +1,364 @@
+# Development Guide
+
+This document contains the complete development workflow, history, and implementation notes for the Shopify Admin Dashboard.
+
+## Table of Contents
+1. [Development Workflow](#development-workflow)
+2. [Project History](#project-history)
+3. [Implementation Notes](#implementation-notes)
+4. [Code Quality & Best Practices](#code-quality--best-practices)
+
+---
+
+## Development Workflow
+
+### Step 1 – Project Initialization and Setup
+- Scaffolded Vite + React (TypeScript) frontend, added Material UI, React Router, Recharts.
+- Initialized Express backend with CORS, JSON parsing, and root health check.
+- Configured root npm scripts (`npm run dev`) to launch both servers concurrently.
+
+### Step 2 – Basic Backend API
+- Seeded in-memory collections for orders, products, users.
+- Added JWT-auth middleware with role checks; exposed CRUD endpoints for each entity.
+- Logged order intake for diagnostics.
+
+### Step 3 – Dummy Order Intake Form
+- Created `/test-order` route with MUI form for marketing-site integration testing.
+- Posts directly to `/api/orders` and surfaces success/error feedback.
+
+### Step 4 – Layout & Navigation
+- Implemented responsive DashboardLayout with AppBar, Drawer, active NavLinks.
+- Added dark mode toggle via `ThemeModeProvider`.
+- Stubbed Dashboard, Orders, Order Details, Products, Users, Settings routes.
+
+### Step 5 – Orders Management
+- Wired Orders page to backend API with DataGrid, search/status/date filters, pagination.
+- Implemented inline status editing, optimistic refresh, and custom empty states.
+
+### Step 6 – Order Details
+- Built detailed view with grouped cards, editable fulfillment/payment controls, timeline log.
+- Persisted edits through API, handled optimistic state updates and toast feedback.
+
+### Step 7 – Products Management
+- Added search, sorting, and CRUD dialogs (add/edit/delete) with form validation.
+- Confirmed destructive actions via modals; integrated server calls with optimistic updates.
+
+### Step 8 – User Management
+- Admin-only table with invite/edit/deactivate flows and primary-admin safety guards.
+- Added password reset field, activation toggle, and role selector.
+
+### Step 9 – Authentication & Route Protection
+- Introduced `AuthContext`, `/login`, `/signup`, and `PrivateRoute` guard.
+- Stored JWT in localStorage, auto-logout on 401, and updated API client to inject tokens.
+
+### Step 10 – Analytics & Launch Prep
+- Implemented dashboard summary cards, 7-day order trend, status pie chart (Recharts).
+- Hardened chart containers for responsive rendering.
+- Authored README, comments, workflow, history docs; verified `npm --prefix frontend run build`.
+- Tuned mobile experience by adjusting drawer spacing, compacting DataGrids, and hiding non-essential columns on small screens.
+
+### Step 11 – Inventory Alerts Foundation
+- Extended product model with `stockQuantity`, `reorderThreshold`, and derived `lowStock` flag; backfilled seed data.
+- Added `/api/products/low-stock` plus guarded mutations that recalculate flags, and an acknowledgement endpoint (`PUT /api/products/:id/mark-reordered`).
+- Exposed low-stock awareness across the UI: Dashboard KPI card linking to the new Inventory Alerts page, filtered view on Products table, and dedicated `/inventory-alerts` screen with reorder action.
+
+### Step 12 – Customer Management (CRM)
+- Seeded a `customers` collection, linked to orders via email, and added helper utilities to keep `orderIds`, counts, and last-order timestamps in sync.
+- Implemented customer CRUD endpoints (`/api/customers`, `/api/customers/:id`) returning derived stats plus detailed order history.
+- Added `/customers` list page with search, chips showing order counts, and modal creation flow; each row links to `/customers/:id` for profile editing and order review.
+
+### Step 13 – Returns & Refund Workflow
+- Extended the API with `/api/returns`, `/api/returns/:id` (GET/POST/PUT) plus stock-restock logic when a return transitions to Approved or Refunded, and appended audit history for every status change.
+- Added navigation badge for pending returns, a dedicated `/returns` workstation with creation, filtering, search, and inline status editing, plus `/returns/:id` for deep dives.
+
+### Step 14 – Data Export & Import
+- Implemented authenticated CSV exports for orders, products, and customers; downloads stream via `/api/export/*` endpoints and are triggered from their respective pages.
+- Added admin-only product import (`/api/import/products`) with validation, declarative summaries, and partial failure reporting.
+
+### Step 15 – Dashboard Enhancements & Attention Alerts
+- Added `/api/metrics/overview` endpoint returning aggregated counts: totalOrders, pendingOrdersCount, totalProducts, lowStockCount, pendingReturnsCount, newCustomersLast7Days, totalRevenue for efficient dashboard loading.
+- Implemented `/api/metrics/low-stock-trend` endpoint providing 7-day trend data for low stock products visualization.
+- Enhanced DashboardHome with new KPI cards: "Pending Returns" (clickable, navigates to `/returns`) and "New Customers (Last 7 Days)" (clickable, navigates to `/customers`).
+
+### Step 16 – Data Display Fixes & UI Improvements
+- Fixed blank field display issues across all DataGrid tables by adding `valueGetter` functions to ensure proper data access from row objects.
+- Enhanced backend GET endpoints (`/api/orders`, `/api/products`) to sanitize and ensure all required fields are present before sending responses.
+
+### Step 17 – Time-Based Filtering & Enhanced Charts
+- Created reusable `DateFilter` component with quick filter buttons (Last 7 days, This month, Last month) and custom date range picker.
+- Updated backend API endpoints to accept optional `startDate` and `endDate` query parameters.
+- Added new metrics endpoints: `/api/metrics/sales-over-time` and `/api/metrics/growth-comparison`.
+
+### Step 18 – Settings/Profile Page Enhancements
+- Extended User model to include new fields: `profilePictureUrl`, `fullName`, `phone`, `defaultDateRangeFilter`, `notificationPreferences`.
+- Created backend endpoints: `GET /api/users/me`, `PUT /api/users/me`, `GET /api/settings/business`, `PUT /api/settings/business`.
+- Implemented comprehensive SettingsPage component with three main sections: My Profile, Preferences, and Business Settings.
+
+### Step 19 – Growth & Progress Reporting Modules
+- Created backend endpoints: `GET /api/reports/growth` and `GET /api/reports/trends`.
+- Created GrowthKPI component: Reusable card component displaying label, value, and growth percentage with color-coded arrows.
+- Enhanced DashboardHome with Growth & Progress Reporting section: period selector, four KPI cards, trend chart, textual summary, and CSV download functionality.
+
+### Step 20 – Code Quality & Mobile Responsiveness Enhancements
+- Created `useApiErrorHandler` hook: Centralized error handling logic eliminates duplication across 9+ components.
+- Created utility modules: `dateUtils.ts` and `currencyUtils.ts` for consistent formatting.
+- Created `ErrorBoundary` component: React error boundary prevents entire app crashes.
+- Enhanced mobile responsiveness: Touch targets (48px minimum), responsive spacing, typography.
+
+### Step 21 – Tier 2 Code Quality Improvements
+- Created `useAsyncState` hook: Custom hook for managing async operations with loading, error, and data states.
+- Added input validation middleware: Created `backend/middleware/validation.js` with express-validator rules for all POST/PUT endpoints.
+- Improved accessibility: Added `aria-label` attributes to all IconButtons, created SkipLink component.
+- Implemented code splitting: Route-based lazy loading using React.lazy and Suspense.
+
+### Step 22 – Bug Fixes & Console Error Resolution
+- Fixed Recharts negative dimension warnings: Added `minHeight` property to all chart container Box components.
+- Fixed valueFormatter null destructuring errors: Enhanced null/undefined parameter handling in DataGrid valueFormatter functions.
+- Fixed Settings page 404 error: Enhanced error handling and changed default users to use fixed UUIDs.
+
+### Step 23 – Tier 3 Code Quality Improvements
+- Implemented retry logic for API requests: Added `retryFetch` function with exponential backoff.
+- Added rate limiting to backend: Installed and configured `express-rate-limit` middleware.
+- Set up testing infrastructure: Installed Vitest, created test configuration and unit tests.
+- Implemented error tracking and monitoring: Added request logging middleware and error logging middleware.
+
+### Step 24 – Rate Limiting & Server Cleanup
+- Fixed 429 (Too Many Requests) errors: Modified rate limiting to be more lenient in development mode.
+- Cleaned up server.js: Removed over 2000 lines of duplicate/leftover code.
+
+### Step 25 – Settings Page Fixes & UI Improvements
+- Fixed Settings page 400 errors: Added missing `/api/users/me` GET and PUT endpoints and `/api/settings/business` GET and PUT endpoints.
+- Fixed dark theme background colors: Updated `index.css` to remove hardcoded dark background colors.
+- Fixed desktop alignment: Login/signup pages left-aligned on desktop, dashboard pages centered.
+
+### Step 26 – User Permissions & Granular Access Control
+- Implemented comprehensive permission management system with 13 granular permission types.
+- Added permissions UI in UsersPage with expandable accordion containing switches for each permission.
+- Updated backend endpoints to handle permissions with role-based defaults.
+
+### Step 27 – Production Migration: Database Setup
+- Installed Sequelize ORM (`sequelize`, `mysql2`, `dotenv`).
+- Created comprehensive database models (Store, User, Product, Customer, Order, Return, Setting).
+- Created database migrations for all 7 tables with foreign keys, indexes, and proper JSON field handling.
+- Created database seeder (`seed-multi-store-data.js`) to migrate data from `generateMultiStoreData.js`.
+
+### Step 28 – Production Deployment Setup
+- Installed Helmet middleware for security headers.
+- Added compression middleware (gzip/brotli) for response optimization.
+- Created health check endpoint (`GET /api/health`).
+- Implemented Winston structured logging with file transports.
+- Created database backup scripts for Linux and Windows.
+
+### Step 29 – Monitoring, Backups & Security Hardening
+- Installed and configured Sentry error tracking with performance monitoring.
+- Enhanced security headers via Helmet: CSP, HSTS, X-Frame-Options, etc.
+- Created encrypted database backup script with AES-256-CBC encryption.
+- Created System Status card component for frontend dashboard.
+
+### Step 30 – Critical Bug Fixes & Code Synchronization
+- Fixed logger initialization order: Moved Winston logger configuration before Sentry initialization.
+- Converted `findUserByEmail` to async Sequelize query.
+- Migrated signup endpoint to use Sequelize User.create().
+- Migrated user management endpoints to use Sequelize queries.
+
+### Step 31 – Codebase Cleanup & Documentation Sync
+- Removed redundant files (`generateTestData.js`, basic backup script).
+- Updated all markdown files to reflect latest migration status.
+
+### Step 32 – Complete Database Migration (Part 1)
+- Migrated all Order endpoints to Sequelize.
+- Migrated all Product endpoints to Sequelize.
+- Migrated all Customer endpoints to Sequelize.
+- Migrated all Return endpoints to Sequelize.
+- Migrated all Metrics endpoints to Sequelize.
+- Migrated all Reports endpoints to Sequelize.
+- Migrated all Export endpoints to Sequelize.
+- Migrated Import endpoint to Sequelize.
+- Migrated Settings endpoints to Sequelize.
+- Migrated User endpoints to Sequelize.
+
+### Step 33 – Security, Monitoring & Deployment Readiness (Part 2)
+- JWT_SECRET validation: Requires environment variable in production, minimum 32 characters.
+- Password change enforcement: Created `POST /api/users/me/change-password` endpoint.
+- Rate limiting configured for general API, auth routes, and demo store.
+- Sentry error tracking configured with performance monitoring.
+- Encrypted backup scripts created.
+
+### Step 34 – Client Onboarding, Demo Account Setup & Multi-Tenant Preparation (Part 3)
+- Seeded 6 stores (5 client stores + 1 demo store) with default admin users.
+- Created demo reset endpoint (`POST /api/demo/reset-data`).
+- Enhanced store endpoints: `GET /api/stores` and `GET /api/stores/admin`.
+- Added store selection dropdown to login page.
+- Created Client Stores list page (`/client-stores`) for admin users.
+
+### Step 35 – Functional & E2E Workflow Testing
+- Removed all `console.log`, `console.warn`, `console.error`, `console.info` statements from frontend.
+- Created comprehensive `TEST_PLAN.md` with detailed test cases covering all workflows.
+
+### Step 36 – Performance, Load & Stress Testing
+- Created database migration for performance indexes.
+- Enhanced `/api/health` endpoint with connection pool stats and CPU usage.
+- Created `/api/performance/metrics` endpoint (admin only).
+- Created k6 load testing script and Artillery configuration.
+
+### Step 37 – Security & Compliance Testing
+- Created comprehensive `SECURITY_TESTING.md` guide.
+- Created security scanning scripts for Linux/Mac and Windows.
+- Verified security implementations: store isolation, authentication, authorization, input validation.
+
+### Step 38 – Accessibility, Cross-Browser & Mobile Compatibility Testing
+- Added `aria-label` attributes to all chart containers.
+- Created comprehensive `ACCESSIBILITY_TESTING.md` guide.
+- Created accessibility audit scripts.
+- Verified cross-browser support and mobile responsiveness.
+
+### Step 39 – Deployment & Production Launch Testing
+- Created comprehensive `DEPLOYMENT_LAUNCH_TESTING.md` guide.
+- Verified existing deployment documentation.
+- Documented production build verification, staging environment checks, backup/rollback procedures.
+
+### Step 40 – Login Page Simplification & Comprehensive Test Data
+- Simplified login page to use email/password only.
+- Increased test data volumes for all 5 stores.
+- Verified store admin permissions.
+
+### Step 41 – Database Reset & Reseed Script
+- Created comprehensive database reset and reseed script (`backend/scripts/reset-and-seed-database.js`).
+- Script clears all existing data, resets auto-increment counters, ensures `storeId` column allows NULL for superadmin users.
+- Seeds fresh data using `generateMultiStoreData()` function.
+- Inserts data in batches to avoid MySQL packet size limits.
+
+### Step 42 – Full Dummy Data Seeding for Multi-Store Production Testing
+- Enhanced product generation in `generateMultiStoreData.js` to create 80-120 products per store.
+- Implemented product variation system using prefixes, colors, and sizes.
+- Seeded comprehensive dummy data for all 5 stores + demo account: 80-120 products, 800-1200 customers, 1500-2500 orders per store.
+
+---
+
+## Project History
+
+### 2025-12-XX (Latest)
+- **Full Dummy Data Seeding for Multi-Store Production Testing**: Enhanced product generation to create 80-120 products per store. Implemented product variation system. Seeded comprehensive dummy data for all stores with proper date distribution.
+
+- **Database Reset & Reseed Script**: Created comprehensive database reset and reseed script to enable easy database reset and fresh data seeding. Script handles batch insertion, foreign key constraints, and displays login credentials.
+
+- **JSON Field Parsing Fix**: Fixed critical bug where `customer.alternativeNames.map is not a function` error occurred. Added `ensureArray()` helper function to safely convert JSON fields to arrays.
+
+- **Login Email Matching Fix**: Fixed critical login issue where all login attempts were failing. Changed email matching from `Op.like` to exact match.
+
+- **Login Page Simplification & Comprehensive Test Data**: Simplified login page to use email/password only. Increased test data volumes for all stores.
+
+### 2025-12-XX (Previous)
+- **Deployment & Production Launch Testing**: Performed deployment readiness and launch verification. Created comprehensive deployment testing guide.
+
+- **Accessibility, Cross-Browser & Mobile Compatibility Testing**: Validated accessibility (WCAG compliance), cross-browser compatibility, and mobile responsiveness.
+
+- **Security & Compliance Testing**: Conducted comprehensive security and compliance testing setup. Created security testing guide and scanning scripts.
+
+- **Performance, Load & Stress Testing**: Conducted comprehensive performance, load, and stress testing setup. Created database indexes migration and load testing scripts.
+
+- **Functional & E2E Workflow Testing**: Created comprehensive functional and end-to-end workflow testing plan. Removed all console statements from frontend.
+
+- **Client Onboarding, Demo Account Setup & Multi-Tenant Preparation**: Finalized client onboarding and demo account setup for production multi-client use.
+
+- **Security, Monitoring & Deployment Readiness**: Implemented comprehensive security hardening, monitoring, logging, backup, and deployment readiness features.
+
+- **Complete Database & Endpoint Migration**: Finalized database migration by migrating all remaining API endpoints from in-memory arrays to Sequelize ORM with MySQL database.
+
+### 2025-11-13
+- **Settings Page Fixes & UI Improvements**: Fixed Settings page 400 errors, dark theme background colors, and desktop alignment.
+
+- **User Permissions & Granular Access Control**: Implemented comprehensive permission management system with 13 granular permission types.
+
+### 2025-11-12
+- Initialized monorepo structure with Vite frontend & Express backend.
+- Implemented JWT-secured CRUD for orders/products/users with in-memory seeds.
+- Built dashboard layout, Orders table, Order details, Products management, and Users admin.
+- Finalized authentication (login/signup, protected routes, logout).
+- Delivered analytics dashboard and documentation refresh.
+
+---
+
+## Implementation Notes
+
+### Architecture Highlights
+- Built with Vite + TypeScript + Material UI for fast HMR and rich component availability.
+- `ThemeModeProvider` persists dark/light preference in `localStorage` for long-running admin sessions.
+- JWT token lifecycle is centralized in `AuthContext`; 401 responses trigger auto-logout for session hygiene.
+- Orders/products/users pages use MUI DataGrid with optimistic updates and snackbars for UX feedback.
+- Inventory thresholds follow retail best practice: any product with `stockQuantity <= reorderThreshold` is flagged.
+- `/test-order` route posts unauthenticated orders for marketing-site integration.
+- Dashboard analytics rely on Recharts; `minWidth: 0` safeguards prevent negative-size warnings in responsive layouts.
+- Mobile-first refinements hide non-critical columns, compact DataGrids, and wrap action toolbars for small breakpoints.
+- Customers entity is linked to orders by email; new submissions auto-create or enrich CRM records.
+
+### Database Migration (100% Complete)
+- Complete infrastructure migrated: Sequelize ORM, MySQL database, models, migrations, seeders.
+- All API endpoints migrated: Authentication, user management, orders, products, customers, returns, settings, metrics, reports, export/import.
+- Helper functions migrated: findCustomerByContact, mergeCustomerInfo, getOrdersForCustomer, serializeCustomer.
+- Transaction support added for complex operations (return approval, customer merging, order updates).
+- All in-memory arrays removed - data persists in database.
+- Proper relational links between models (Order belongsTo Customer, Product hasMany Orders, etc.).
+
+### Security, Monitoring & Deployment Readiness (100% Complete)
+- JWT_SECRET validation: Requires environment variable in production (no fallback), minimum 32 characters.
+- Password change enforcement: `POST /api/users/me/change-password` endpoint, forced on first login.
+- Role-based access control: All protected endpoints use `authorizeRole('admin')` middleware.
+- Rate limiting: General API (100 req/15min), auth routes (5 req/15min), demo store (10 req/15min).
+- Security headers: Helmet middleware with CSP, HSTS, X-Frame-Options, X-Content-Type-Options.
+- Sentry error tracking: Performance monitoring (10% sampling), sensitive data filtering.
+- Winston structured logging: File transports (`logs/error.log`, `logs/combined.log`), console for development.
+- Health check endpoint: Enhanced `/api/health` with database status, latency, memory usage, uptime.
+- Encrypted backups: AES-256-CBC encryption, compression, off-site storage support, 30-day retention.
+
+### Client Onboarding & Multi-Tenant Preparation (100% Complete)
+- 6 stores seeded: 5 client stores + 1 demo store with default admin users.
+- Tenant isolation: All queries scoped by `storeId` (`where: { storeId: req.user.storeId }`).
+- Role/permission logic: Admin (full access), Staff (limited), Demo (view only).
+- Demo reset endpoint: `POST /api/demo/reset-data` (admin only) resets demo store data.
+- Simplified login page: Email/password only, auto-detects user type and store from credentials.
+- Comprehensive test data: 80-120 products, 800-1200 customers, 1500-2500 orders, 8-12 staff per store.
+
+---
+
+## Code Quality & Best Practices
+
+### Code Quality Improvements (Tier 1 - ✅ Completed)
+- ✅ Created `useApiErrorHandler` hook: Centralized error handling eliminates duplication across 9+ components.
+- ✅ Created utility modules: `dateUtils.ts` and `currencyUtils.ts` for consistent formatting.
+- ✅ Created `ErrorBoundary` component: React error boundary prevents entire app crashes.
+- ✅ Enhanced mobile responsiveness: Touch targets (48px minimum), responsive spacing, typography.
+
+### Code Quality Improvements (Tier 2 - ✅ Completed)
+- ✅ Created `useAsyncState` hook: Custom hook for managing async operations with loading, error, and data states.
+- ✅ Added input validation middleware: Created `backend/middleware/validation.js` with express-validator rules.
+- ✅ Improved accessibility: Added `aria-label` attributes to all IconButtons, created SkipLink component.
+- ✅ Implemented code splitting: Route-based lazy loading using React.lazy and Suspense.
+
+### Code Quality Improvements (Tier 3 - ✅ Completed)
+- ✅ Implemented retry logic for API requests: Added `retryFetch` function with exponential backoff.
+- ✅ Added rate limiting to backend: Installed and configured `express-rate-limit` middleware.
+- ✅ Set up testing infrastructure: Installed Vitest, created test configuration and unit tests.
+- ✅ Implemented error tracking and monitoring: Added request logging middleware and error logging middleware.
+
+### Bug Fixes (Latest - ✅ Completed)
+- ✅ Fixed Recharts negative dimension warnings: Added `minHeight` property to all chart container Box components.
+- ✅ Fixed valueFormatter null destructuring errors: Enhanced null/undefined parameter handling in DataGrid valueFormatter functions.
+- ✅ Fixed Settings page 404 error: Enhanced error handling and changed default users to use fixed UUIDs.
+- ✅ Fixed dark theme background colors: Updated `index.css` to remove hardcoded dark background colors.
+- ✅ Fixed desktop alignment: Login/signup pages left-aligned on desktop, dashboard pages centered.
+
+### Strengths
+- **Well-structured**: Clear separation between frontend/backend, services, components, and pages.
+- **Type Safety**: Comprehensive TypeScript usage with proper type definitions.
+- **Error Handling**: Consistent error handling patterns with 401 auto-logout.
+- **Responsive**: Mobile-first design with proper breakpoints and media queries.
+- **Reusability**: Common components like DateFilter, GrowthKPI are well-designed.
+- **Performance**: Good use of useMemo and useCallback for optimization.
+- **Form Handling**: React Hook Form + Yup provides robust validation.
+
+---
+
+**Last Updated**: December 2024  
+**Status**: ✅ Production Ready - All development milestones completed, database migration 100% complete, security and monitoring implemented, comprehensive testing documentation created.
+

@@ -46,6 +46,7 @@ import {
 } from '../services/usersService'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../services/apiClient'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 type FormValues = {
   name: string
@@ -214,6 +215,7 @@ const currentAdminEmail =
 
 const UsersPage = () => {
   const [users, setUsers] = useState<User[]>([])
+  const [stores, setStores] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -221,6 +223,7 @@ const UsersPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
   const { user, logout } = useAuth()
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
@@ -258,20 +261,28 @@ const UsersPage = () => {
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    if (!query) return users
-    return users.filter(
-      (user) =>
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query) ||
-        user.role.toLowerCase().includes(query),
-    )
+    let result = users
+
+    // Apply search query filter
+    if (query) {
+      result = result.filter(
+        (user) =>
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query) ||
+          user.role.toLowerCase().includes(query),
+      )
+    }
+
+    return result
   }, [users, searchQuery])
 
   const loadUsers = async () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchUsers()
+      const startDate = dateRange.startDate || undefined
+      const endDate = dateRange.endDate || undefined
+      const data = await fetchUsers(startDate, endDate)
       setUsers(data)
     } catch (err) {
       setError(resolveError(err, 'Failed to load users.'))
@@ -284,7 +295,7 @@ const UsersPage = () => {
     if (isAdmin) {
       loadUsers()
     }
-  }, [isAdmin])
+  }, [isAdmin, dateRange.startDate, dateRange.endDate])
 
   useEffect(() => {
     const loadStores = async () => {
@@ -566,16 +577,31 @@ const UsersPage = () => {
             </Stack>
           </Stack>
 
-          <TextField
-            sx={{ mt: 3 }}
-            placeholder="Search by name, email, or role"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
-            }}
-            fullWidth
-          />
+          {/* Date Filter */}
+          <Box mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
+          </Box>
+
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            mt={3}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+            sx={{ width: '100%' }}
+          >
+
+            <TextField
+              placeholder="Search by name, email, or role"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon color="disabled" sx={{ mr: 1 }} />,
+              }}
+              fullWidth
+              autoComplete="off"
+              aria-label="Search users"
+            />
+          </Stack>
         </CardContent>
       </Card>
 

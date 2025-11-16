@@ -113,6 +113,8 @@ async function resetAndSeedDatabase() {
       permissions: user.permissions || {},
       active: user.active !== undefined ? user.active : true,
       passwordChangedAt: new Date(), // Set to current date to skip password change requirement
+      createdAt: user.createdAt || new Date(),
+      updatedAt: user.updatedAt || user.createdAt || new Date(),
     })))
     
     // Create superadmin user (skip if already exists)
@@ -144,6 +146,8 @@ async function resetAndSeedDatabase() {
       },
       active: true,
       passwordChangedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
       })
       console.log('✅ Superadmin user created: superadmin@shopifyadmin.pk / superadmin123')
     } else {
@@ -164,6 +168,8 @@ async function resetAndSeedDatabase() {
       category: product.category || 'Uncategorized',
       imageUrl: product.imageUrl || null,
       status: product.status || 'active',
+      createdAt: product.createdAt || new Date(),
+      updatedAt: product.updatedAt || product.createdAt || new Date(),
     })))
     
     console.log(`👤 Seeding ${multiStoreData.customers.length} customers...`)
@@ -237,7 +243,9 @@ async function resetAndSeedDatabase() {
       status: returnItem.status || 'Submitted',
       refundAmount: returnItem.refundAmount || 0,
       history: returnItem.history || [],
-      dateRequested: returnItem.dateRequested || returnItem.createdAt || new Date(),
+      dateRequested: returnItem.dateRequested || returnItem.createdAt || new Date().toISOString(),
+      createdAt: returnItem.createdAt || returnItem.dateRequested || new Date().toISOString(),
+      updatedAt: returnItem.updatedAt || returnItem.dateRequested || new Date().toISOString(),
     })))
     
     console.log('⚙️  Seeding settings...')

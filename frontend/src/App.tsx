@@ -23,7 +23,7 @@ const ClientStoresPage = lazy(() => import('./pages/ClientStoresPage').then((m) 
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then((m) => ({ default: m.default })))
 const ChangePasswordPage = lazy(() => import('./pages/auth/ChangePasswordPage').then((m) => ({ default: m.default })))
 const NotFoundPage = lazy(() => import('./pages/auth/NotFoundPage').then((m) => ({ default: m.default })))
-const SignupPage = lazy(() => import('./pages/auth/SignupPage').then((m) => ({ default: m.default })))
+// Signup page is hidden - not imported
 const OrderTrackingPage = lazy(() => import('./pages/public/OrderTrackingPage').then((m) => ({ default: m.default })))
 const StoreSelectionPage = lazy(() => import('./pages/public/StoreSelectionPage').then((m) => ({ default: m.default })))
 
@@ -88,7 +88,7 @@ const App = () => (
             </Suspense>
           }
         />
-        {/* Legacy routes (redirect to store selection) */}
+        {/* Public routes - Track Order (for customers to track their orders without login) */}
         <Route
           path="/track-order"
           element={
@@ -97,6 +97,7 @@ const App = () => (
             </Suspense>
           }
         />
+        {/* Public routes - Test Order (for placing orders for any store) */}
         <Route
           path="/test-order"
           element={
@@ -105,6 +106,7 @@ const App = () => (
             </Suspense>
           }
         />
+        {/* Public routes - Login */}
         <Route
           path="/login"
           element={
@@ -113,11 +115,12 @@ const App = () => (
             </Suspense>
           }
         />
+        {/* Signup page is hidden - redirect to 404 */}
         <Route
           path="/signup"
           element={
             <Suspense fallback={<LoadingFallback />}>
-              <SignupPage />
+              <NotFoundPage />
             </Suspense>
           }
         />

@@ -28,6 +28,7 @@ import {
   markProductReordered,
 } from '../services/productsService'
 import { useAuth } from '../context/AuthContext'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 const InventoryAlertsPage = () => {
   const [products, setProducts] = useState<Product[]>([])
@@ -36,6 +37,7 @@ const InventoryAlertsPage = () => {
   const [success, setSuccess] = useState<string | null>(null)
   const { logout } = useAuth()
   const [reorderingId, setReorderingId] = useState<string | null>(null)
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const lowStockRowBg = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.18 : 0.12)
@@ -53,8 +55,29 @@ const InventoryAlertsPage = () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchLowStockProducts()
-      setProducts(data)
+      // Fetch low stock products and filter by date if provided
+      const startDate = dateRange.startDate || undefined
+      const endDate = dateRange.endDate || undefined
+      const lowStockData = await fetchLowStockProducts()
+      // Filter low stock products by date range if dates are provided
+      const filteredLowStock = startDate || endDate
+        ? lowStockData.filter((p) => {
+            if (!p.createdAt) return false
+            const created = new Date(p.createdAt)
+            if (startDate) {
+              const start = new Date(startDate)
+              start.setHours(0, 0, 0, 0)
+              if (created < start) return false
+            }
+            if (endDate) {
+              const end = new Date(endDate)
+              end.setHours(23, 59, 59, 999)
+              if (created > end) return false
+            }
+            return true
+          })
+        : lowStockData
+      setProducts(filteredLowStock)
     } catch (err) {
       setError(resolveError(err, 'Unable to load inventory alerts.'))
     } finally {
@@ -64,7 +87,7 @@ const InventoryAlertsPage = () => {
 
   useEffect(() => {
     loadAlerts()
-  }, [])
+  }, [dateRange.startDate, dateRange.endDate])
 
   const handleMarkReordered = async (productId: string) => {
     try {
@@ -161,6 +184,11 @@ const InventoryAlertsPage = () => {
               </Tooltip>
             </Stack>
           </Stack>
+
+          {/* Date Filter */}
+          <Box mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
+          </Box>
         </CardContent>
       </Card>
 

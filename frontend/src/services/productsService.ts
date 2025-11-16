@@ -1,8 +1,13 @@
 import { apiDownload, apiFetch } from './apiClient'
 import type { Product, ProductPayload } from '../types/product'
 
-export const fetchProducts = (skipAuth = false) => 
-  apiFetch<Product[]>(skipAuth ? '/api/products/public' : '/api/products', { skipAuth })
+export const fetchProducts = (skipAuth = false, startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  const query = params.toString()
+  return apiFetch<Product[]>(`${skipAuth ? '/api/products/public' : '/api/products'}${query ? `?${query}` : ''}`, { skipAuth })
+}
 
 export const fetchLowStockProducts = () =>
   apiFetch<Product[]>('/api/products/low-stock')

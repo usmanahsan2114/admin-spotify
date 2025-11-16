@@ -37,6 +37,7 @@ import type { Customer, CustomerPayload } from '../types/customer'
 import { saveAs } from 'file-saver'
 import { createCustomer, fetchCustomers, downloadCustomersExport } from '../services/customersService'
 import { useAuth } from '../context/AuthContext'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 type FormValues = {
   name: string
@@ -88,6 +89,7 @@ const CustomersPage = () => {
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const { logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
@@ -121,7 +123,9 @@ const CustomersPage = () => {
     try {
       setLoading(true)
       setError(null)
-      const data = await fetchCustomers()
+      const startDate = dateRange.startDate || undefined
+      const endDate = dateRange.endDate || undefined
+      const data = await fetchCustomers(startDate, endDate)
       setCustomers(data)
       setFiltered(data)
     } catch (err) {
@@ -133,7 +137,7 @@ const CustomersPage = () => {
 
   useEffect(() => {
     loadCustomers()
-  }, [])
+  }, [dateRange.startDate, dateRange.endDate])
 
   const handleExport = async () => {
     try {
@@ -152,17 +156,19 @@ const CustomersPage = () => {
 
   useEffect(() => {
     const query = searchQuery.trim().toLowerCase()
-    if (!query) {
-      setFiltered(customers)
-      return
-    }
-    setFiltered(
-      customers.filter(
+    let result = customers
+
+    // Apply search query filter
+    if (query) {
+      result = result.filter(
         (customer) =>
           customer.name.toLowerCase().includes(query) ||
-          customer.email.toLowerCase().includes(query),
-      ),
-    )
+          customer.email.toLowerCase().includes(query) ||
+          customer.phone?.toLowerCase().includes(query),
+      )
+    }
+
+    setFiltered(result)
   }, [searchQuery, customers])
 
   const handleOpenDialog = () => {
@@ -311,6 +317,11 @@ const CustomersPage = () => {
               </Button>
             </Stack>
           </Stack>
+
+          {/* Date Filter */}
+          <Box mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
+          </Box>
 
           <Stack
             direction={{ xs: 'column', md: 'row' }}

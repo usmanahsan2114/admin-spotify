@@ -8,8 +8,12 @@ import type {
   UpdateBusinessSettingsPayload,
 } from '../types/user'
 
-export const fetchUsers = async () => {
-  return apiFetch<User[]>('/api/users')
+export const fetchUsers = async (startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  const query = params.toString()
+  return apiFetch<User[]>(`/api/users${query ? `?${query}` : ''}`)
 }
 
 export const createUser = async (payload: CreateUserPayload) => {

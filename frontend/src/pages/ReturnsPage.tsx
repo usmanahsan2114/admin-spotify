@@ -41,9 +41,8 @@ import type { ReturnRequest, ReturnStatus } from '../types/return'
 import { createReturnRequest, fetchReturns, updateReturnRequest } from '../services/returnsService'
 import { fetchOrders } from '../services/ordersService'
 import type { Order } from '../types/order'
-import DateFilter, { type DateRange } from '../components/common/DateFilter'
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'
-import dayjs from 'dayjs'
+import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 const RETURN_STATUSES: ReturnStatus[] = ['Submitted', 'Approved', 'Rejected', 'Refunded']
 
@@ -133,9 +132,11 @@ const ReturnsPage = () => {
     try {
       setLoading(true)
       setError(null)
+      const startDate = dateRange.startDate || undefined
+      const endDate = dateRange.endDate || undefined
       const [returnsResponse, ordersResponse] = await Promise.all([
-        fetchReturns(dateRange.startDate || undefined, dateRange.endDate || undefined),
-        fetchOrders(),
+        fetchReturns(startDate, endDate),
+        fetchOrders(startDate, endDate),
       ])
       setReturns(returnsResponse)
       setOrders(ordersResponse)
@@ -152,7 +153,29 @@ const ReturnsPage = () => {
 
   const filteredReturns = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
-    return returns.filter((returnRequest) => {
+    let result = returns
+
+    // Apply date filter first
+    if (dateRange.startDate || dateRange.endDate) {
+      result = result.filter((returnRequest) => {
+        if (!returnRequest.dateRequested) return false
+        const returnDate = new Date(returnRequest.dateRequested)
+        if (dateRange.startDate) {
+          const start = new Date(dateRange.startDate)
+          start.setHours(0, 0, 0, 0)
+          if (returnDate < start) return false
+        }
+        if (dateRange.endDate) {
+          const end = new Date(dateRange.endDate)
+          end.setHours(23, 59, 59, 999)
+          if (returnDate > end) return false
+        }
+        return true
+      })
+    }
+
+    // Apply search query and status filters
+    return result.filter((returnRequest) => {
       if (!returnRequest) return false
       const matchesStatus =
         statusFilter === 'All' || returnRequest.status === statusFilter
@@ -376,8 +399,12 @@ const ReturnsPage = () => {
             </Stack>
           </Stack>
 
+          {/* Date Filter */}
+          <Box mt={3}>
+            <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
+          </Box>
+
           <Stack spacing={2} mt={3}>
-            <DateFilter value={dateRange} onChange={setDateRange} />
             <Stack
               direction={{ xs: 'column', md: 'row' }}
               spacing={2}
@@ -432,8 +459,8 @@ const ReturnsPage = () => {
         </Alert>
       )}
 
-      {returns.length > 0 && (() => {
-        const statusCounts = returns.reduce((acc, r) => {
+      {filteredReturns.length > 0 && (() => {
+        const statusCounts = filteredReturns.reduce((acc, r) => {
           const status = r.status || 'Submitted'
           acc[status] = (acc[status] || 0) + 1
           return acc
@@ -445,7 +472,7 @@ const ReturnsPage = () => {
         }))
 
         const pendingCount = statusCounts['Submitted'] || 0
-        const totalCount = returns.length
+        const totalCount = filteredReturns.length
         const pendingPercent = totalCount > 0 ? ((pendingCount / totalCount) * 100).toFixed(0) : '0'
 
         const PIE_COLORS_MAP: Record<string, string> = {
@@ -484,9 +511,7 @@ const ReturnsPage = () => {
               )}
               <Typography variant="body2" color="text.secondary">
                 You received <strong>{totalCount}</strong> return request{totalCount !== 1 ? 's' : ''}
-                {dateRange.startDate && dateRange.endDate
-                  ? ` from ${dayjs(dateRange.startDate).format('MMM D')} to ${dayjs(dateRange.endDate).format('MMM D, YYYY')}`
-                  : ' in the selected period'}
+                
                 , of which <strong>{pendingCount}</strong> ({pendingPercent}%) {pendingCount === 1 ? 'is' : 'are'} still pending.
               </Typography>
             </CardContent>

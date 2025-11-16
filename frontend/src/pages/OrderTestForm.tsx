@@ -229,6 +229,7 @@ const OrderTestForm = () => {
         phone: trimmedPhone || '',
         quantity: parsedQuantity,
         notes: formData.notes.trim(),
+        ...(storeId ? { storeId } : {}), // Include storeId from URL if available
       }
 
       const headers: Record<string, string> = {

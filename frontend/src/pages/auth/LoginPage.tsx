@@ -197,17 +197,6 @@ const LoginPage = () => {
                 </Alert>
               )}
 
-              <Typography variant="caption" color="text.secondary" textAlign="center">
-                New here?{' '}
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => navigate('/signup')}
-                  sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
-                >
-                  Create an account
-                </Button>
-              </Typography>
             </Stack>
           </CardContent>
         </Card>

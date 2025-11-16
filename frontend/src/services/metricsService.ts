@@ -78,8 +78,12 @@ export const fetchSalesOverTime = (startDate?: string, endDate?: string) => {
   return apiFetch<SalesOverTimeResponse>(`/api/metrics/sales-over-time${query ? `?${query}` : ''}`)
 }
 
-export const fetchGrowthComparison = (period: 'week' | 'month' = 'month') => {
-  return apiFetch<GrowthComparisonResponse>(`/api/metrics/growth-comparison?period=${period}`)
+export const fetchGrowthComparison = (period: 'week' | 'month' = 'month', startDate?: string, endDate?: string) => {
+  const params = new URLSearchParams()
+  params.append('period', period)
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
+  return apiFetch<GrowthComparisonResponse>(`/api/metrics/growth-comparison?${params.toString()}`)
 }
 
 export type GrowthReportResponse = {
@@ -112,10 +116,12 @@ export type TrendReportResponse = {
   endDate: string
 }
 
-export const fetchGrowthReport = (period: 'week' | 'month' | 'quarter' = 'month', compareToPrevious: boolean = true) => {
+export const fetchGrowthReport = (period: 'week' | 'month' | 'quarter' = 'month', compareToPrevious: boolean = true, startDate?: string, endDate?: string) => {
   const params = new URLSearchParams()
   params.append('period', period)
   if (!compareToPrevious) params.append('compareToPrevious', 'false')
+  if (startDate) params.append('startDate', startDate)
+  if (endDate) params.append('endDate', endDate)
   return apiFetch<GrowthReportResponse>(`/api/reports/growth?${params.toString()}`)
 }
 

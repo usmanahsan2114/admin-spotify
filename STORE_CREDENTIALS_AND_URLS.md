@@ -50,15 +50,19 @@
 
 ### Public Pages (No Login Required)
 
+**Only 3 public pages are available:**
+
 | URL | Purpose |
 |-----|---------|
-| `http://localhost:5173/` | **Store Selection Page** - Choose a store to track orders or submit test orders |
-| `http://localhost:5173/track-order` | Redirects to store selection page |
-| `http://localhost:5173/test-order` | Redirects to store selection page |
-| `http://localhost:5173/store/:storeId/track-order` | **Order Tracking Page** - Search orders by Order ID, Email, or Phone (store-specific) |
-| `http://localhost:5173/store/:storeId/test-order` | **Test Order Form** - Submit test orders for a specific store (store-specific) |
-| `http://localhost:5173/login` | **Login Page** - Admin/Staff/Superadmin authentication |
-| `http://localhost:5173/signup` | **Signup Page** - Create new admin/staff accounts |
+| `http://localhost:5173/login` | **Login Page** - Admin/Staff/Superadmin authentication to access dashboard |
+| `http://localhost:5173/track-order` | **Track Order** - For customers who have placed orders to track their order without login. Shows store selection page to choose a store. |
+| `http://localhost:5173/test-order` | **Test Order** - For placing orders for any store. Shows store selection page to choose a store. |
+| `http://localhost:5173/store/:storeId/track-order` | **Order Tracking Page (Store-specific)** - Search orders by Order ID, Email, or Phone for a specific store |
+| `http://localhost:5173/store/:storeId/test-order` | **Test Order Form (Store-specific)** - Submit test orders for a specific store |
+
+**Note:** 
+- Each store has its own URLs (`/store/:storeId/track-order` and `/store/:storeId/test-order`) to differentiate orders and make it easier to manage all customer orders without requiring login.
+- Signup page is hidden and not accessible.
 
 ### Dashboard Pages (Login Required)
 
@@ -126,15 +130,18 @@
 
 ---
 
-## 📊 Data Per Store
+## 📊 Data Per Store (Updated November 15, 2025)
 
 Each store contains:
-- **800-1200 customers** with comprehensive Pakistan-based data
-- **1500-2500 orders** distributed over the full year from today (40% in last 3 months, 60% in first 9 months)
-- **80-120 products** specific to the store's category with detailed descriptions
+- **1000-1600 customers** (increased from 800-1200) with comprehensive Pakistan-based data
+- **2000-3500 orders** (increased from 1500-2500) distributed from January 1, 2025 to November 15, 2025:
+  - **30% of orders** in October-November 2025 (most recent for graph visibility)
+  - **20% of orders** in August-September 2025
+  - **50% of orders** in January-July 2025
+- **100-160 products** (increased from 80-120) specific to the store's category with detailed descriptions
 - **Returns** (~8% of orders, automatically scaled)
 - **1 admin account** + **8-12 staff accounts**
-- **All dates are relative to today** - orders span exactly one year from today
+- **Current date reference:** November 15, 2025 (all data generation uses this as "today")
 
 ---
 
@@ -164,6 +171,11 @@ When deployed to production on Hostinger, URLs will be:
 
 ---
 
-**Last Updated:** December 2024
+**Last Updated:** November 15, 2025
 
 **Status:** ✅ Fully migrated to MySQL database. Ready for production deployment.
+
+**Recent Updates:**
+- Database regenerated with November 15, 2025 as current date reference
+- Order distribution optimized for graph visibility (30% Oct-Nov, 20% Aug-Sep, 50% Jan-Jul)
+- Data volumes increased: customers (1000-1600), orders (2000-3500), products (100-160) per store

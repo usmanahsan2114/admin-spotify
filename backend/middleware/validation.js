@@ -27,13 +27,29 @@ const validateLogin = [
 ]
 
 /**
+ * Password complexity validation
+ */
+const validatePasswordComplexity = (value) => {
+  if (!value) return false
+  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
+  const hasMinLength = value.length >= 8
+  const hasUpperCase = /[A-Z]/.test(value)
+  const hasLowerCase = /[a-z]/.test(value)
+  const hasNumber = /[0-9]/.test(value)
+  
+  return hasMinLength && hasUpperCase && hasLowerCase && hasNumber
+}
+
+/**
  * Validation rules for signup
  */
 const validateSignup = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .custom(validatePasswordComplexity)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('role').optional().isIn(['admin', 'staff']).withMessage('Role must be admin or staff'),
   handleValidationErrors,
@@ -130,8 +146,10 @@ const validateUser = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password')
     .optional()
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .custom(validatePasswordComplexity)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('role').isIn(['admin', 'staff', 'superadmin']).withMessage('Role must be admin, staff, or superadmin'),
   handleValidationErrors,
@@ -247,8 +265,10 @@ const validateStoreAdminCredentials = [
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password')
     .optional()
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters'),
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .custom(validatePasswordComplexity)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   body('name').optional().trim().notEmpty().withMessage('Name is required if provided'),
   handleValidationErrors,
 ]
