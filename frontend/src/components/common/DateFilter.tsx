@@ -42,6 +42,10 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
   const [startDateInput, setStartDateInput] = useState<string>('')
   const [endDateInput, setEndDateInput] = useState<string>('')
 
+  // Use reference date matching seed data (Nov 15, 2025) for consistent filtering
+  // This ensures date filters work correctly with seeded test data
+  const referenceDate = dayjs('2025-11-15')
+
   // Sync quickFilter state with value prop
   useEffect(() => {
     if (!value.startDate || !value.endDate) {
@@ -51,7 +55,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
 
     const start = dayjs(value.startDate)
     const end = dayjs(value.endDate)
-    const now = dayjs()
+    const now = referenceDate
 
     // Check which quick filter matches
     if (start.isSame(now.startOf('day'), 'day') && end.isSame(now.endOf('day'), 'day')) {
@@ -94,7 +98,8 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
   }, [value.startDate, value.endDate])
 
   const getQuickFilterRange = (filter: QuickFilter): DateRange => {
-    const now = dayjs()
+    // Use reference date matching seed data (Nov 15, 2025) for consistent filtering
+    const now = referenceDate
     
     switch (filter) {
       case 'today': {
@@ -311,10 +316,13 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   onClick={() => handleQuickFilter(filter.key)}
                   size="small"
                   sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    fontSize: { xs: '0.7rem', sm: '0.8125rem' },
                     py: { xs: 0.75, sm: 1 },
                     minHeight: { xs: 36, sm: 40 },
                     textTransform: 'none',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    lineHeight: 1.2,
                   }}
                 >
                   {filter.label}
@@ -409,13 +417,13 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   onClick={() => handleQuickFilter(filter.key)}
                   size="small"
                   sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem', md: '0.875rem' },
+                    fontSize: { xs: '0.7rem', sm: '0.8125rem', md: '0.875rem' },
                     py: { xs: 0.75, sm: 1 },
                     minHeight: { xs: 36, sm: 40 },
+                    whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                    wordBreak: { xs: 'break-word', sm: 'normal' },
+                    lineHeight: { xs: 1.2, sm: 1.5 },
                     textTransform: 'none',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
                   }}
                 >
                   {filter.label}

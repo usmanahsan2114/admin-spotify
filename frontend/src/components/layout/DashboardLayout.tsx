@@ -144,11 +144,11 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
 
   const navItems = useMemo(
     () => {
-      // Superadmin only sees: Dashboard, All Stores, Settings
+      // Superadmin only sees: Dashboard, Stores (credentials management), Settings
       if (user?.role === 'superadmin') {
         return [
           { label: 'Dashboard', to: '/', icon: <DashboardIcon /> },
-          { label: 'All Stores', to: '/client-stores', icon: <StoreIcon /> },
+          { label: 'Stores', to: '/stores', icon: <StoreIcon /> },
           { label: 'Settings', to: '/settings', icon: <SettingsIcon /> },
         ]
       }
@@ -348,16 +348,31 @@ const DashboardLayout = () => {
               sx={{
                 fontSize: { xs: '1rem', sm: '1.25rem' },
                 display: { xs: 'none', sm: 'block' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: { sm: '200px', md: '300px', lg: '400px' },
               }}
             >
-              {settings?.dashboardName ? `${settings.dashboardName} Dashboard` : 'Shopify Admin Dashboard'}
+              {(() => {
+                const dashboardName = settings?.dashboardName || 'Shopify Admin Dashboard'
+                // If dashboardName already contains "Dashboard", don't duplicate it
+                if (dashboardName.toLowerCase().includes('dashboard')) {
+                  return dashboardName
+                }
+                return `${dashboardName} Dashboard`
+              })()}
             </Typography>
             <Typography
               variant="h6"
               fontWeight={600}
               sx={{
-                fontSize: '1rem',
+                fontSize: '0.875rem',
                 display: { xs: 'block', sm: 'none' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '120px',
               }}
             >
               {settings?.dashboardName?.split(' ')[0] || 'Dashboard'}
@@ -379,18 +394,67 @@ const DashboardLayout = () => {
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
               </IconButton>
             </Tooltip>
-            <Avatar
-              sx={{
-                bgcolor: 'primary.main',
-                width: { xs: 32, sm: 36 },
-                height: { xs: 32, sm: 36 },
-                fontSize: { xs: '0.875rem', sm: '1rem' },
-              }}
-              src={user?.profilePictureUrl || undefined}
-              alt={user?.fullName || user?.name || user?.email || 'User'}
-            >
-              {user?.fullName?.[0] || user?.name?.[0] || user?.email?.[0] || 'U'}
-            </Avatar>
+            {/* Store Name and Logo */}
+            {settings?.dashboardName && (
+              <Box 
+                display="flex" 
+                alignItems="center" 
+                gap={0.75}
+                sx={{ 
+                  maxWidth: { xs: '120px', sm: '200px', md: '300px' },
+                  minWidth: 0,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '0.9375rem' },
+                    display: { xs: 'none', md: 'block' },
+                  }}
+                >
+                  {settings.dashboardName}
+                </Typography>
+                <Tooltip title={settings.dashboardName} arrow>
+                  <Avatar
+                    sx={{
+                      width: { xs: 32, sm: 36 },
+                      height: { xs: 32, sm: 36 },
+                      fontSize: { xs: '0.875rem', sm: '1rem' },
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                    }}
+                    src={
+                      settings?.logoUrl || 
+                      (settings?.dashboardName 
+                        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(settings.dashboardName)}&size=128&background=0d8abc&color=fff&bold=true`
+                        : undefined)
+                    }
+                    alt={settings?.dashboardName || 'Store'}
+                  >
+                    {settings?.dashboardName?.[0]?.toUpperCase() || 'S'}
+                  </Avatar>
+                </Tooltip>
+              </Box>
+            )}
+            {/* User Avatar - Show for superadmin or when no store settings */}
+            {(!settings?.dashboardName || user?.role === 'superadmin') && (
+              <Avatar
+                sx={{
+                  bgcolor: 'primary.main',
+                  width: { xs: 32, sm: 36 },
+                  height: { xs: 32, sm: 36 },
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                }}
+                src={user?.profilePictureUrl || undefined}
+                alt={user?.fullName || user?.name || user?.email || 'User'}
+              >
+                {user?.fullName?.[0] || user?.name?.[0] || user?.email?.[0] || 'U'}
+              </Avatar>
+            )}
             <Tooltip title="Log out">
               <IconButton
                 color="inherit"

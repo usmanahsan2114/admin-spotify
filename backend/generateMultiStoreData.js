@@ -602,16 +602,17 @@ const generateReturnHistory = (returnDate, status) => {
 
 // Generate comprehensive multi-store data
 const generateMultiStoreData = () => {
-  // Fixed date range: January 1, 2025 to November 15, 2025 (current date)
+  // Regular stores: January 1, 2025 to November 30, 2025
+  // Demo store: January 1, 2025 to December 31, 2026 (extended for future visibility)
   const startDate = new Date('2025-01-01T00:00:00.000Z')
-  const now = new Date('2025-11-15T23:59:59.999Z') // November 15, 2025 - current date
-  const endDate = now // Use November 15, 2025 as end date
+  const regularStoreEndDate = new Date('2025-11-30T23:59:59.999Z') // November 30, 2025 (Nov has 30 days)
+  const demoStoreEndDate = new Date('2026-12-31T23:59:59.999Z') // December 31, 2026 for demo store
   
-  // Calculate date ranges - from Jan 1, 2025 to November 15, 2025
+  // Calculate date ranges - from Jan 1, 2025 to respective end dates
   const oneYearAgo = startDate // January 1, 2025
-  // Last 3 months: 90 days ago from November 15, 2025 (approximately August 17, 2025)
-  const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
-  threeMonthsAgo.setHours(0, 0, 0, 0)
+  // Last 3 months calculation for regular stores (approximately September 1, 2025)
+  const threeMonthsAgoRegular = new Date(regularStoreEndDate.getTime() - 90 * 24 * 60 * 60 * 1000)
+  threeMonthsAgoRegular.setHours(0, 0, 0, 0)
   
   const stores = []
   const allUsers = []
@@ -625,9 +626,16 @@ const generateMultiStoreData = () => {
     const storeId = crypto.randomUUID()
     // Store created dates: spread across early 2025 (Jan-Mar) for non-demo stores
     const storeCreatedAt = template.isDemo 
-      ? now.toISOString() 
+      ? new Date('2025-01-01T00:00:00.000Z').toISOString() 
       : randomDate(new Date('2025-01-01T00:00:00.000Z'), new Date('2025-03-31T23:59:59.999Z')).toISOString()
     const cityInfo = pakistanCities.find(c => c.city === template.city) || pakistanCities[0]
+    
+    // Use appropriate end date based on store type
+    const storeEndDate = template.isDemo ? demoStoreEndDate : regularStoreEndDate
+    const storeThreeMonthsAgo = template.isDemo 
+      ? new Date(demoStoreEndDate.getTime() - 90 * 24 * 60 * 60 * 1000)
+      : threeMonthsAgoRegular
+    storeThreeMonthsAgo.setHours(0, 0, 0, 0)
     
     const store = {
       id: storeId,
@@ -644,9 +652,9 @@ const generateMultiStoreData = () => {
     }
     stores.push(store)
     
-    // Demo store gets comprehensive data
+    // Demo store gets comprehensive data till Dec 31, 2026
     if (template.isDemo) {
-      // Demo store: 1 admin user, 10 products, 25 customers, 50 orders, 5 returns
+      // Demo store: Extensive data till Dec 31, 2026 - 1 admin, 150+ products, 500+ customers, 2000+ orders, 100+ returns
       const demoAdminPassword = bcrypt.hashSync('demo123', 10)
       const demoAdmin = {
         id: crypto.randomUUID(),
@@ -682,48 +690,91 @@ const generateMultiStoreData = () => {
       }
       allUsers.push(demoAdmin)
       
-      // Demo products (10 products with detailed info)
-      const demoProducts = [
-        { name: 'Demo Product 1', price: 2500, reorderThreshold: 5, description: 'Demo product for testing purposes with detailed description.' },
-        { name: 'Demo Product 2', price: 4500, reorderThreshold: 5, description: 'Another demo product with comprehensive details for testing.' },
-        { name: 'Demo Product 3', price: 1800, reorderThreshold: 5, description: 'Test product with full specifications and features.' },
-        { name: 'Demo Product 4', price: 3500, reorderThreshold: 5, description: 'Sample product for demonstration and testing scenarios.' },
-        { name: 'Demo Product 5', price: 5500, reorderThreshold: 5, description: 'Premium demo product with advanced features and details.' },
-        { name: 'Demo Product 6', price: 1200, reorderThreshold: 5, description: 'Basic demo product for testing various functionalities.' },
-        { name: 'Demo Product 7', price: 2800, reorderThreshold: 5, description: 'Standard demo product with complete information.' },
-        { name: 'Demo Product 8', price: 4200, reorderThreshold: 5, description: 'Feature-rich demo product for comprehensive testing.' },
-        { name: 'Demo Product 9', price: 3200, reorderThreshold: 5, description: 'Quality demo product with detailed specifications.' },
-        { name: 'Demo Product 10', price: 4800, reorderThreshold: 5, description: 'Advanced demo product for testing all features.' },
+      // Demo products - Generate 150+ products with all fields populated
+      const demoProductTemplates = [
+        { name: 'Demo Product 1', price: 2500, reorderThreshold: 15, description: 'Premium demo product for testing purposes with detailed description and comprehensive features.' },
+        { name: 'Demo Product 2', price: 4500, reorderThreshold: 12, description: 'Another demo product with comprehensive details for testing all functionalities.' },
+        { name: 'Demo Product 3', price: 1800, reorderThreshold: 20, description: 'Test product with full specifications and features for comprehensive testing.' },
+        { name: 'Demo Product 4', price: 3500, reorderThreshold: 10, description: 'Sample product for demonstration and testing scenarios with detailed information.' },
+        { name: 'Demo Product 5', price: 5500, reorderThreshold: 8, description: 'Premium demo product with advanced features and details for extended testing.' },
+        { name: 'Demo Product 6', price: 1200, reorderThreshold: 25, description: 'Basic demo product for testing various functionalities and use cases.' },
+        { name: 'Demo Product 7', price: 2800, reorderThreshold: 18, description: 'Standard demo product with complete information and specifications.' },
+        { name: 'Demo Product 8', price: 4200, reorderThreshold: 14, description: 'Feature-rich demo product for comprehensive testing and evaluation.' },
+        { name: 'Demo Product 9', price: 3200, reorderThreshold: 16, description: 'Quality demo product with detailed specifications and features.' },
+        { name: 'Demo Product 10', price: 4800, reorderThreshold: 10, description: 'Advanced demo product for testing all features and capabilities.' },
       ]
       
-      demoProducts.forEach((prodTemplate, index) => {
+      const demoProductVariations = ['Standard', 'Premium', 'Deluxe', 'Pro', 'Plus', 'Elite', 'Classic', 'Modern', 'Vintage', 'Limited Edition', 'Special Edition', 'Ultra', 'Max', 'Super', 'Ultimate']
+      const demoColors = ['Black', 'White', 'Blue', 'Red', 'Green', 'Silver', 'Gold', 'Gray', 'Brown', 'Pink', 'Purple', 'Orange']
+      const demoSizes = ['Small', 'Medium', 'Large', 'XL', 'XXL', 'Standard', 'Compact', 'Full Size', 'Extra Small']
+      
+      const demoProductCount = 150
+      for (let i = 0; i < demoProductCount; i++) {
+        const template = demoProductTemplates[i % demoProductTemplates.length]
+        let productName = template.name
+        if (i >= demoProductTemplates.length) {
+          const variation = demoProductVariations[Math.floor(i / demoProductTemplates.length) % demoProductVariations.length]
+          const color = demoColors[i % demoColors.length]
+          const size = demoSizes[i % demoSizes.length]
+          const variationType = i % 3
+          if (variationType === 0) {
+            productName = `${variation} ${template.name}`
+          } else if (variationType === 1) {
+            productName = `${template.name} - ${color}`
+          } else {
+            productName = `${template.name} (${size})`
+          }
+        }
+        
+        const priceVariation = 1 + ((Math.random() * 0.3) - 0.15) // ±15%
+        const variedPrice = Math.round(template.price * priceVariation)
+        const stockQuantity = Math.floor(Math.random() * 100) + 20
+        const lowStock = stockQuantity <= template.reorderThreshold
+        const createdAt = randomDate(startDate, storeEndDate)
+        const updatedAt = randomDate(createdAt, storeEndDate)
+        
         const product = {
           id: crypto.randomUUID(),
           storeId: storeId,
-          name: prodTemplate.name,
-          description: prodTemplate.description,
-          price: prodTemplate.price,
-          stockQuantity: Math.floor(Math.random() * 30) + 15,
-          reorderThreshold: prodTemplate.reorderThreshold,
-          lowStock: false,
-          status: 'active',
+          name: productName,
+          description: template.description + (i >= demoProductTemplates.length ? ` Available in ${demoColors[i % demoColors.length].toLowerCase()} color and ${demoSizes[i % demoSizes.length].toLowerCase()} size. Perfect for comprehensive testing scenarios.` : ''),
+          price: variedPrice,
+          stockQuantity: stockQuantity,
+          reorderThreshold: template.reorderThreshold,
+          lowStock: lowStock,
+          status: Math.random() > 0.1 ? 'active' : 'inactive',
           category: 'Demo',
-          imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + index}?auto=format&fit=crop&w=800&q=60`,
-          createdAt: storeCreatedAt,
-          updatedAt: storeCreatedAt,
+          imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + i}?auto=format&fit=crop&w=800&q=60`,
+          createdAt: createdAt.toISOString(),
+          updatedAt: updatedAt.toISOString(),
         }
         allProducts.push(product)
-      })
+      }
       
-      // Demo customers (25 customers with Pakistan data)
+      // Demo customers - 500+ customers with all fields populated
       const demoCustomers = []
-      for (let i = 0; i < 25; i++) {
+      const demoCustomerMap = new Map()
+      const demoCustomerCount = 500
+      
+      for (let i = 0; i < demoCustomerCount; i++) {
         const name = randomPakistaniCustomerName()
         const email = randomEmail(name, 'demo.shopifyadmin.pk')
+        if (demoCustomerMap.has(email)) continue
+        
         const phone = randomPakistanPhone()
-        const altPhone = Math.random() > 0.7 ? randomPakistanPhone() : null
+        const altPhone = Math.random() > 0.6 ? randomPakistanPhone() : null
+        const altPhone2 = Math.random() > 0.8 ? randomPakistanPhone() : null
         const address = randomPakistanAddress(cityInfo)
-        const altAddress = Math.random() > 0.8 ? randomPakistanAddress(cityInfo) : null
+        const altAddress = Math.random() > 0.7 ? randomPakistanAddress(cityInfo) : null
+        const altAddress2 = Math.random() > 0.9 ? randomPakistanAddress(cityInfo) : null
+        const altName = Math.random() > 0.7 ? randomPakistaniCustomerName() : null
+        const altName2 = Math.random() > 0.9 ? randomPakistaniCustomerName() : null
+        const altEmail = Math.random() > 0.7 ? randomEmail(name, 'gmail.com') : null
+        const altEmail2 = Math.random() > 0.9 ? randomEmail(name, 'yahoo.com') : null
+        
+        const customerCreatedAt = Math.random() > 0.3 
+          ? randomDate(storeThreeMonthsAgo, storeEndDate) // 70% in last 3 months
+          : randomDate(startDate, storeThreeMonthsAgo) // 30% earlier
         
         const customer = {
           id: crypto.randomUUID(),
@@ -732,23 +783,39 @@ const generateMultiStoreData = () => {
           email,
           phone,
           address,
-          alternativePhones: altPhone ? [altPhone] : [],
-          alternativeEmails: Math.random() > 0.8 ? [randomEmail(name, 'gmail.com')] : [],
-          alternativeNames: [],
-          alternativeAddresses: altAddress ? [altAddress] : [],
-          createdAt: randomDate(oneYearAgo, now).toISOString(),
+          alternativePhones: [altPhone, altPhone2].filter(Boolean),
+          alternativeEmails: [altEmail, altEmail2].filter(Boolean),
+          alternativeNames: [altName, altName2].filter(Boolean),
+          alternativeAddresses: [altAddress, altAddress2].filter(Boolean),
+          createdAt: customerCreatedAt.toISOString(),
           orderIds: [],
         }
         demoCustomers.push(customer)
+        demoCustomerMap.set(email, customer)
         allCustomers.push(customer)
       }
       
-      // Demo orders (50 orders)
+      // Demo orders - 2000+ orders distributed across 2025-2026
       const demoStoreProducts = allProducts.filter(p => p.storeId === storeId)
       let orderIndex = 0
       
-      for (let i = 0; i < 50; i++) {
-        const orderDate = randomDate(oneYearAgo, now)
+      // Distribute orders: 30% in last 3 months, 20% in mid-recent, 50% in earlier period
+      const demoRecentPeriodStart = new Date(storeEndDate.getTime() - 90 * 24 * 60 * 60 * 1000)
+      const demoMidRecentPeriodStart = new Date(storeEndDate.getTime() - 180 * 24 * 60 * 60 * 1000)
+      const demoOrderCount = 2000
+      const demoRecentOrders = Math.floor(demoOrderCount * 0.3)
+      const demoMidRecentOrders = Math.floor(demoOrderCount * 0.2)
+      const demoOlderOrders = demoOrderCount - demoRecentOrders - demoMidRecentOrders
+      
+      for (let i = 0; i < demoOrderCount; i++) {
+        let orderDate
+        if (i < demoRecentOrders) {
+          orderDate = randomDate(demoRecentPeriodStart, storeEndDate)
+        } else if (i < demoRecentOrders + demoMidRecentOrders) {
+          orderDate = randomDate(demoMidRecentPeriodStart, demoRecentPeriodStart)
+        } else {
+          orderDate = randomDate(startDate, demoMidRecentPeriodStart)
+        }
         const product = demoStoreProducts[Math.floor(Math.random() * demoStoreProducts.length)]
         const customer = demoCustomers[Math.floor(Math.random() * demoCustomers.length)]
         const quantity = Math.floor(Math.random() * 3) + 1
@@ -792,12 +859,13 @@ const generateMultiStoreData = () => {
         customer.orderIds.push(order.id)
       }
       
-      // Demo returns (5 returns)
+      // Demo returns (100+ returns for comprehensive testing)
       const demoOrders = allOrders.filter(o => o.storeId === storeId)
-      const ordersForReturns = demoOrders.slice(0, 5)
+      const demoReturnCount = Math.min(100, Math.floor(demoOrders.length * 0.05)) // 5% of orders or max 100
+      const ordersForReturns = demoOrders.slice(0, demoReturnCount)
       
       ordersForReturns.forEach((order) => {
-        const returnDate = randomDate(new Date(order.createdAt), now)
+        const returnDate = randomDate(new Date(order.createdAt), storeEndDate)
         const returnRequest = {
           id: crypto.randomUUID(),
           storeId: storeId,
@@ -847,8 +915,8 @@ const generateMultiStoreData = () => {
     }
     allUsers.push(adminUser)
     
-    // Generate staff users for this store (4-6 staff members)
-    const staffCount = Math.floor(Math.random() * 5) + 8 // 8-12 staff (increased for better testing)
+    // Generate staff users for this store (12-18 staff members - increased for comprehensive testing)
+    const staffCount = Math.floor(Math.random() * 7) + 12 // 12-18 staff (increased for better testing)
     const staffUsers = []
     for (let i = 0; i < staffCount; i++) {
       const staffFullName = randomPakistaniStaffName()
@@ -869,8 +937,8 @@ const generateMultiStoreData = () => {
           viewReports: true, manageUsers: false, manageSettings: false,
         },
         // Staff created after store, distributed over time
-        createdAt: randomDate(new Date(store.createdAt), now).toISOString(),
-        updatedAt: randomDate(new Date(store.createdAt), now).toISOString(),
+        createdAt: randomDate(new Date(store.createdAt), storeEndDate).toISOString(),
+        updatedAt: randomDate(new Date(store.createdAt), storeEndDate).toISOString(),
         profilePictureUrl: null,
         fullName: staffFullName,
         phone: randomPakistanPhone(),
@@ -885,10 +953,10 @@ const generateMultiStoreData = () => {
       staffUsers.push(staffUser)
     }
     
-    // Generate products for this store (80-120 products with detailed descriptions)
+    // Generate products for this store (200-300 products with detailed descriptions) - significantly increased
     // Each store gets unique product variations based on storeIndex
     const productTemplates = productTemplatesByCategory[template.category] || productTemplatesByCategory.Electronics
-    const productCount = Math.floor(Math.random() * 61) + 100 // 100-160 products (increased from 80-120)
+    const productCount = Math.floor(Math.random() * 101) + 200 // 200-300 products (significantly increased for comprehensive testing)
     const storeProducts = []
     
     // Generate variations of templates to reach target count
@@ -930,11 +998,11 @@ const generateMultiStoreData = () => {
       const variedPrice = Math.round(prodTemplate.price * priceVariation)
       
       // Stock quantity varies per store
-      const baseStock = Math.floor(Math.random() * 150) + 20 + (storeIndex * 5)
+      const baseStock = Math.floor(Math.random() * 200) + 30 + (storeIndex * 5)
       const lowStock = baseStock <= prodTemplate.reorderThreshold
-      // Products created throughout 2025
-      const createdAt = randomDate(oneYearAgo, now)
-      const updatedAt = randomDate(createdAt, now)
+      // Products created throughout 2025 (till Nov 30 for regular stores)
+      const createdAt = randomDate(oneYearAgo, storeEndDate)
+      const updatedAt = randomDate(createdAt, storeEndDate)
       
       const product = {
         id: crypto.randomUUID(),
@@ -955,8 +1023,8 @@ const generateMultiStoreData = () => {
       allProducts.push(product)
     }
     
-    // Generate customers for this store (300-400 customers with comprehensive data)
-    const customerCount = Math.floor(Math.random() * 601) + 1000 // 1000-1600 customers (increased from 800-1200)
+    // Generate customers for this store (2000-3000 customers with comprehensive data) - significantly increased
+    const customerCount = Math.floor(Math.random() * 1001) + 2000 // 2000-3000 customers (significantly increased for comprehensive testing)
     const storeCustomers = []
     const customerMap = new Map() // email -> customer
     
@@ -969,8 +1037,8 @@ const generateMultiStoreData = () => {
       
       // Customers created throughout 2025, more in recent months for better filter results
       const customerCreatedAt = Math.random() > 0.3 
-        ? randomDate(threeMonthsAgo, now) // 70% in last 3 months (recent activity)
-        : randomDate(oneYearAgo, threeMonthsAgo) // 30% earlier (Jan-Sep 2025)
+        ? randomDate(storeThreeMonthsAgo, storeEndDate) // 70% in last 3 months (recent activity)
+        : randomDate(oneYearAgo, storeThreeMonthsAgo) // 30% earlier (Jan-Sep 2025)
       
       // Generate alternative contact info (30% chance)
       const hasAltPhone = Math.random() > 0.7
@@ -997,9 +1065,9 @@ const generateMultiStoreData = () => {
       allCustomers.push(customer)
     }
     
-    // Generate orders for this store - distributed over full year 2025
-    // Increased to ensure more data per store
-    const orderCount = Math.floor(Math.random() * 1501) + 2000 // 2000-3500 orders (increased from 1500-2500)
+    // Generate orders for this store - distributed over full year 2025 (till Nov 30)
+    // Significantly increased for comprehensive testing
+    const orderCount = Math.floor(Math.random() * 2001) + 3000 // 3000-5000 orders (significantly increased for comprehensive testing)
     const storeOrders = []
     let orderIndex = 0
     
@@ -1007,7 +1075,7 @@ const generateMultiStoreData = () => {
     // 30% in October-November 2025 (most recent), 20% in August-September, 50% in earlier months
     const octNovStart = new Date('2025-10-01T00:00:00.000Z')
     const augStart = new Date('2025-08-01T00:00:00.000Z')
-    const recentOrders = Math.floor(orderCount * 0.3) // October-November 2025
+    const recentOrders = Math.floor(orderCount * 0.3) // October-November 2025 (till Nov 30)
     const midRecentOrders = Math.floor(orderCount * 0.2) // August-September 2025
     const olderOrders = orderCount - recentOrders - midRecentOrders // January-July 2025
     
@@ -1128,7 +1196,7 @@ const generateMultiStoreData = () => {
     
     // Generate orders for October-November 2025 (most recent - 30% of orders)
     for (let i = 0; i < recentOrders; i++) {
-      const orderDate = randomDate(octNovStart, now)
+      const orderDate = randomDate(octNovStart, storeEndDate)
       createOrder(orderDate)
     }
     
@@ -1163,8 +1231,8 @@ const generateMultiStoreData = () => {
     ordersForReturns.forEach((order) => {
       const orderDate = new Date(order.createdAt)
       const maxReturnDate = addDays(orderDate, 30)
-      const returnDate = randomDate(orderDate, maxReturnDate > now ? now : maxReturnDate)
-      const daysSinceReturn = Math.floor((now - returnDate) / (1000 * 60 * 60 * 24))
+      const returnDate = randomDate(orderDate, maxReturnDate > storeEndDate ? storeEndDate : maxReturnDate)
+      const daysSinceReturn = Math.floor((storeEndDate - returnDate) / (1000 * 60 * 60 * 24))
       
       let status
       if (daysSinceReturn < 2) {

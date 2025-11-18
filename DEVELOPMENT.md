@@ -233,11 +233,110 @@ This document contains the complete development workflow, history, and implement
 - Implemented product variation system using prefixes, colors, and sizes.
 - Seeded comprehensive dummy data for all 5 stores + demo account: 80-120 products, 800-1200 customers, 1500-2500 orders per store.
 
+### Step 43 – Infrastructure Standardization: Remove Hostinger Logic & Standardize on Cloud VM
+- Removed all Hostinger-specific logic and references from the codebase:
+  - Updated `ecosystem.config.js` to remove Hostinger comment, replaced with generic resource-constrained environment guidance
+  - Removed Hostinger-specific deployment guides and merged generic parts into `DEPLOYMENT.md`
+  - Updated all documentation files to remove Hostinger mentions and replace with generic cloud VM deployment (Oracle Cloud Always Free, AWS EC2, DigitalOcean)
+  - Standardized deployment model:
+    - **Local Development**: XAMPP MySQL + Node backend + Vite/React frontend (localhost:5173, localhost:5000)
+    - **Production**: Generic Linux VM + MySQL (e.g., Oracle Cloud Always Free)
+- Added comprehensive Oracle Cloud Always Free deployment guide to `DEPLOYMENT.md`:
+  - Step-by-step VM instance creation, security list configuration, software installation
+  - Database setup, environment variables, PM2 deployment, Nginx reverse proxy, SSL setup
+- Updated documentation files: `README.md`, `DEPLOYMENT.md`, `IMPROVEMENTS_AND_RECOMMENDATIONS.md`, `STORE_CREDENTIALS_AND_URLS.md`, `DOCUMENTATION_SUMMARY.md`, `DEVELOPMENT.md`
+- Deleted `HOSTINGER_DEPLOYMENT.md` (content merged into `DEPLOYMENT.md`)
+
+**Impact:**
+- Infrastructure-agnostic deployment model allows flexibility in cloud provider choice
+- Oracle Cloud Always Free tier documented as primary production deployment option
+- Local development standardized on XAMPP MySQL for Windows users
+- Clean separation between local dev (localhost:5173, localhost:5000, XAMPP) and production (cloud VM)
+
+### Step 44 – Local Development Standardization: XAMPP MySQL Setup
+- Standardized all local development instructions on **XAMPP MySQL**:
+  - Updated `README.md` with comprehensive "Local Development (XAMPP)" section:
+    - Step-by-step XAMPP installation and setup guide
+    - phpMyAdmin database creation instructions
+    - Environment variable configuration matching XAMPP defaults
+    - Database migration and seeding steps
+    - Development server startup verification
+  - Updated `REGENERATE_DATABASE.md` with XAMPP-specific instructions:
+    - Prerequisites: XAMPP MySQL running, database created
+    - Step-by-step regeneration process using XAMPP
+    - Verification steps using phpMyAdmin
+  - Updated `DEPLOYMENT.md` to emphasize XAMPP for local development:
+    - "Using XAMPP (Windows - Recommended for Local Development)" section
+    - Detailed XAMPP setup instructions with phpMyAdmin access
+  - Updated `TESTING.md` to mention XAMPP prerequisites:
+    - XAMPP MySQL as required prerequisite
+    - XAMPP connection details in test environment setup
+  - Updated `DEVELOPMENT.md` with this standardization step
+- Backend configuration already optimized for XAMPP:
+  - `backend/config/database.js` uses environment variables with XAMPP-friendly defaults:
+    - `DB_HOST=localhost` (default)
+    - `DB_PORT=3306` (default)
+    - `DB_USER=root` (XAMPP default)
+    - `DB_PASSWORD=` (empty, XAMPP default)
+    - `DB_NAME=shopify_admin_dev` (default)
+  - `backend/models/index.js` uses same XAMPP-friendly defaults
+- Frontend configuration standardized:
+  - `VITE_API_BASE_URL=http://localhost:5000` (required for local dev)
+  - All examples use `http://localhost:5173/` for frontend
+- All documentation now consistently references:
+  - **Local Development**: XAMPP MySQL + Node backend (`localhost:5000`) + Vite frontend (`localhost:5173`)
+  - **Production**: Generic cloud VM (e.g., Oracle Cloud Always Free)
+
+**Impact:**
+- Clear, standardized local development workflow using XAMPP MySQL
+- All examples and documentation consistently reference XAMPP for local dev
+- Environment variables configured to match XAMPP defaults
+- Easy onboarding for new developers with step-by-step XAMPP setup guide
+- Clean separation between local dev (XAMPP) and production (cloud VM)
+
+### Step 45 – Seed/Reset Logic Alignment: XAMPP + 5 Stores + Demo + Superadmin
+- Aligned all database reset/seed logic with XAMPP MySQL infrastructure:
+  - Updated `REGENERATE_DATABASE.md` with comprehensive XAMPP workflow:
+    - Detailed "What Gets Created" section listing all 6 stores (5 client + 1 demo) and superadmin
+    - Step-by-step regeneration guide: Start XAMPP → Run Migrations → Run Seed Script → Verify
+    - Troubleshooting section for common XAMPP MySQL connection errors
+    - Database structure documentation (6 stores, 1 superadmin, 6 admins, 48-72 staff, etc.)
+  - Verified seed scripts (`backend/scripts/reset-and-seed-database.js`, `backend/generateMultiStoreData.js`) create:
+    - 5 client stores: TechHub Electronics, Fashion Forward, Home & Living Store, Fitness Gear Pro, Beauty Essentials
+    - 1 demo store: Demo Store (demo.shopifyadmin.pk)
+    - 1 superadmin account: superadmin@shopifyadmin.pk (storeId: null)
+    - Admin accounts: 1 per store (admin@[domain])
+    - Staff accounts: 8-12 per store (staff1@[domain] through staff12@[domain])
+    - Test data: 80-120 products, 800-1200 customers, 1500-2500 orders per store
+  - Verified seed scripts use environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) matching XAMPP defaults
+  - Removed any Hostinger-specific assumptions from seed/reset scripts (verified no Hostinger references exist)
+  - Updated `REGENERATE_DATABASE.md` to explicitly document XAMPP workflow:
+    - Prerequisites: XAMPP installed, MySQL running, database created via phpMyAdmin
+    - Step 1: Start XAMPP MySQL
+    - Step 2: Run Migrations
+    - Step 3: Run Reset/Seed Script
+    - Step 4: Verify Results (phpMyAdmin, terminal output)
+    - Step 5: Test Login (frontend/backend)
+  - Updated `TESTING.md` to reference XAMPP for test environment setup
+  - All documentation now consistently references:
+    - **Local Development**: XAMPP MySQL (localhost:3306)
+    - **Production**: Generic cloud MySQL (e.g., Oracle Cloud Always Free)
+
+**Impact:**
+- Seed/reset logic fully aligned with XAMPP MySQL infrastructure
+- Clear documentation for regenerating database with XAMPP workflow
+- All 6 stores (5 client + 1 demo) and superadmin properly seeded
+- Multi-tenant isolation verified across all stores
+- Easy database reset for development and testing
+
 ---
 
 ## Project History
 
 ### 2025-12-XX (Latest)
+- **Seed/Reset Logic Alignment**: Aligned all database reset/seed logic with XAMPP MySQL infrastructure. Updated REGENERATE_DATABASE.md with comprehensive XAMPP workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin, and ensured all documentation references XAMPP for local dev.
+- **Local Development Standardization**: Standardized all local development instructions on XAMPP MySQL. Updated README.md with comprehensive XAMPP setup guide, REGENERATE_DATABASE.md with XAMPP-specific instructions, and all documentation to consistently reference XAMPP for local dev.
+- **Infrastructure Standardization**: Removed all Hostinger-specific logic, standardized on local dev (XAMPP MySQL) and production (Oracle Cloud Always Free/cloud VM) deployment. Added comprehensive Oracle Cloud deployment guide.
 - **Full Dummy Data Seeding for Multi-Store Production Testing**: Enhanced product generation to create 80-120 products per store. Implemented product variation system. Seeded comprehensive dummy data for all stores with proper date distribution.
 
 - **Database Reset & Reseed Script**: Created comprehensive database reset and reseed script to enable easy database reset and fresh data seeding. Script handles batch insertion, foreign key constraints, and displays login credentials.

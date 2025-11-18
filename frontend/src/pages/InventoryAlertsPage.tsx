@@ -169,10 +169,17 @@ const InventoryAlertsPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Inventory alerts
               </Typography>
-              <Typography color="text.secondary">
+              <Typography 
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+              >
                 Products that have reached or fallen below their reorder threshold.
               </Typography>
             </Box>

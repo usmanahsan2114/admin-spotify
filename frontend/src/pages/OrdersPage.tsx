@@ -331,10 +331,17 @@ const OrdersPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Orders
               </Typography>
-              <Typography color="text.secondary">
+              <Typography 
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+              >
                 Monitor incoming orders, update their status, and jump into detailed views.
               </Typography>
             </Box>

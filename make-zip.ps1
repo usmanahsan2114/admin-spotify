@@ -1,8 +1,8 @@
-﻿# Create Hostinger Upload Zip
+﻿# Create Production Deployment Zip
 $ErrorActionPreference = "Continue"
-Write-Host "Creating Hostinger Upload Zip..." -ForegroundColor Cyan
+Write-Host "Creating Production Deployment Zip..." -ForegroundColor Cyan
 $sourcePath = Get-Location
-$zipFile = "admin-spotify-hostinger.zip"
+$zipFile = "admin-spotify-production.zip"
 if (Test-Path $zipFile) { Remove-Item $zipFile -Force }
 $tempDir = Join-Path $env:TEMP "admin-spotify-$(Get-Random)"
 $targetPath = Join-Path $tempDir "admin-spotify"

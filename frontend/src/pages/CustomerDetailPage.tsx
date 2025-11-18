@@ -255,7 +255,17 @@ const CustomerDetailPage = () => {
             <ArrowBackIcon />
           </IconButton>
         </Tooltip>
-        <Typography variant="h5" fontWeight={600}>
+        <Typography 
+          variant="h5" 
+          fontWeight={600}
+          sx={{ 
+            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: { xs: '150px', sm: '250px', md: 'none' },
+          }}
+        >
           {customer.name}
         </Typography>
         <Chip label={`${customer.orderCount ?? 0} orders`} color="primary" size="small" />
@@ -404,6 +414,7 @@ const CustomerDetailPage = () => {
         onClose={handleCloseEdit}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmall}
         aria-labelledby="edit-customer-dialog"
       >
         <DialogTitle id="edit-customer-dialog">Edit customer</DialogTitle>

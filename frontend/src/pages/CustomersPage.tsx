@@ -274,10 +274,17 @@ const CustomersPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Customers
               </Typography>
-              <Typography color="text.secondary">
+              <Typography 
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+              >
                 View your customer base, contact details, and recent order activity.
               </Typography>
             </Box>
@@ -411,6 +418,7 @@ const CustomersPage = () => {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmall}
         aria-labelledby="add-customer-dialog"
       >
         <DialogTitle id="add-customer-dialog">Add customer</DialogTitle>

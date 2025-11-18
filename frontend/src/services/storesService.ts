@@ -75,3 +75,8 @@ export const createOrUpdateStoreAdminCredentials = (storeId: string, payload: St
     }
   )
 
+export const deleteStore = (storeId: string) =>
+  apiFetch<{ message: string }>(`/api/stores/${storeId}`, {
+    method: 'DELETE',
+  })
+

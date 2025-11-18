@@ -187,6 +187,8 @@ async function resetAndSeedDatabase() {
       alternativeEmails: customer.alternativeEmails || [],
       alternativePhones: customer.alternativePhones || [],
       alternativeAddresses: customer.alternativeAddresses || [],
+      createdAt: customer.createdAt || new Date().toISOString(),
+      updatedAt: customer.updatedAt || customer.createdAt || new Date().toISOString(),
     }))
     
     for (let i = 0; i < customerData.length; i += BATCH_SIZE) {
@@ -219,6 +221,8 @@ async function resetAndSeedDatabase() {
       items: order.items || [],
       shippingAddress: order.shippingAddress || null,
       paymentStatus: order.paymentStatus || (order.isPaid ? 'paid' : 'pending'),
+      createdAt: order.createdAt || new Date().toISOString(),
+      updatedAt: order.updatedAt || order.createdAt || new Date().toISOString(),
     }))
     
     for (let i = 0; i < orderData.length; i += BATCH_SIZE) {

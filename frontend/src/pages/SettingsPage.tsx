@@ -757,7 +757,11 @@ const SettingsPage = () => {
     <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Card>
         <CardContent>
-          <Typography variant="h5" fontWeight={600}>
+          <Typography 
+            variant="h5" 
+            fontWeight={600}
+            sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+          >
             Settings
           </Typography>
           <Typography color="text.secondary" mt={1}>

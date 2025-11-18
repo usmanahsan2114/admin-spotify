@@ -1247,6 +1247,56 @@ app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('
   }
 })
 
+// Delete store (superadmin only) - with cascade deletion of all related data
+app.delete('/api/stores/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+  try {
+    const store = await Store.findByPk(req.params.id)
+    if (!store) {
+      return res.status(404).json({ message: 'Store not found.' })
+    }
+    
+    // Prevent deletion of demo store (if needed)
+    if (store.isDemo) {
+      return res.status(400).json({ message: 'Demo store cannot be deleted.' })
+    }
+    
+    const storeId = store.id
+    const storeName = store.name
+    
+    // Delete all related data in transaction
+    await db.sequelize.transaction(async (transaction) => {
+      // Delete orders
+      await Order.destroy({ where: { storeId }, transaction })
+      
+      // Delete returns
+      await Return.destroy({ where: { storeId }, transaction })
+      
+      // Delete products
+      await Product.destroy({ where: { storeId }, transaction })
+      
+      // Delete customers
+      await Customer.destroy({ where: { storeId }, transaction })
+      
+      // Delete settings (if exists)
+      await db.Setting.destroy({ where: { storeId }, transaction }).catch(() => {
+        // Settings table might not exist, ignore error
+      })
+      
+      // Delete users associated with this store
+      await User.destroy({ where: { storeId }, transaction })
+      
+      // Finally, delete the store itself
+      await store.destroy({ transaction })
+    })
+    
+    logger.info(`[STORES] Store deleted: ${storeName} (${storeId})`)
+    return res.json({ message: `Store "${storeName}" has been deleted successfully along with all associated data.` })
+  } catch (error) {
+    logger.error('[ERROR] /api/stores/:id DELETE:', error)
+    return res.status(500).json({ message: 'Failed to delete store', error: error.message })
+  }
+})
+
 // Demo store data reset endpoint (admin only)
 app.post('/api/demo/reset-data', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {

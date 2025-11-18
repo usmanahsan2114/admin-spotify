@@ -365,10 +365,17 @@ const ReturnsPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Returns & Refunds
               </Typography>
-              <Typography color="text.secondary">
+              <Typography 
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+              >
                 Track submitted return requests, update their status, and monitor stock impact.
               </Typography>
             </Box>
@@ -576,6 +583,7 @@ const ReturnsPage = () => {
         onClose={() => setCreateOpen(false)}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmall}
       >
         <DialogTitle>Submit return request</DialogTitle>
         <DialogContent>
@@ -674,6 +682,7 @@ const ReturnsPage = () => {
         onClose={() => setEditOpen(false)}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmall}
       >
         <DialogTitle>Update return</DialogTitle>
         <DialogContent>

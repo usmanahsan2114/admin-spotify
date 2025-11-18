@@ -16,10 +16,20 @@ Comprehensive testing documentation covering functional testing, performance tes
 ### Test Environment Setup
 
 **Prerequisites:**
-- Frontend running at `http://localhost:5173/`
-- Backend running at `http://localhost:5000/`
-- Clean database state (fresh DB or test DB)
-- Test user accounts: Admin, Staff, Demo (for each store)
+- **XAMPP MySQL** installed and running (see [README.md](./README.md) for XAMPP setup)
+- **Frontend** running at `http://localhost:5173/` (Vite dev server)
+- **Backend** running at `http://localhost:5000/` (Express API server)
+- **Database**: `shopify_admin_dev` created in XAMPP MySQL (see [README.md](./README.md) Step 2)
+- **Backend `.env`** configured with XAMPP connection details:
+  ```env
+  DB_HOST=localhost
+  DB_PORT=3306
+  DB_NAME=shopify_admin_dev
+  DB_USER=root
+  DB_PASSWORD=
+  ```
+- Clean database state (fresh DB or test DB) - Reset using `node backend/scripts/reset-and-seed-database.js`
+- Test user accounts: Admin, Staff, Demo (for each store) - Created automatically on database seed
 
 ### Test Accounts
 

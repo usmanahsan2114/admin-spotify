@@ -557,10 +557,17 @@ const ProductsPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Products
               </Typography>
-              <Typography color="text.secondary">
+              <Typography 
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+              >
                 Review product performance, edit descriptions, and keep stock levels accurate.
               </Typography>
             </Box>
@@ -845,6 +852,7 @@ const ProductsPage = () => {
         onClose={handleCloseDialog}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmall}
         aria-labelledby="product-form-dialog"
       >
         <DialogTitle id="product-form-dialog">
@@ -1006,6 +1014,7 @@ const ProductsPage = () => {
         }}
         maxWidth="sm"
         fullWidth
+        fullScreen={isSmall}
       >
         <DialogTitle>Import products</DialogTitle>
         <DialogContent>
@@ -1070,6 +1079,9 @@ const ProductsPage = () => {
       <Dialog
         open={isDeleteConfirmOpen}
         onClose={() => setDeleteConfirmOpen(false)}
+        fullScreen={isSmall}
+        maxWidth="sm"
+        fullWidth
         aria-labelledby="delete-product-confirm"
       >
         <DialogTitle id="delete-product-confirm">Delete product</DialogTitle>

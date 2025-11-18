@@ -37,7 +37,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { useTheme } from '@mui/material/styles'
+import { useTheme, useMediaQuery } from '@mui/material/styles'
 
 const statusOptions: OrderStatus[] = [
   'Pending',
@@ -79,6 +79,7 @@ const OrderDetailsPage = () => {
   const handleError = useApiErrorHandler()
   const { formatCurrency } = useCurrency()
   const theme = useTheme()
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
 
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
@@ -309,7 +310,11 @@ const OrderDetailsPage = () => {
             spacing={2}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Order #{order.id.slice(0, 8)}
               </Typography>
               <Stack direction="row" spacing={1} mt={1} alignItems="center">

@@ -8,7 +8,7 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 
 ## 🔧 Code Review & Improvements
 
-**Planning to deploy?** Check out **[IMPROVEMENTS_AND_RECOMMENDATIONS.md](./IMPROVEMENTS_AND_RECOMMENDATIONS.md)** for a comprehensive code review covering security, performance, production readiness, and Hostinger-specific deployment recommendations.
+**Planning to deploy?** Check out **[IMPROVEMENTS_AND_RECOMMENDATIONS.md](./IMPROVEMENTS_AND_RECOMMENDATIONS.md)** for a comprehensive code review covering security, performance, and production readiness recommendations.
 
 ## Features
 
@@ -36,22 +36,68 @@ This repository delivers a full-stack ecommerce admin workspace modeled after Sh
 
 ### Prerequisites
 
-- Node.js ≥ 18
-- npm ≥ 9
+- **Node.js**: ≥ 18 (LTS recommended)
+- **npm**: ≥ 9
+- **XAMPP**: For local MySQL database (Windows recommended) - Download from [https://www.apachefriends.org/](https://www.apachefriends.org/)
 
-### Installation
+## Local Development (XAMPP)
+
+This guide uses **XAMPP MySQL** for local development, which is the recommended setup for Windows users.
+
+### Step 1: Install and Start XAMPP
+
+1. **Download and Install XAMPP**:
+   - Visit https://www.apachefriends.org/
+   - Download XAMPP for Windows
+   - Run the installer and follow the setup wizard
+   - Default installation path: `C:\xampp`
+
+2. **Start XAMPP Services**:
+   - Open **XAMPP Control Panel** (from Start Menu or desktop shortcut)
+   - Click **"Start"** next to **Apache** service (optional, for phpMyAdmin access)
+   - Click **"Start"** next to **MySQL** service (required)
+   - Verify MySQL is running (green indicator shows)
+
+### Step 2: Create Database in phpMyAdmin
+
+1. **Access phpMyAdmin**:
+   - Open browser: http://localhost/phpmyadmin
+   - Or navigate: http://localhost:80/phpmyadmin
+
+2. **Create Database**:
+   - Click **"New"** in the left sidebar
+   - Enter database name: `shopify_admin_dev`
+   - Select collation: `utf8mb4_unicode_ci` (from dropdown)
+   - Click **"Create"**
+
+   **OR** use SQL command:
+   ```sql
+   CREATE DATABASE shopify_admin_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+### Step 3: Install Dependencies
 
 ```bash
+# Clone repository (if not already)
 git clone https://github.com/usmanahsan2114/admin-spotify.git
 cd admin-spotify
+
+# Install root dependencies
 npm install
+
+# Install backend dependencies
 npm --prefix backend install
+
+# Install frontend dependencies
 npm --prefix frontend install
 ```
 
-### Environment Variables
+### Step 4: Configure Environment Variables
 
 **Backend (`backend/.env`):**
+
+Create `backend/.env` file with the following content (matches XAMPP defaults):
+
 ```env
 NODE_ENV=development
 PORT=5000
@@ -64,48 +110,115 @@ DB_PASSWORD=
 CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 ```
 
+**XAMPP Connection Details:**
+- `DB_HOST=localhost` - XAMPP MySQL runs on localhost
+- `DB_PORT=3306` - Default MySQL port
+- `DB_NAME=shopify_admin_dev` - Database name you created in Step 2
+- `DB_USER=root` - Default XAMPP MySQL user
+- `DB_PASSWORD=` - Empty (XAMPP default), or your MySQL root password if you set one
+
 **Frontend (`frontend/.env`):**
+
+Create `frontend/.env` file:
+
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 VITE_DEV_ADMIN_EMAIL=admin@example.com  # Optional
 ```
 
-**See `backend/.env.example` for production configuration.**
-
-### Database Setup (Required)
-
-Before running the application, set up the MySQL database:
+### Step 5: Run Database Migrations
 
 ```bash
-# 1. Create database
-mysql -u root -p
-CREATE DATABASE shopify_admin_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-EXIT;
-
-# 2. Run migrations
+# Navigate to backend directory
 cd backend
-npx sequelize-cli db:migrate
 
-# 3. Database will auto-seed on first server start (development mode)
-# OR manually reset and seed using:
-node backend/scripts/reset-and-seed-database.js
+# Run migrations to create all tables
+npx sequelize-cli db:migrate
 ```
 
-**Note:** The database will automatically seed with test data on first server start in development mode. If you need to reset the database and reseed with fresh data, run the reset script above.
+This will create all required tables in your `shopify_admin_dev` database.
 
-### Development
+### Step 6: Seed Database (Optional - Auto-seeds on first run)
+
+The database will **automatically seed** with test data on first server start. However, if you want to manually reset and seed:
 
 ```bash
+# From backend directory
+node scripts/reset-and-seed-database.js
+```
+
+This will:
+- Clear all existing data
+- Create 6 stores (5 client stores + 1 demo store)
+- Seed comprehensive test data (products, customers, orders, returns, users)
+- Display login credentials for all accounts
+
+### Step 7: Start Development Servers
+
+```bash
+# From project root
 npm run dev
 ```
 
-This launches Vite (`http://localhost:5173`) and Express (`http://localhost:5000`). Stop both (`Ctrl+C`) to restart.
+This will start:
+- **Frontend**: http://localhost:5173/ (Vite dev server)
+- **Backend**: http://localhost:5000/ (Express API server)
 
-**Note**: 
-- Ensure MySQL is running before starting the backend
-- Database will auto-seed with 6 stores (5 client stores + 1 demo store) and comprehensive Pakistan-based test data on first run (development mode)
-- Data spans from January 1, 2025 to November 15, 2025 with optimized distribution for graph visibility
-- Ensure frontend is running on `http://localhost:5173/` and backend on `http://localhost:5000/` for proper API communication
+Press `Ctrl+C` to stop both servers.
+
+**Verify Installation:**
+- Frontend: Open http://localhost:5173/ - Should show login page
+- Backend: Open http://localhost:5000/api/health - Should return `{"status": "ok"}`
+
+### Step 8: Verify Database Connection
+
+**Check Backend Health Endpoint:**
+```bash
+curl http://localhost:5000/api/health
+```
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "database": "connected",
+  "uptime": <seconds>
+}
+```
+
+**Check Database in phpMyAdmin:**
+- Open http://localhost/phpmyadmin
+- Select `shopify_admin_dev` database
+- Verify tables exist: `stores`, `users`, `products`, `customers`, `orders`, `returns`, `settings`
+
+---
+
+## Quick Reference
+
+### Local Development URLs
+
+- **Frontend**: http://localhost:5173/
+- **Backend API**: http://localhost:5000/
+- **Health Check**: http://localhost:5000/api/health
+- **phpMyAdmin**: http://localhost/phpmyadmin
+
+### XAMPP MySQL Connection
+
+- **Host**: `localhost`
+- **Port**: `3306`
+- **User**: `root`
+- **Password**: (empty, or your MySQL root password)
+- **Database**: `shopify_admin_dev`
+
+### Important Notes
+
+- ✅ **Always start XAMPP MySQL** before starting the backend server
+- ✅ **Frontend must run on `http://localhost:5173/`** - This is configured in `VITE_API_BASE_URL`
+- ✅ **Backend must run on `http://localhost:5000/`** - This is configured in `PORT` environment variable
+- ✅ **Database will auto-seed** with 6 stores and comprehensive test data on first run
+- ✅ **All examples assume XAMPP MySQL** for local development
+
+**See [STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md) for complete login credentials after seeding.**
 
 ### Login Credentials
 

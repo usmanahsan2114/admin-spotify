@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines critical improvements needed for production deployment on Hostinger hosting. The codebase is well-structured but requires enhancements in security, performance, error handling, and production configuration.
+This document outlines critical improvements needed for production deployment on cloud infrastructure (e.g., Oracle Cloud Always Free, AWS EC2, DigitalOcean). The codebase is well-structured but requires enhancements in security, performance, error handling, and production configuration.
 
 ---
 
@@ -123,13 +123,13 @@ DB_POOL_ACQUIRE=30000
 **Current Issues:**
 - Large dataset queries may be slow
 - No query result caching
-- Connection pool may need tuning for Hostinger
+- Connection pool may need tuning for cloud VM deployments
 
 **Recommendations:**
 ```javascript
 // backend/models/index.js - Already has pool config, but optimize:
 pool: {
-  max: 10, // Reduce for shared hosting (Hostinger)
+  max: 10, // Suitable for small to medium VMs (adjust based on VM resources)
   min: 2,
   acquire: 30000,
   idle: 10000,
@@ -191,15 +191,15 @@ const ProductsPage = lazy(() => import('./pages/ProductsPage'))
 
 ---
 
-## 🚀 Production Readiness (Hostinger Specific)
+## 🚀 Production Readiness (Cloud VM Deployment)
 
-### 1. **Hostinger Configuration**
+### 1. **Cloud VM Configuration**
 
-**Hostinger Limitations:**
-- Shared hosting may have Node.js version restrictions
-- Database connection limits may be lower
-- Memory limits may be restrictive
-- No root access for some configurations
+**VM Requirements:**
+- **Oracle Cloud Always Free**: 1 OCPU, 1 GB RAM (suitable for small deployments)
+- **Minimum Recommended**: 2 OCPUs, 4 GB RAM for production workloads
+- **Database**: MySQL 8.0+ (can be on same VM or separate instance)
+- **OS**: Ubuntu 20.04+ or Oracle Linux 8+
 
 **Recommendations:**
 ```javascript
@@ -218,13 +218,14 @@ process.on('SIGINT', async () => {
 ```
 
 **Action Items:**
-- [ ] Verify Node.js version compatibility (Hostinger supports Node 18+)
+- [ ] Verify Node.js version compatibility (Node.js 18+ required)
 - [ ] Configure PM2 or similar process manager
 - [ ] Set up reverse proxy (Nginx) configuration
-- [ ] Configure SSL/TLS certificates (Let's Encrypt)
-- [ ] Set up database backups (automated)
+- [ ] Configure SSL/TLS certificates (Let's Encrypt via Certbot)
+- [ ] Set up database backups (automated to cloud storage)
 - [ ] Configure log rotation
-- [ ] Set up monitoring and alerts
+- [ ] Set up monitoring and alerts (cloud provider monitoring or third-party)
+- [ ] Configure firewall rules (allow HTTP/HTTPS, restrict SSH)
 
 ### 2. **Environment Configuration**
 
@@ -236,8 +237,8 @@ JWT_SECRET=<generate-strong-secret-32-chars-min>
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=shopify_admin
-DB_USER=<hostinger-db-user>
-DB_PASSWORD=<hostinger-db-password>
+DB_USER=<db-user>
+DB_PASSWORD=<db-password>
 CORS_ORIGIN=https://yourdomain.com
 SENTRY_DSN=<optional>
 DB_POOL_MAX=10
@@ -408,7 +409,7 @@ app.use((err, req, res, next) => {
 
 **Recommendations:**
 - [ ] Add API documentation (Swagger/OpenAPI)
-- [ ] Document deployment process for Hostinger
+- [ ] Document deployment process for cloud VM (Oracle Cloud, AWS, etc.)
 - [ ] Add troubleshooting guide
 - [ ] Create runbook for common issues
 
@@ -479,6 +480,48 @@ app.use((err, req, res, next) => {
 
 ---
 
+## ✅ Improvements Implemented
+
+### 1. Global Error Handler ✅
+- **File**: `backend/middleware/errorHandler.js`
+- Structured error responses with request IDs
+- Automatic Sentry integration for production errors
+- Production-safe error messages (no stack traces leaked)
+
+### 2. Request ID Middleware ✅
+- **File**: `backend/middleware/requestId.js`
+- Unique request ID for each request
+- Added to response headers (`X-Request-ID`)
+- Enables request correlation in logs
+
+### 3. Account Lockout Mechanism ✅
+- **File**: `backend/middleware/accountLockout.js`
+- Locks account after 5 failed login attempts
+- 15-minute lockout duration
+- Automatic unlock after timeout
+
+### 4. Environment Variable Validation ✅
+- **File**: `backend/middleware/envValidation.js`
+- Validates required environment variables at startup
+- JWT_SECRET length validation (min 32 chars)
+- Clear error messages for missing variables
+
+### 5. Enhanced Password Validation ✅
+- **File**: `backend/middleware/validation.js`
+- Minimum 8 characters, requires uppercase, lowercase, and number
+- Applied to signup, user creation, and store admin credentials
+
+### 6. Graceful Shutdown ✅
+- Handles SIGTERM and SIGINT signals
+- Closes database connections gracefully
+- PM2-ready with `process.send('ready')`
+
+### 7. PM2 Configuration Optimization ✅
+- **File**: `ecosystem.config.js`
+- Optimized for resource-constrained VMs (single instance by default)
+- Graceful shutdown settings
+- Memory limit (500MB)
+
 ## 📝 Immediate Action Items (Priority Order)
 
 ### Critical (Before Production)
@@ -487,40 +530,35 @@ app.use((err, req, res, next) => {
 3. ✅ Add environment variable validation at startup
 4. ✅ Implement graceful shutdown
 5. ✅ Configure PM2 for process management
-6. ✅ Set up SSL/TLS certificates
-7. ✅ Configure database backups
-8. ✅ Test deployment on staging environment
+6. ⚠️ Set up SSL/TLS certificates
+7. ⚠️ Configure database backups
+8. ⚠️ Test deployment on staging environment
 
 ### High Priority (First Week)
 1. ✅ Add global error handler middleware
-2. ✅ Implement token refresh mechanism
+2. ⚠️ Implement token refresh mechanism
 3. ✅ Add password complexity requirements
-4. ✅ Optimize database queries
-5. ✅ Add API response caching
+4. ✅ Optimize database queries (indexes added)
+5. ⚠️ Add API response caching
 6. ✅ Implement route-based code splitting
-7. ✅ Set up monitoring and alerts
+7. ⚠️ Set up monitoring and alerts
 
 ### Medium Priority (First Month)
-1. ✅ Add comprehensive test coverage
-2. ✅ Split `server.js` into modules
-3. ✅ Add API documentation
-4. ✅ Implement file upload security (if needed)
-5. ✅ Add performance monitoring
+1. ⚠️ Add comprehensive test coverage
+2. ⚠️ Split `server.js` into modules
+3. ⚠️ Add API documentation
+4. ⚠️ Implement file upload security (if needed)
+5. ⚠️ Add performance monitoring
 6. ✅ Optimize bundle size
-
-### Low Priority (Ongoing)
-1. ✅ Add TypeScript to backend
-2. ✅ Implement GraphQL (if needed)
-3. ✅ Add service worker for offline support
-4. ✅ Implement advanced caching strategies
 
 ---
 
-## 🎯 Hostinger-Specific Deployment Checklist
+## 🎯 Cloud VM Deployment Checklist
 
-- [ ] Verify Node.js version (18+)
-- [ ] Set up MySQL database in Hostinger panel
-- [ ] Configure environment variables in Hostinger
+- [ ] Create VM instance (Oracle Cloud Always Free or other provider)
+- [ ] Verify Node.js version (18+) installed on VM
+- [ ] Set up MySQL database (local or remote)
+- [ ] Configure environment variables on VM
 - [ ] Set up PM2 process manager
 - [ ] Configure Nginx reverse proxy
 - [ ] Set up SSL certificate (Let's Encrypt)
@@ -538,7 +576,7 @@ app.use((err, req, res, next) => {
 
 ## 📚 Additional Resources
 
-- [Hostinger Node.js Deployment Guide](https://www.hostinger.com/tutorials/how-to-deploy-node-js-application)
+- [Oracle Cloud Always Free Documentation](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)
 - [PM2 Documentation](https://pm2.keymetrics.io/)
 - [Express Security Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)

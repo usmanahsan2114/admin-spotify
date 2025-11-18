@@ -544,10 +544,17 @@ const UsersPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography variant="h5" fontWeight={600}>
+              <Typography 
+                variant="h5" 
+                fontWeight={600}
+                sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
+              >
                 Team Members
               </Typography>
-              <Typography color="text.secondary">
+              <Typography 
+                color="text.secondary"
+                sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
+              >
                 Invite new teammates, assign permissions, and keep your roster up to date.
               </Typography>
             </Box>
@@ -662,7 +669,13 @@ const UsersPage = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={isDialogOpen} onClose={closeDialog} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={isDialogOpen} 
+        onClose={closeDialog} 
+        maxWidth="sm" 
+        fullWidth
+        fullScreen={isSmall}
+      >
         <DialogTitle>{selectedUser ? 'Edit user' : 'Add user'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} mt={1}>
@@ -875,7 +888,13 @@ const UsersPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={isDeleteOpen} onClose={() => setIsDeleteOpen(false)}>
+      <Dialog 
+        open={isDeleteOpen} 
+        onClose={() => setIsDeleteOpen(false)}
+        fullScreen={isSmall}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Remove user</DialogTitle>
         <DialogContent>
           <Typography>

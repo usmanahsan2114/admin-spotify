@@ -4,8 +4,8 @@ module.exports = {
       name: 'shopify-admin-backend',
       script: './backend/server.js',
       cwd: process.cwd(),
-      // Use single instance for shared hosting (Hostinger)
-      // Change to 2+ instances only if you have VPS/dedicated server
+      // Use single instance for resource-constrained environments (shared hosting or small VMs)
+      // Change to 2+ instances for VPS/dedicated servers with more resources
       instances: process.env.PM2_INSTANCES || 1,
       exec_mode: process.env.PM2_INSTANCES > 1 ? 'cluster' : 'fork',
       env: {

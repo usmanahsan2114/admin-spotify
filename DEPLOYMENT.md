@@ -34,15 +34,22 @@ npm --prefix frontend install
 
 ### Database Setup
 
-#### For XAMPP Users (Windows):
-1. Open XAMPP Control Panel
-2. Start MySQL service
-3. Create database:
+#### Using XAMPP (Windows - Recommended for Local Development):
+1. **Install XAMPP**: Download and install XAMPP from https://www.apachefriends.org/
+2. **Start MySQL Service**:
+   - Open XAMPP Control Panel
+   - Click "Start" next to MySQL service
+   - Verify MySQL is running (green indicator)
+3. **Access phpMyAdmin** (Optional):
+   - Open browser: http://localhost/phpmyadmin
+   - Or use MySQL command line: `mysql -u root -p` (password is usually empty)
+4. **Create Database**:
    ```sql
    CREATE DATABASE shopify_admin_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
    ```
+   Or via phpMyAdmin: Click "New" → Enter database name → Select collation → Click "Create"
 
-#### For Standalone MySQL:
+#### For Standalone MySQL (Linux/Mac):
 ```bash
 mysql -u root -p
 CREATE DATABASE shopify_admin_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -176,24 +183,104 @@ bash backend/scripts/restore-database.sh
 
 ### Pre-Deployment Checklist
 
+### 1. Environment Variables
+
+- [ ] **Backend `.env` file created** from `backend/.env.example`
+  - [ ] `NODE_ENV=production` set
+  - [ ] `JWT_SECRET` generated (32+ characters) - **CRITICAL**
+  - [ ] `DB_USER`, `DB_PASSWORD`, `DB_NAME` configured
+  - [ ] `CORS_ORIGIN` set to production domain(s)
+  - [ ] `SENTRY_DSN` configured (optional but recommended)
+
+- [ ] **Frontend `.env.production` file created**
+  - [ ] `VITE_API_BASE_URL` set to production API URL
+
+**Generate JWT Secret:**
+```bash
+openssl rand -base64 32
+```
+
+### 2. Database Setup
+
+- [ ] **MySQL database created**
+  - [ ] Database name matches `DB_NAME` in `.env`
+  - [ ] Database user created with proper permissions
+  - [ ] Database password set and matches `DB_PASSWORD` in `.env`
+
+- [ ] **Database migrations run:**
+```bash
+cd backend
+npx sequelize-cli db:migrate
+```
+
+### 3. Code Security
+
 - [ ] Code audit complete (no in-memory data stores)
 - [ ] Secrets removed from code (using environment variables)
-- [ ] Dependencies updated
+- [ ] No hardcoded secrets in code (all in `.env`)
+- [ ] `.env` files in `.gitignore` (already done)
+- [ ] Production build removes console.log (configured in `vite.config.ts`)
+- [ ] Source maps disabled in production (configured in `vite.config.ts`)
+
+### 4. Build & Dependencies
+
+- [ ] **Backend dependencies installed:**
+```bash
+cd backend
+npm install --production
+```
+
+- [ ] **Frontend production build created:**
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+### 5. Security Configuration
+
 - [ ] Security headers configured (Helmet)
 - [ ] Compression enabled (gzip/brotli)
+- [ ] Rate limiting enabled (already configured)
+- [ ] CORS restricted to production domains only
+- [ ] Account lockout enabled (5 failed attempts = 15 min lockout)
+- [ ] Password complexity enforced (min 8 chars, uppercase, lowercase, number)
+
+### 6. Monitoring & Logging
+
 - [ ] Error logging configured (Winston)
 - [ ] Health endpoint created (`/api/health`)
+- [ ] Log rotation configured (prevent disk space issues)
+- [ ] Sentry error tracking configured (optional but recommended)
+
+### 7. Database Backups
+
 - [ ] Database backups current and tested
+- [ ] Backup script tested: `bash backend/scripts/backup-database-encrypted.sh`
+- [ ] Automated backups configured (cron job recommended)
+- [ ] Restore procedure tested: `bash backend/scripts/restore-database.sh`
+
+### 8. Version Control
+
+- [ ] Dependencies updated
 - [ ] Previous version code tagged in Git
 - [ ] Environment variables documented
 
 ### Server Requirements
 
+**Local Development:**
 - Node.js 18+ (LTS)
-- MySQL 8.0+
-- Nginx (reverse proxy)
-- PM2 (process manager)
-- SSL certificates (Let's Encrypt)
+- MySQL 5.7+ or 8.0+ (via XAMPP on Windows)
+- XAMPP for Windows (includes MySQL and phpMyAdmin)
+
+**Production (Cloud VM - e.g., Oracle Cloud Always Free):**
+- **VM**: Ubuntu 20.04+ or similar Linux distribution
+- **Node.js**: 18+ (LTS recommended)
+- **MySQL**: 8.0+ (can be installed on same VM or separate database server)
+- **Nginx**: Reverse proxy (install via apt: `sudo apt install nginx`)
+- **PM2**: Process manager (install via npm: `npm install -g pm2`)
+- **SSL Certificates**: Let's Encrypt (via Certbot)
+- **Firewall**: Configure to allow HTTP (80), HTTPS (443), and SSH (22) ports
 
 ### Backend Production Setup
 
@@ -252,25 +339,11 @@ chmod 755 logs
 
 #### 5. PM2 Configuration
 
-**Create `ecosystem.config.js` in project root:**
-
-```javascript
-module.exports = {
-  apps: [
-    {
-      name: 'shopify-admin-backend',
-      script: './backend/server.js',
-      cwd: '/path/to/app',
-      instances: 2,
-      exec_mode: 'cluster',
-      env: {
-        NODE_ENV: 'production',
-        PORT: 5000
-      }
-    }
-  ]
-}
-```
+The `ecosystem.config.js` file in the project root is already configured. It uses:
+- Single instance by default (suitable for resource-constrained VMs)
+- Automatic restarts on failure
+- Memory limit (500MB) to prevent memory issues
+- Health checks and graceful shutdown
 
 **Start with PM2:**
 ```bash
@@ -278,6 +351,10 @@ pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
 ```
+
+**For Oracle Cloud Always Free tier (1 OCPU, 1GB RAM):**
+- Use single instance: `instances: 1` (already configured)
+- For larger VMs (2+ OCPUs, 4+ GB RAM), you can increase instances: `instances: 2` or `instances: 'max'`
 
 ### Frontend Production Build
 
@@ -357,8 +434,213 @@ sudo systemctl reload nginx
 ### SSL Certificate Setup
 
 ```bash
+sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d admin.yourdomain.com
 ```
+
+---
+
+## Oracle Cloud Always Free Deployment
+
+This section provides step-by-step instructions for deploying to Oracle Cloud Infrastructure (OCI) Always Free tier.
+
+### Prerequisites
+
+- Oracle Cloud account (free tier available)
+- SSH key pair (for VM access)
+- Domain name (optional, can use VM public IP)
+
+### Step 1: Create VM Instance
+
+1. **Log in to Oracle Cloud Console**: https://cloud.oracle.com/
+2. **Navigate to Compute → Instances**
+3. **Click "Create Instance"**
+4. **Configure VM:**
+   - **Name**: `shopify-admin-vm`
+   - **Image**: Oracle Linux 8 or Ubuntu 20.04/22.04
+   - **Shape**: Always Free eligible shape (VM.Standard.E2.1.Micro - 1 OCPU, 1 GB RAM)
+   - **Network**: Create new VCN or use default
+   - **SSH Keys**: Upload your public SSH key
+5. **Click "Create"**
+
+### Step 2: Configure Security List (Firewall)
+
+1. **Navigate to Networking → Virtual Cloud Networks**
+2. **Click on your VCN**
+3. **Click "Security Lists" → "Default Security List"**
+4. **Add Ingress Rules:**
+   - **HTTP (Port 80)**: Source `0.0.0.0/0`
+   - **HTTPS (Port 443)**: Source `0.0.0.0/0`
+   - **SSH (Port 22)**: Source `0.0.0.0/0` (restrict to your IP for better security)
+   - **Custom TCP (Port 5000)**: Source `10.0.0.0/16` (for internal API access only)
+
+### Step 3: Connect to VM
+
+```bash
+ssh opc@<VM_PUBLIC_IP>
+# Or if using Ubuntu
+ssh ubuntu@<VM_PUBLIC_IP>
+```
+
+### Step 4: Install Required Software
+
+#### Update System:
+```bash
+sudo apt update && sudo apt upgrade -y
+# Or for Oracle Linux:
+sudo yum update -y
+```
+
+#### Install Node.js 18+:
+```bash
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+# Or for Oracle Linux:
+curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+sudo yum install -y nodejs
+```
+
+#### Install MySQL:
+```bash
+sudo apt install -y mysql-server
+# Or for Oracle Linux:
+sudo yum install -y mysql-server
+sudo systemctl start mysqld
+sudo systemctl enable mysqld
+```
+
+#### Install Nginx:
+```bash
+sudo apt install -y nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+```
+
+#### Install PM2:
+```bash
+sudo npm install -g pm2
+```
+
+### Step 5: Clone and Setup Application
+
+```bash
+# Clone repository
+git clone https://github.com/usmanahsan2114/admin-spotify.git
+cd admin-spotify
+
+# Install dependencies
+npm install
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+### Step 6: Configure Database
+
+```bash
+# Secure MySQL installation
+sudo mysql_secure_installation
+
+# Create database
+sudo mysql -u root -p
+```
+
+```sql
+CREATE DATABASE shopify_admin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'shopify_admin'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
+GRANT ALL PRIVILEGES ON shopify_admin.* TO 'shopify_admin'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### Step 7: Configure Environment Variables
+
+```bash
+# Backend .env
+cd backend
+nano .env
+```
+
+```env
+NODE_ENV=production
+PORT=5000
+JWT_SECRET=<generate-strong-secret>
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=shopify_admin
+DB_USER=shopify_admin
+DB_PASSWORD=<your-db-password>
+CORS_ORIGIN=https://admin.yourdomain.com
+```
+
+```bash
+# Frontend .env.production
+cd ../frontend
+nano .env.production
+```
+
+```env
+VITE_API_BASE_URL=https://admin.yourdomain.com/api
+```
+
+### Step 8: Run Migrations and Seed
+
+```bash
+cd ../backend
+npx sequelize-cli db:migrate
+node scripts/reset-and-seed-database.js
+```
+
+### Step 9: Build Frontend
+
+```bash
+cd ../frontend
+npm run build
+```
+
+### Step 10: Start Application with PM2
+
+```bash
+cd ..
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup
+# Follow the instructions provided by pm2 startup
+```
+
+### Step 11: Configure Nginx
+
+See the Nginx configuration section above. Update paths and domain name as needed.
+
+### Step 12: Setup SSL (Optional but Recommended)
+
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d admin.yourdomain.com
+```
+
+### Step 13: Verify Deployment
+
+```bash
+# Check PM2 status
+pm2 status
+
+# Check application logs
+pm2 logs shopify-admin-backend
+
+# Test health endpoint
+curl http://localhost:5000/api/health
+
+# Test public endpoint
+curl https://admin.yourdomain.com/api/health
+```
+
+### Oracle Cloud Specific Notes
+
+- **Always Free Tier**: 1 OCPU, 1 GB RAM - sufficient for small to medium deployments
+- **Network**: Ensure security list allows HTTP/HTTPS traffic
+- **Backup**: Use Oracle Cloud Object Storage for automated backups (free tier available)
+- **Monitoring**: Use Oracle Cloud Monitoring for resource usage alerts
+- **Scaling**: If needed, upgrade to paid VM shapes (2+ OCPUs, 4+ GB RAM) for better performance
 
 ---
 
@@ -673,6 +955,72 @@ curl -H "Authorization: Bearer YOUR_TOKEN" https://admin.yourdomain.com/api/perf
 
 ---
 
+## Production Deployment to Cloud VM
+
+This section covers deployment to a generic Linux VM (e.g., Oracle Cloud Always Free, AWS EC2, DigitalOcean, etc.) running Ubuntu 20.04+ or similar.
+
+### Cloud VM Requirements
+
+- [ ] **Node.js Version**: Install Node.js 18+ (LTS recommended)
+- [ ] **PM2 Installed**: `npm install -g pm2`
+- [ ] **PM2 Configured**: `pm2 start ecosystem.config.js && pm2 save && pm2 startup`
+- [ ] **Nginx Configuration**: Reverse proxy configured (see Nginx config below)
+- [ ] **SSL Certificate**: Let's Encrypt configured for HTTPS
+- [ ] **File Permissions**: Logs directory writable (`chmod 755 backend/logs`)
+- [ ] **Database Connection**: MySQL accessible (local or remote)
+- [ ] **Environment Variables**: Configured in `.env` file on server
+
+### Post-Deployment Verification
+
+**Immediate Checks (First 5 minutes):**
+- [ ] Application starts without errors
+- [ ] Health endpoint returns OK: `curl https://yourdomain.com/api/health`
+- [ ] Frontend loads without errors
+- [ ] Login works with production credentials
+- [ ] Database connection successful (check logs)
+
+**First Hour:**
+- [ ] All critical pages load
+- [ ] API endpoints respond correctly
+- [ ] No errors in PM2 logs: `pm2 logs shopify-admin-backend`
+- [ ] No errors in browser console
+- [ ] SSL certificate valid
+
+**First Day:**
+- [ ] Monitor error logs
+- [ ] Check performance metrics
+- [ ] Verify backups are running
+- [ ] Test all critical workflows
+- [ ] Monitor resource usage (memory, CPU)
+
+### Troubleshooting Common Issues
+
+**Application Won't Start:**
+1. Check PM2 logs: `pm2 logs shopify-admin-backend`
+2. Check environment variables: `cat backend/.env`
+3. Check database connection: `mysql -u $DB_USER -p $DB_NAME`
+4. Check Node.js version: `node --version`
+
+**Database Connection Errors:**
+1. Verify database credentials in `.env`
+2. Check database exists: `mysql -u root -p -e "SHOW DATABASES;"`
+3. Check user permissions: `mysql -u root -p -e "SHOW GRANTS FOR '$DB_USER'@'localhost';"`
+4. Check database logs: `tail -f backend/logs/database.log`
+
+**Frontend Not Loading:**
+1. Check Nginx configuration: `sudo nginx -t`
+2. Check Nginx logs: `sudo tail -f /var/log/nginx/error.log`
+3. Verify `frontend/dist/` directory exists
+4. Check file permissions: `ls -la frontend/dist/`
+
+**API Errors:**
+1. Check backend logs: `pm2 logs shopify-admin-backend`
+2. Check error logs: `tail -f backend/logs/error.log`
+3. Test health endpoint: `curl https://yourdomain.com/api/health`
+4. Check CORS configuration in `.env`
+
+---
+
 **Last Updated**: December 2024  
-**Status**: ✅ Production Ready - Complete deployment guide with rollback procedures and monitoring setup.
+**Status**: ✅ Production Ready - Complete deployment guide with rollback procedures, monitoring setup, and cloud VM deployment instructions.
 

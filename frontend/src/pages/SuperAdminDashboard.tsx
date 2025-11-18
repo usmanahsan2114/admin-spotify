@@ -4,6 +4,7 @@ import {
   Box,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Grid,
   Stack,
@@ -149,7 +150,7 @@ const SuperAdminDashboard = () => {
       value: aggregatedStats.totalStores.toString(),
       icon: <StoreIcon />,
       color: theme.palette.primary.main,
-      to: '/client-stores',
+      to: '/stores',
     },
     {
       label: 'Total Users',
@@ -216,20 +217,50 @@ const SuperAdminDashboard = () => {
           color="text.secondary"
           sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
         >
-          Overview of all stores across the platform with aggregated statistics
+          Overview of all stores - collective and individual statistics across the platform
         </Typography>
       </Box>
 
       {/* Aggregated Stats Cards */}
-      <Grid container spacing={{ xs: 1.5, sm: 2 }} sx={{ mb: { xs: 3, sm: 4 } }}>
+      <Grid 
+        container 
+        spacing={{ xs: 1.5, sm: 2 }} 
+        sx={{ 
+          mb: { xs: 3, sm: 4 },
+        }}
+      >
         {statCards.map((stat, index) => (
-          <Grid item xs={6} sm={4} md={3} key={index}>
+          <Grid 
+            item 
+            xs={12} 
+            sm={6} 
+            md={4} 
+            lg={3}
+            key={index}
+            sx={{
+              flexBasis: { 
+                xs: '100%', 
+                sm: 'calc(50% - 8px)', 
+                md: 'calc(33.333% - 11px)', 
+                lg: 'calc(25% - 18px)' 
+              },
+              maxWidth: { 
+                xs: '100%', 
+                sm: 'calc(50% - 8px)', 
+                md: 'calc(33.333% - 11px)', 
+                lg: 'calc(25% - 18px)' 
+              },
+              flexGrow: 0,
+              flexShrink: 0,
+            }}
+          >
             <Card
               component={stat.to ? RouterLink : Box}
               to={stat.to}
               sx={{
                 height: '100%',
                 minHeight: { xs: 110, sm: 130 },
+                maxWidth: '100%',
                 textDecoration: 'none',
                 transition: 'transform 0.2s, box-shadow 0.2s',
                 cursor: stat.to ? 'pointer' : 'default',
@@ -313,7 +344,7 @@ const SuperAdminDashboard = () => {
             </Typography>
             <Typography
               component={RouterLink}
-              to="/client-stores"
+              to="/stores"
               sx={{
                 color: 'primary.main',
                 textDecoration: 'none',
@@ -337,24 +368,42 @@ const SuperAdminDashboard = () => {
                 >
                   <CardContent>
                     <Stack spacing={1.5}>
-                      <Box display="flex" alignItems="center" justifyContent="space-between">
-                        <Typography variant="subtitle1" fontWeight={600}>
+                      <Box 
+                        display="flex" 
+                        alignItems="center" 
+                        gap={1}
+                        sx={{
+                          minWidth: 0,
+                          width: '100%',
+                        }}
+                      >
+                        <Typography 
+                          variant="subtitle1" 
+                          fontWeight={600}
+                          sx={{
+                            flex: 1,
+                            minWidth: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
                           {store.name}
                         </Typography>
                         {store.isDemo && (
-                          <Box
-                            component="span"
-                            sx={{
-                              px: 1,
-                              py: 0.25,
-                              borderRadius: 0.5,
-                              fontSize: '0.75rem',
-                              backgroundColor: 'info.main',
-                              color: 'white',
+                          <Chip 
+                            label="Demo" 
+                            size="small" 
+                            color="info"
+                            sx={{ 
+                              flexShrink: 0,
+                              height: 20,
+                              fontSize: '0.7rem',
+                              '& .MuiChip-label': {
+                                px: 1,
+                              },
                             }}
-                          >
-                            Demo
-                          </Box>
+                          />
                         )}
                       </Box>
                       <Typography variant="caption" color="text.secondary">
@@ -418,7 +467,7 @@ const SuperAdminDashboard = () => {
             <Box mt={2} textAlign="center">
               <Typography
                 component={RouterLink}
-                to="/client-stores"
+                to="/stores"
                 sx={{
                   color: 'primary.main',
                   textDecoration: 'none',
