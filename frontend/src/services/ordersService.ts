@@ -21,5 +21,33 @@ export const fetchOrderById = (orderId: string) =>
 
 export const downloadOrdersExport = () => apiDownload('/api/export/orders')
 
+export type CreateOrderPayload = {
+  productName: string
+  customerName: string
+  email: string
+  phone?: string
+  quantity: number
+  notes?: string
+}
+
+export const createOrder = async (payload: CreateOrderPayload) => {
+  return apiFetch<Order>('/api/orders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export const importOrders = async (rows: Array<Record<string, unknown>>) => {
+  return apiFetch<{
+    created: number
+    updated: number
+    failed: number
+    errors: Array<{ index: number; message: string }>
+  }>('/api/import/orders', {
+    method: 'POST',
+    body: JSON.stringify(rows),
+  })
+}
+
 
 

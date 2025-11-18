@@ -1870,17 +1870,19 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, r
       }
     })
 
-    // Update timeline
-    const timeline = orderData.timeline || []
-    timeline.push({
-      id: crypto.randomUUID(),
-      description: `Order updated (${Object.keys(req.body)
-        .filter((key) => allowedFields.includes(key))
-        .join(', ')})`,
-      timestamp: new Date().toISOString(),
-      actor: req.user?.email ?? 'System',
-    })
-    updateData.timeline = timeline
+    // Update timeline - create a new array to avoid mutation issues
+    const existingTimeline = Array.isArray(orderData.timeline) ? [...orderData.timeline] : []
+    const updatedFields = Object.keys(req.body).filter((key) => allowedFields.includes(key) && req.body[key] !== undefined)
+    
+    if (updatedFields.length > 0) {
+      existingTimeline.push({
+        id: crypto.randomUUID(),
+        description: `Order updated (${updatedFields.join(', ')})`,
+        timestamp: new Date().toISOString(),
+        actor: req.user?.email ?? 'System',
+      })
+      updateData.timeline = existingTimeline
+    }
 
     // Update order in database
     await order.update(updateData)
@@ -2187,22 +2189,25 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, async (req, r
 
     const customerData = customer.toJSON ? customer.toJSON() : customer
 
-    // Verify customer belongs to user's store
-    if (customerData.storeId !== req.storeId) {
+    // Verify customer belongs to user's store (skip check for superadmin)
+    if (!req.isSuperAdmin && customerData.storeId !== req.storeId) {
       await transaction.rollback()
       return res.status(403).json({ message: 'Customer does not belong to your store.' })
     }
 
     const { name, email, phone, address, alternativePhone } = req.body || {}
 
+    // For superadmin, use customer's storeId; for regular users, use req.storeId
+    const storeIdForCheck = req.isSuperAdmin ? customerData.storeId : req.storeId
+
     // Check if updated email/phone/address matches another customer within the same store
     // (but allow if it matches the same customer being updated)
     if (email && normalizeEmail(email) !== normalizeEmail(customerData.email)) {
-      const existingByEmail = await findCustomerByEmail(email, req.storeId)
+      const existingByEmail = await findCustomerByEmail(email, storeIdForCheck)
       if (existingByEmail && existingByEmail.id !== customerData.id) {
         const existingData = existingByEmail.toJSON ? existingByEmail.toJSON() : existingByEmail
         // Check if they match by other contact info (phone/address) within the same store
-        const existingByContact = await findCustomerByContact(email, phone, address, req.storeId)
+        const existingByContact = await findCustomerByContact(email, phone, address, storeIdForCheck)
         if (existingByContact && existingByContact.id !== customerData.id) {
           // Merge this customer into the existing one
           const mergedInfo = mergeCustomerInfo(existingData, {

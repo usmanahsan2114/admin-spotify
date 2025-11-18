@@ -304,8 +304,8 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
             {/* Quick Filter Buttons - Mobile */}
             <Box
               sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                display: 'flex',
+                flexDirection: 'column',
                 gap: 1,
               }}
             >
@@ -315,14 +315,17 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                   variant={quickFilter === filter.key ? 'contained' : 'outlined'}
                   onClick={() => handleQuickFilter(filter.key)}
                   size="small"
+                  fullWidth
                   sx={{
-                    fontSize: { xs: '0.7rem', sm: '0.8125rem' },
-                    py: { xs: 0.75, sm: 1 },
-                    minHeight: { xs: 36, sm: 40 },
+                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                    py: { xs: 0.875, sm: 1 },
+                    minHeight: { xs: 40, sm: 40 },
                     textTransform: 'none',
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    justifyContent: 'flex-start',
+                    textAlign: 'left',
                   }}
                 >
                   {filter.label}

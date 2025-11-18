@@ -22,7 +22,9 @@ import {
   TextField,
   Tooltip as MuiTooltip,
   Typography,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { fetchOrderById, updateOrder } from '../services/ordersService'
@@ -37,7 +39,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { useTheme, useMediaQuery } from '@mui/material/styles'
 
 const statusOptions: OrderStatus[] = [
   'Pending',
@@ -359,7 +360,7 @@ const OrderDetailsPage = () => {
               Order Progress Visualization
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            <Box sx={{ width: '100%', height: 300, mb: 2 }}>
+            <Box sx={{ width: '100%', height: 300, minWidth: 0, minHeight: 300, mb: 2 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={orderProgressData}>
                   <defs>
@@ -371,10 +372,10 @@ const OrderDetailsPage = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
                   <XAxis 
                     dataKey="status" 
-                    tick={{ fill: theme.palette.text.primary }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
+                    tick={{ fill: theme.palette.text.primary, fontSize: isSmall ? 10 : 12 }}
+                    angle={isSmall ? -90 : -45}
+                    textAnchor={isSmall ? 'middle' : 'end'}
+                    height={isSmall ? 100 : 80}
                   />
                   <YAxis 
                     domain={[0, 100]}

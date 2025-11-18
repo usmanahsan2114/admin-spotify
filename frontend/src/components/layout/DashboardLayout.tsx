@@ -351,7 +351,7 @@ const DashboardLayout = () => {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                maxWidth: { sm: '200px', md: '300px', lg: '400px' },
+                maxWidth: { sm: '300px', md: '400px', lg: '500px', xl: '600px' },
               }}
             >
               {(() => {
@@ -372,7 +372,7 @@ const DashboardLayout = () => {
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                maxWidth: '120px',
+                maxWidth: '180px',
               }}
             >
               {settings?.dashboardName?.split(' ')[0] || 'Dashboard'}

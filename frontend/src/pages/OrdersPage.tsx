@@ -6,6 +6,10 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
   MenuItem,
@@ -21,15 +25,23 @@ import { useTheme } from '@mui/material/styles'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import DownloadIcon from '@mui/icons-material/Download'
+import AddIcon from '@mui/icons-material/Add'
+import UploadIcon from '@mui/icons-material/UploadFile'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveAs } from 'file-saver'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
 import dayjs from 'dayjs'
-import { downloadOrdersExport, fetchOrders, updateOrder } from '../services/ordersService'
+import Papa from 'papaparse'
+import { Controller, useForm } from 'react-hook-form'
+import { yupResolver } from '@hookform/resolvers/yup'
+import * as yup from 'yup'
+import { downloadOrdersExport, fetchOrders, updateOrder, createOrder, importOrders, type CreateOrderPayload } from '../services/ordersService'
 import { fetchGrowthComparison, type GrowthComparisonResponse } from '../services/metricsService'
+import { fetchProducts } from '../services/productsService'
 import type { Order, OrderStatus } from '../types/order'
+import type { Product } from '../types/product'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
@@ -77,6 +89,15 @@ const formatDate = (value?: string | null) => {
 }
 
 
+const orderSchema = yup.object({
+  productName: yup.string().required('Product name is required'),
+  customerName: yup.string().required('Customer name is required'),
+  email: yup.string().email('Valid email is required').required('Email is required'),
+  phone: yup.string().optional(),
+  quantity: yup.number().typeError('Quantity must be a number').integer('Quantity must be an integer').min(1, 'Quantity must be at least 1').required('Quantity is required'),
+  notes: yup.string().optional(),
+})
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -88,11 +109,35 @@ const OrdersPage = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
   const [growthComparison, setGrowthComparison] = useState<GrowthComparisonResponse | null>(null)
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
+  const [isOrderDialogOpen, setIsOrderDialogOpen] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importSummary, setImportSummary] = useState<{ created: number; updated: number; failed: number } | null>(null)
+  const [importErrors, setImportErrors] = useState<Array<{ index: number; message: string }>>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [saving, setSaving] = useState(false)
 
   const navigate = useNavigate()
   const { logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+
+  const {
+    control: orderControl,
+    handleSubmit: handleOrderSubmit,
+    reset: resetOrderForm,
+    formState: { errors: orderErrors },
+  } = useForm<CreateOrderPayload>({
+    resolver: yupResolver(orderSchema),
+    defaultValues: {
+      productName: '',
+      customerName: '',
+      email: '',
+      phone: '',
+      quantity: 1,
+      notes: '',
+    },
+  })
 
   const handleApiError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -129,6 +174,11 @@ const OrdersPage = () => {
   useEffect(() => {
     loadOrders()
   }, [dateRange.startDate, dateRange.endDate])
+
+  useEffect(() => {
+    // Load products for order form
+    fetchProducts().then(setProducts).catch(() => {})
+  }, [])
 
   const handleExport = async () => {
     try {
@@ -226,6 +276,88 @@ const OrdersPage = () => {
     } finally {
       setUpdatingOrderId(null)
     }
+  }
+
+  const onOrderSubmit = async (data: CreateOrderPayload) => {
+    try {
+      setSaving(true)
+      setError(null)
+      await createOrder(data)
+      setSuccess('Order created successfully.')
+      setIsOrderDialogOpen(false)
+      resetOrderForm()
+      await loadOrders()
+    } catch (err) {
+      setError(handleApiError(err, 'Failed to create order.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleImportFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const inputElement = event.target
+    setImporting(true)
+    setImportSummary(null)
+    setImportErrors([])
+    setError(null)
+
+    Papa.parse<Record<string, unknown>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        inputElement.value = ''
+        if (results.errors && results.errors.length > 0) {
+          setError(`Import parsing error: ${results.errors[0].message}`)
+          setImporting(false)
+          return
+        }
+
+        const rows = results.data.filter(
+          (row) => row && Object.keys(row).length > 0,
+        )
+
+        if (rows.length === 0) {
+          setError('No rows found in the import file.')
+          setImporting(false)
+          return
+        }
+
+        try {
+          const response = await importOrders(rows)
+          setImportSummary(response)
+          if (response.errors && response.errors.length > 0) {
+            setImportErrors(
+              response.errors.map((entry) => ({
+                index: entry.index,
+                message: entry.message,
+              })),
+            )
+          }
+          setSuccess(
+            `Import completed: ${response.created} created, ${response.updated} updated.`,
+          )
+          await loadOrders()
+        } catch (err) {
+          setError(handleApiError(err, 'Unable to import orders.'))
+        } finally {
+          setImporting(false)
+        }
+      },
+      error: (parseError) => {
+        inputElement.value = ''
+        setError(parseError.message)
+        setImporting(false)
+      },
+    })
+  }
+
+  const handleOpenImportDialog = () => {
+    setImportSummary(null)
+    setImportErrors([])
+    setIsImportDialogOpen(true)
   }
 
   const columns: GridColDef<Order>[] = [
@@ -361,6 +493,13 @@ const OrdersPage = () => {
                 </IconButton>
               </Tooltip>
               <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setIsOrderDialogOpen(true)}
+              >
+                Add Order
+              </Button>
+              <Button
                 variant="outlined"
                 startIcon={
                   exporting ? <CircularProgress size={16} color="inherit" /> : <DownloadIcon />
@@ -369,6 +508,16 @@ const OrdersPage = () => {
                 disabled={exporting}
               >
                 {exporting ? 'Exporting…' : 'Export orders'}
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={
+                  importing ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />
+                }
+                onClick={handleOpenImportDialog}
+                disabled={importing}
+              >
+                {importing ? 'Importing…' : 'Import orders'}
               </Button>
               <Button variant="outlined" startIcon={<FilterListIcon />} disabled>
                 Advanced filters
@@ -562,6 +711,221 @@ const OrdersPage = () => {
         onClose={() => setSuccess(null)}
         message={success}
       />
+
+      {/* Add Order Dialog */}
+      <Dialog
+        open={isOrderDialogOpen}
+        onClose={() => {
+          setIsOrderDialogOpen(false)
+          resetOrderForm()
+        }}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isSmall}
+      >
+        <form onSubmit={handleOrderSubmit(onOrderSubmit)}>
+          <DialogTitle>Add New Order</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Controller
+                name="productName"
+                control={orderControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Product Name"
+                    required
+                    select
+                    error={!!orderErrors.productName}
+                    helperText={orderErrors.productName?.message}
+                    fullWidth
+                    SelectProps={{
+                      native: true,
+                    }}
+                  >
+                    <option value="">Select a product</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.name}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="customerName"
+                control={orderControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Customer Name"
+                    required
+                    error={!!orderErrors.customerName}
+                    helperText={orderErrors.customerName?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="email"
+                control={orderControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Email"
+                    type="email"
+                    required
+                    error={!!orderErrors.email}
+                    helperText={orderErrors.email?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="phone"
+                control={orderControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Phone (optional)"
+                    error={!!orderErrors.phone}
+                    helperText={orderErrors.phone?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="quantity"
+                control={orderControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Quantity"
+                    type="number"
+                    required
+                    error={!!orderErrors.quantity}
+                    helperText={orderErrors.quantity?.message}
+                    fullWidth
+                    inputProps={{ min: 1 }}
+                  />
+                )}
+              />
+              <Controller
+                name="notes"
+                control={orderControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Notes (optional)"
+                    multiline
+                    rows={3}
+                    error={!!orderErrors.notes}
+                    helperText={orderErrors.notes?.message}
+                    fullWidth
+                  />
+                )}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setIsOrderDialogOpen(false)
+                resetOrderForm()
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" disabled={saving}>
+              {saving ? <CircularProgress size={24} /> : 'Create Order'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Import Orders Dialog */}
+      <Dialog
+        open={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={isSmall}
+      >
+        <DialogTitle>Import Orders from CSV</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Alert severity="info">
+              <Typography variant="body2" gutterBottom>
+                Upload a CSV file with the following columns:
+              </Typography>
+              <Typography variant="body2" component="div">
+                <strong>Required:</strong> productName, customerName, email, quantity
+                <br />
+                <strong>Optional:</strong> phone, notes
+              </Typography>
+            </Alert>
+            <input
+              accept=".csv"
+              style={{ display: 'none' }}
+              id="import-orders-file"
+              type="file"
+              onChange={handleImportFile}
+              disabled={importing}
+            />
+            <label htmlFor="import-orders-file">
+              <Button
+                variant="outlined"
+                component="span"
+                startIcon={<UploadIcon />}
+                disabled={importing}
+                fullWidth
+              >
+                {importing ? 'Importing…' : 'Choose CSV File'}
+              </Button>
+            </label>
+            {importSummary && (
+              <Alert severity={importSummary.failed > 0 ? 'warning' : 'success'}>
+                <Typography variant="body2">
+                  <strong>Import Summary:</strong>
+                  <br />
+                  Created: {importSummary.created}
+                  <br />
+                  Updated: {importSummary.updated}
+                  {importSummary.failed > 0 && (
+                    <>
+                      <br />
+                      Failed: {importSummary.failed}
+                    </>
+                  )}
+                </Typography>
+              </Alert>
+            )}
+            {importErrors.length > 0 && (
+              <Alert severity="error">
+                <Typography variant="body2" fontWeight={600} gutterBottom>
+                  Errors:
+                </Typography>
+                {importErrors.slice(0, 5).map((error, idx) => (
+                  <Typography key={idx} variant="body2">
+                    Row {error.index + 1}: {error.message}
+                  </Typography>
+                ))}
+                {importErrors.length > 5 && (
+                  <Typography variant="body2" color="text.secondary">
+                    ...and {importErrors.length - 5} more errors
+                  </Typography>
+                )}
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsImportDialogOpen(false)} disabled={importing}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   )
 }

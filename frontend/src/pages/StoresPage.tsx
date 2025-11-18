@@ -619,6 +619,17 @@ const StoresPage = () => {
         </Snackbar>
       )}
 
+      <Box mb={2} display="flex" justifyContent="flex-end">
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenStoreDialog()}
+          size="medium"
+        >
+          Create New Store
+        </Button>
+      </Box>
+
       <Card>
         <DataGrid
           rows={stores}
@@ -657,6 +668,161 @@ const StoresPage = () => {
           }}
         />
       </Card>
+
+      {/* Add/Edit Store Dialog */}
+      <Dialog 
+        open={isStoreDialogOpen} 
+        onClose={handleCloseStoreDialog} 
+        maxWidth="md" 
+        fullWidth
+        fullScreen={isMobile}
+      >
+        <form onSubmit={handleStoreSubmit(onStoreSubmit)}>
+          <DialogTitle>
+            {selectedStore ? 'Edit Store' : 'Create New Store'}
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Controller
+                name="name"
+                control={storeControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Store Name"
+                    required
+                    error={!!storeErrors.name}
+                    helperText={storeErrors.name?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="dashboardName"
+                control={storeControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Dashboard Name"
+                    required
+                    error={!!storeErrors.dashboardName}
+                    helperText={storeErrors.dashboardName?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="domain"
+                control={storeControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Domain"
+                    required
+                    error={!!storeErrors.domain}
+                    helperText={storeErrors.domain?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="category"
+                control={storeControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Category"
+                    required
+                    error={!!storeErrors.category}
+                    helperText={storeErrors.category?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Stack direction="row" spacing={2}>
+                <Controller
+                  name="defaultCurrency"
+                  control={storeControl}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Default Currency"
+                      error={!!storeErrors.defaultCurrency}
+                      helperText={storeErrors.defaultCurrency?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                <Controller
+                  name="country"
+                  control={storeControl}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Country"
+                      error={!!storeErrors.country}
+                      helperText={storeErrors.country?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Stack>
+              <Controller
+                name="logoUrl"
+                control={storeControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Logo URL (optional)"
+                    type="url"
+                    error={!!storeErrors.logoUrl}
+                    helperText={storeErrors.logoUrl?.message}
+                    fullWidth
+                  />
+                )}
+              />
+              <Controller
+                name="brandColor"
+                control={storeControl}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    label="Brand Color"
+                    type="color"
+                    error={!!storeErrors.brandColor}
+                    helperText={storeErrors.brandColor?.message}
+                    fullWidth
+                    InputLabelProps={{ shrink: true }}
+                  />
+                )}
+              />
+              <Controller
+                name="isDemo"
+                control={storeControl}
+                render={({ field }) => (
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <input
+                      type="checkbox"
+                      checked={field.value || false}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      style={{ width: 20, height: 20 }}
+                    />
+                    <Typography variant="body2">Demo Store</Typography>
+                  </Box>
+                )}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseStoreDialog} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" disabled={saving}>
+              {saving ? <CircularProgress size={24} /> : selectedStore ? 'Update' : 'Create'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       {/* Manage Admin Credentials Dialog */}
       <Dialog 
