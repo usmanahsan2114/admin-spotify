@@ -6,14 +6,27 @@ const validateEnvironmentVariables = () => {
   const NODE_ENV = process.env.NODE_ENV || 'development'
   const errors = []
 
+  // Get database dialect (default to mysql for local dev)
+  const dialect = (process.env.DB_DIALECT || 'mysql').toLowerCase()
+  const supportedDialects = ['mysql', 'postgres']
+
+  // Validate DB_DIALECT
+  if (!supportedDialects.includes(dialect)) {
+    errors.push(
+      `Invalid DB_DIALECT: ${dialect}. Supported dialects: ${supportedDialects.join(', ')}`
+    )
+  }
+
   // Production-specific validations
   if (NODE_ENV === 'production') {
     // Required in production
     const requiredVars = [
       'JWT_SECRET',
+      'DB_DIALECT',
       'DB_USER',
       'DB_PASSWORD',
       'DB_NAME',
+      'DB_HOST',
     ]
 
     requiredVars.forEach((varName) => {
@@ -30,6 +43,25 @@ const validateEnvironmentVariables = () => {
     // Validate CORS_ORIGIN is set
     if (!process.env.CORS_ORIGIN) {
       errors.push('CORS_ORIGIN environment variable is required in production')
+    }
+
+    // Postgres-specific validations (e.g., for Supabase)
+    if (dialect === 'postgres') {
+      if (!process.env.DB_PORT) {
+        // Warn but don't fail (default is 5432)
+        console.warn('⚠️  DB_PORT not set for Postgres, using default: 5432')
+      }
+    }
+  }
+
+  // Development-specific validations
+  if (NODE_ENV === 'development') {
+    // DB_DIALECT defaults to 'mysql' if not set, which is fine
+    // But warn if explicitly set to postgres in development
+    if (dialect === 'postgres') {
+      console.warn(
+        '⚠️  Using Postgres in development. Make sure PostgreSQL is running and accessible.'
+      )
     }
   }
 
@@ -50,7 +82,7 @@ const validateEnvironmentVariables = () => {
     warnings.forEach((warning) => console.warn(`  - ${warning}`))
   }
 
-  console.log('✅ Environment variables validated successfully')
+  console.log(`✅ Environment variables validated successfully (DB_DIALECT: ${dialect})`)
 }
 
 module.exports = { validateEnvironmentVariables }

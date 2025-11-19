@@ -4,9 +4,9 @@ This document provides an overview of the consolidated documentation structure.
 
 ## Documentation Files
 
-### Main Documentation (10 files)
+### Main Documentation (9 files)
 
-1. **README.md** (25 KB)
+1. **README.md** (25+ KB)
    - Main entry point for the project
    - Quick start guide
    - Features overview
@@ -26,13 +26,15 @@ This document provides an overview of the consolidated documentation structure.
    - Code quality improvements
    - Architecture highlights
 
-4. **DEPLOYMENT.md** (17+ KB)
+4. **DEPLOYMENT.md** (30+ KB)
    - Quick start (localhost setup)
    - Database setup and migration
+   - Database reset and regeneration guide (merged from REGENERATE_DATABASE.md)
    - Production deployment guide
+   - Production readiness checklist (merged from PRODUCTION_READINESS_CHECKLIST.md)
    - Rollback procedures
    - Monitoring & maintenance
-   - Production readiness checklist
+   - Cloud VM deployment instructions
 
 5. **TESTING.md** (15.61 KB)
    - Functional & E2E testing
@@ -47,20 +49,15 @@ This document provides an overview of the consolidated documentation structure.
    - Quick access guide
    - Access levels and permissions
 
-7. **REGENERATE_DATABASE.md** (2.38 KB)
-   - Database reset and reseed instructions
-   - Date filter fixes
-   - Verification steps
-
-8. **IMPROVEMENTS_AND_RECOMMENDATIONS.md** (15+ KB)
+7. **IMPROVEMENTS_AND_RECOMMENDATIONS.md** (15+ KB)
    - Comprehensive code review
    - Security, performance, and production readiness recommendations
    - Implemented improvements summary (consolidated from IMPROVEMENTS_IMPLEMENTED.md and QUICK_IMPROVEMENTS_SUMMARY.md)
    - Cloud VM deployment checklist (Oracle Cloud, AWS, DigitalOcean)
 
-10. **DOCUMENTATION_SUMMARY.md** (This file)
-    - Documentation structure overview
-    - File consolidation summary
+8. **DOCUMENTATION_SUMMARY.md** (This file)
+   - Documentation structure overview
+   - File consolidation summary
 
 ## Consolidated Files
 
@@ -70,7 +67,8 @@ The following files were merged into the main documentation:
 - `ALL_PAGES_URLS.md` → All application URLs and purposes section with access levels
 
 ### Merged into DEPLOYMENT.md:
-- `PRODUCTION_READINESS_CHECKLIST.md` → Production readiness checklist section
+- `PRODUCTION_READINESS_CHECKLIST.md` → Production readiness checklist section (January 2025)
+- `REGENERATE_DATABASE.md` → Detailed database regeneration guide section (January 2025)
 - `DEPLOYMENT_PLAN.md` → Production deployment section
 - `DEPLOYMENT_LAUNCH_TESTING.md` → Deployment testing section
 - `PRODUCTION_DEPLOYMENT.md` → Production deployment section
@@ -143,10 +141,9 @@ Documentation/
 ├── README.md                          # Main entry point
 ├── USER_GUIDE.md                      # End-user documentation
 ├── DEVELOPMENT.md                     # Developer documentation
-├── DEPLOYMENT.md                      # Deployment & operations
+├── DEPLOYMENT.md                      # Deployment & operations (includes production readiness & database regeneration)
 ├── TESTING.md                         # Testing documentation
 ├── STORE_CREDENTIALS_AND_URLS.md      # Credentials & URLs reference
-├── REGENERATE_DATABASE.md             # Database reset guide
 ├── IMPROVEMENTS_AND_RECOMMENDATIONS.md # Code review & improvements
 └── DOCUMENTATION_SUMMARY.md           # Documentation overview (this file)
 ```
@@ -154,11 +151,12 @@ Documentation/
 ## Benefits of Consolidation
 
 1. **Reduced Redundancy**: Eliminated duplicate information across 40+ files
-2. **Better Organization**: Related content grouped logically into 10 essential files
+2. **Better Organization**: Related content grouped logically into 9 essential files
 3. **Easier Maintenance**: Update one file instead of multiple
 4. **Improved Navigation**: Clear structure with table of contents
 5. **Faster Access**: Fewer files to search through
 6. **Cloud VM**: Generic cloud VM deployment (Oracle Cloud Always Free, AWS EC2, DigitalOcean, etc.)
+7. **Production Focus**: Production readiness checklist and database regeneration now integrated into deployment guide
 
 ## Quick Reference
 
@@ -168,7 +166,8 @@ Documentation/
 - **Deployment**: See DEPLOYMENT.md (includes Oracle Cloud Always Free deployment guide)
 - **Testing**: See TESTING.md
 - **Credentials**: See STORE_CREDENTIALS_AND_URLS.md
-- **Database Reset**: See REGENERATE_DATABASE.md
+- **Database Reset**: See DEPLOYMENT.md (Database Reset & Seeding section)
+- **Production Readiness**: See DEPLOYMENT.md (Production Readiness Checklist section)
 - **Code Review**: See IMPROVEMENTS_AND_RECOMMENDATIONS.md
 - **Cloud VM Deployment**: See DEPLOYMENT.md (Oracle Cloud Always Free section)
 - **Documentation Overview**: See DOCUMENTATION_SUMMARY.md (this file)
@@ -176,11 +175,13 @@ Documentation/
 ---
 
 **Last Updated**: January 2025  
-**Status**: ✅ Documentation consolidated from 40+ files to 10 essential files
+**Status**: ✅ Documentation consolidated from 40+ files to 9 essential files
 
 ## Recent Updates (January 2025)
 
-- **Production Readiness Verification**: Complete verification of all internal pages and backend endpoints. All 14 frontend pages and 56 backend API endpoints verified and working correctly. Fixed chart dimensions warnings, order update timeline issues, and customer update cross-store handling. Created PRODUCTION_READINESS_CHECKLIST.md with comprehensive verification status.
+- **Dual Database Support**: Added Supabase/Postgres support alongside MySQL. Backend now supports both MySQL (local dev via XAMPP) and Postgres (production via Supabase) via `DB_DIALECT` environment variable. All models and migrations are dialect-agnostic. Installed `pg` package, updated migrations for dialect compatibility, created `backend/.env.example` with dual database configuration examples. Documentation updated to explain dual database setup.
+- **Documentation Consolidation**: Merged PRODUCTION_READINESS_CHECKLIST.md and REGENERATE_DATABASE.md into DEPLOYMENT.md. Removed empty files (ERRORS_WARNINGS_IMPROVEMENTS.md, backend/config/README.md). Documentation now consists of exactly 9 root MD files.
+- **Production Readiness Verification**: Complete verification of all internal pages and backend endpoints. All 14 frontend pages and 56 backend API endpoints verified and working correctly. Fixed chart dimensions warnings, order update timeline issues, and customer update cross-store handling. Production readiness checklist integrated into DEPLOYMENT.md.
 
 ## Recent Updates (December 2024)
 
@@ -188,7 +189,8 @@ Documentation/
 - **Documentation Consolidation**: Reduced from 40+ markdown files to 10 essential files
 - **Seed/Reset Logic Alignment**: Aligned database reset/seed logic with XAMPP MySQL infrastructure. Updated REGENERATE_DATABASE.md with XAMPP workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin.
 - **Infrastructure Standardization**: Removed all Hostinger-specific logic, standardized on local dev (XAMPP MySQL) and production (Oracle Cloud Always Free/cloud VM) deployment
-- **Production Readiness**: Merged PRODUCTION_READINESS_CHECKLIST.md into DEPLOYMENT.md
+- **Production Readiness**: Merged PRODUCTION_READINESS_CHECKLIST.md into DEPLOYMENT.md (January 2025)
+- **Database Regeneration**: Merged REGENERATE_DATABASE.md into DEPLOYMENT.md (January 2025)
 - **Improvements Summary**: Consolidated IMPROVEMENTS_IMPLEMENTED.md and QUICK_IMPROVEMENTS_SUMMARY.md into IMPROVEMENTS_AND_RECOMMENDATIONS.md
 - **URLs Reference**: Merged ALL_PAGES_URLS.md into STORE_CREDENTIALS_AND_URLS.md with access levels
 - **Database regeneration**: Updated data generation to use November 15, 2025 as current date reference

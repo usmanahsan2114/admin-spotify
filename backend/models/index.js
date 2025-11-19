@@ -2,31 +2,62 @@
 const { Sequelize } = require('sequelize')
 require('dotenv').config()
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'shopify_admin_dev',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASSWORD || '',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    pool: {
-      max: process.env.NODE_ENV === 'production' 
-        ? parseInt(process.env.DB_POOL_MAX || '20', 10) 
-        : parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for large datasets
-      min: process.env.NODE_ENV === 'production' 
-        ? parseInt(process.env.DB_POOL_MIN || '5', 10) 
-        : parseInt(process.env.DB_POOL_MIN || '2', 10),
-      acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10), // Increased timeout for large datasets
-      idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
-      evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Check for idle connections every second
-    },
-    dialectOptions: {
-      connectTimeout: 60000,
-    },
+// Get database dialect from environment, default to 'mysql' for local development
+const dialect = (process.env.DB_DIALECT || 'mysql').toLowerCase()
+
+// Validate dialect is supported
+const supportedDialects = ['mysql', 'postgres']
+if (!supportedDialects.includes(dialect)) {
+  throw new Error(
+    `Unsupported DB_DIALECT: ${dialect}. Supported dialects: ${supportedDialects.join(', ')}`
+  )
+}
+
+// Default ports per dialect
+const defaultPorts = {
+  mysql: 3306,
+  postgres: 5432,
+}
+
+// Get connection config from environment
+const dbConfig = {
+  database: process.env.DB_NAME || (dialect === 'mysql' ? 'shopify_admin_dev' : 'shopify_admin'),
+  username: process.env.DB_USER || (dialect === 'mysql' ? 'root' : 'postgres'),
+  password: process.env.DB_PASSWORD || '',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || defaultPorts[dialect], 10),
+  dialect,
+  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  pool: {
+    max: process.env.NODE_ENV === 'production' 
+      ? parseInt(process.env.DB_POOL_MAX || '20', 10) 
+      : parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for large datasets
+    min: process.env.NODE_ENV === 'production' 
+      ? parseInt(process.env.DB_POOL_MIN || '5', 10) 
+      : parseInt(process.env.DB_POOL_MIN || '2', 10),
+    acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10), // Increased timeout for large datasets
+    idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
+    evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Check for idle connections every second
+  },
+}
+
+// Dialect-specific options
+if (dialect === 'mysql') {
+  dbConfig.dialectOptions = {
+    connectTimeout: 60000,
   }
-)
+} else if (dialect === 'postgres') {
+  // Postgres-specific options (e.g., for Supabase)
+  dbConfig.dialectOptions = {
+    connectTimeout: 60000,
+    // SSL is typically required for Supabase
+    ssl: process.env.DB_SSL === 'true' ? {
+      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+    } : false,
+  }
+}
+
+const sequelize = new Sequelize(dbConfig)
 
 const db = {}
 

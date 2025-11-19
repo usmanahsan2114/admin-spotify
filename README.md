@@ -102,6 +102,7 @@ Create `backend/.env` file with the following content (matches XAMPP defaults):
 NODE_ENV=development
 PORT=5000
 JWT_SECRET=development-secret-please-change-in-production-min-32-chars
+DB_DIALECT=mysql
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=shopify_admin_dev
@@ -111,11 +112,18 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 ```
 
 **XAMPP Connection Details:**
+- `DB_DIALECT=mysql` - Database dialect (defaults to 'mysql' if not set, supports 'mysql' or 'postgres')
 - `DB_HOST=localhost` - XAMPP MySQL runs on localhost
 - `DB_PORT=3306` - Default MySQL port
 - `DB_NAME=shopify_admin_dev` - Database name you created in Step 2
 - `DB_USER=root` - Default XAMPP MySQL user
 - `DB_PASSWORD=` - Empty (XAMPP default), or your MySQL root password if you set one
+
+**Database Dialect Support:**
+- **Local Development**: Uses MySQL via XAMPP (`DB_DIALECT=mysql`)
+- **Production**: Can use Supabase Postgres (`DB_DIALECT=postgres`) by setting Supabase credentials
+- The backend automatically supports both MySQL and Postgres without code changes
+- Migrations and models are dialect-agnostic and work with both databases
 
 **Frontend (`frontend/.env`):**
 

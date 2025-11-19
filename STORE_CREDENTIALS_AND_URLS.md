@@ -184,7 +184,7 @@ When deployed to production on a cloud VM (e.g., Oracle Cloud), URLs will be:
 
 ---
 
-**Last Updated:** November 15, 2025
+**Last Updated:** January 2025
 
 **Status:** ✅ Fully migrated to MySQL database. Ready for production deployment.
 
