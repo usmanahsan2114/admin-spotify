@@ -127,12 +127,14 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 
 **Frontend (`frontend/.env`):**
 
-Create `frontend/.env` file:
+Create `frontend/.env` file for local development:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 VITE_DEV_ADMIN_EMAIL=admin@example.com  # Optional
 ```
+
+**Note:** For production deployment on Vercel, see [DEPLOYMENT.md](./DEPLOYMENT.md) section "Vercel Frontend Deployment". The frontend uses `VITE_API_BASE_URL` environment variable for all API calls, which is set in Vercel dashboard for production.
 
 ### Step 5: Run Database Migrations
 
@@ -288,10 +290,10 @@ npm start
 
 **Environment Variables:**
 
-**Frontend (`frontend/.env.production`):**
-```env
-VITE_API_BASE_URL=https://admin.yourdomain.com/api
-```
+**Frontend (Vercel Deployment):**
+- For Vercel deployment, set `VITE_API_BASE_URL` in Vercel dashboard under "Environment Variables"
+- Example: `VITE_API_BASE_URL=https://api.shopifyadmin.pk`
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) section "Vercel Frontend Deployment" for detailed setup instructions
 
 **Backend (`backend/.env`):**
 ```env

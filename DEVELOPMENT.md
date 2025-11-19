@@ -491,6 +491,8 @@ This document contains the complete development workflow, history, and implement
 ---
 
 ### 2025-01-XX (Latest)
+- **Vercel Frontend Deployment**: Prepared frontend for Vercel deployment with clean environment-based API configuration. Created `frontend/.env` for local development and `frontend/.env.production.example` for production reference. All API calls use `VITE_API_BASE_URL` environment variable. Added comprehensive Vercel deployment guide in DEPLOYMENT.md with step-by-step setup instructions. Updated TESTING.md with production smoke test checklist. Frontend is now ready for Vercel deployment while maintaining local dev workflow unchanged.
+
 - **Supabase Integration**: Integrated Supabase Postgres as production database target. Added comprehensive deployment documentation in DEPLOYMENT.md with step-by-step Supabase setup guide. Updated reset-and-seed script to support `SEED_MODE` environment variable (development/production) for controlled seeding. Made seed script dialect-agnostic (MySQL and Postgres compatible). Added startup logging to show active database dialect without exposing credentials. Health check endpoint works with both MySQL and Postgres.
 
 - **Dual Database Support**: Added Supabase/Postgres support alongside MySQL for production deployments. Backend now supports both MySQL (local dev via XAMPP) and Postgres (production via Supabase) via `DB_DIALECT` environment variable. All models and migrations are dialect-agnostic. Installed `pg` package for Postgres support. Updated migrations to handle dialect differences (ENUM types, indexes). Created `backend/.env.example` with dual database configuration examples.

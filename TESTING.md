@@ -488,6 +488,150 @@ powershell backend/scripts/security-scan.ps1
 
 ## Deployment Testing
 
+### Production (Vercel + Supabase) Smoke Test
+
+This section provides a quick smoke test checklist for production deployment on Vercel with Supabase backend.
+
+#### Prerequisites
+
+- Frontend deployed to Vercel (see [DEPLOYMENT.md](./DEPLOYMENT.md) section "Vercel Frontend Deployment")
+- Backend deployed and accessible (Supabase Postgres database configured)
+- Production API URL configured in Vercel environment variables (`VITE_API_BASE_URL`)
+- Test credentials available (superadmin or demo account)
+
+#### Test Steps
+
+1. **Open Production Frontend URL**:
+   - Navigate to your Vercel deployment URL (e.g., `https://your-app.vercel.app`)
+   - Or custom domain (e.g., `https://admin.shopifyadmin.pk`)
+   - Verify frontend loads without errors
+   - Check browser console for any errors
+
+2. **Test Login**:
+   - Click "Login" or navigate to login page
+   - Login with demo account:
+     - Email: `demo@shopifyadmin.pk`
+     - Password: `demo123`
+   - Or superadmin account:
+     - Email: `superadmin@shopifyadmin.pk`
+     - Password: `superadmin123`
+   - Verify successful login and redirect to dashboard
+
+3. **Test Dashboard**:
+   - Verify dashboard loads without errors
+   - Check that KPI cards display correctly:
+     - Total Orders
+     - Pending Orders
+     - Total Products
+     - Low Stock Count
+     - Pending Returns
+     - New Customers (Last 7 Days)
+   - Verify charts render correctly (sales over time, growth comparison)
+   - Check that date filters work (Last 7 days, This month, Last month)
+   - Verify dark mode toggle works
+
+4. **Test Orders Page**:
+   - Navigate to "Orders" page
+   - Verify orders list loads correctly
+   - Test search functionality (search by order number, customer name)
+   - Test status filter (Pending, Accepted, Paid, Shipped, etc.)
+   - Test date range filter
+   - Click on an order to view details
+   - Verify order details page loads correctly
+   - Test order status update (if admin)
+
+5. **Test Products Page**:
+   - Navigate to "Products" page
+   - Verify products list loads correctly
+   - Test search functionality
+   - Test category filter
+   - Test stock status filter
+   - Click on a product to view/edit (if admin)
+
+6. **Test Customers Page**:
+   - Navigate to "Customers" page
+   - Verify customers list loads correctly
+   - Test search functionality
+   - Click on a customer to view details
+   - Verify customer details page loads correctly
+
+7. **Test Returns Page**:
+   - Navigate to "Returns" page
+   - Verify returns list loads correctly
+   - Test status filter
+   - Test search functionality
+   - Click on a return to view details
+   - Verify return details page loads correctly
+
+8. **Test Mobile View**:
+   - Open browser DevTools (F12)
+   - Enable mobile view (responsive design mode)
+   - Test on mobile viewport (e.g., iPhone 12 Pro, 390x844)
+   - Verify:
+     - All pages are responsive
+     - Navigation drawer works on mobile
+     - Tables are scrollable horizontally if needed
+     - Charts render correctly on mobile
+     - Forms are usable on mobile
+     - Buttons are appropriately sized
+
+9. **Test Dark Mode**:
+   - Toggle dark mode using the theme switcher
+   - Verify:
+     - All pages switch to dark theme correctly
+     - Text remains readable
+     - Charts maintain visibility
+     - No color contrast issues
+
+10. **Test API Integration**:
+    - Open browser DevTools → Network tab
+    - Verify API calls are going to correct backend URL
+    - Check that API calls succeed (status 200)
+    - Verify no CORS errors in console
+
+#### Expected Results
+
+✅ **All pages load without errors**
+✅ **Login works correctly**
+✅ **Dashboard displays data correctly**
+✅ **All list pages (Orders, Products, Customers, Returns) load and filter correctly**
+✅ **Charts render correctly on desktop and mobile**
+✅ **Dark mode toggle works correctly**
+✅ **Mobile view is responsive and usable**
+✅ **API calls succeed without CORS errors**
+✅ **No console errors**
+
+#### Troubleshooting
+
+**Frontend doesn't load:**
+- Check Vercel deployment status
+- Verify build succeeded in Vercel dashboard
+- Check browser console for errors
+
+**API calls fail (CORS errors):**
+- Verify `CORS_ORIGIN` in backend includes your Vercel URL
+- Check `VITE_API_BASE_URL` is set correctly in Vercel environment variables
+- Ensure backend is running and accessible
+
+**Login fails:**
+- Verify backend is running and accessible
+- Check database connection (Supabase Postgres)
+- Verify test credentials exist in database
+
+**Charts don't render:**
+- Check browser console for JavaScript errors
+- Verify Recharts library loaded correctly
+- Check that data is being fetched from API
+
+**Mobile view issues:**
+- Check responsive breakpoints in code
+- Verify Material-UI responsive utilities are working
+- Test on actual mobile device if possible
+
+---
+
+## Deployment Testing
+
 ### Pre-Deployment Checklist
 
 - [ ] Production build verification complete

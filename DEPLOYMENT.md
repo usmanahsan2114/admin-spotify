@@ -634,8 +634,10 @@ Remove or comment out Supabase-specific settings (`DB_SSL`, etc.).
   - [ ] `CORS_ORIGIN` set to production domain(s)
   - [ ] `SENTRY_DSN` configured (optional but recommended)
 
-- [ ] **Frontend `.env.production` file created**
-  - [ ] `VITE_API_BASE_URL` set to production API URL
+- [ ] **Frontend environment variables configured**:
+  - [ ] **Local Development**: `frontend/.env` with `VITE_API_BASE_URL=http://localhost:5000`
+  - [ ] **Production (Vercel)**: `VITE_API_BASE_URL` set in Vercel dashboard (e.g., `https://api.shopifyadmin.pk`)
+  - [ ] See [Vercel Frontend Deployment](#vercel-frontend-deployment) section for detailed setup
 
 **Generate JWT Secret:**
 ```bash
