@@ -83,7 +83,10 @@ Admin users can invite additional staff via `/users` or consume the `/api/signup
 ## Project Structure
 
 ```
-backend/      # Express server, in-memory data, JWT auth
+backend/      # Express server, Sequelize ORM, JWT auth
+  models/     # Sequelize models (dialect-agnostic)
+  migrations/ # Database migrations
+  seeders/    # Database seeders
 frontend/     # React app (Vite + TS + MUI)
   src/
     components/layout/
@@ -92,15 +95,31 @@ frontend/     # React app (Vite + TS + MUI)
     providers/
     services/
     types/
-docs/
-  completeworkflow.md  # Step-by-step build log
-  comments.md          # Implementation notes
-  history.md           # Milestone history
+  dist/       # Production build output
 ```
+
+## Documentation
+
+- **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Development guide, workflow, and history
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment instructions for Vercel + Supabase
+- **[TESTING.md](./TESTING.md)** - Testing procedures and smoke tests
+- **[IMPLEMENTATION_NOTES.md](./IMPLEMENTATION_NOTES.md)** - Technical details and design decisions
+- **[PROJECT_PLAN.md](./PROJECT_PLAN.md)** - Original project plan and requirements
+
+## Database Configuration
+
+### Local Development (MySQL)
+- Uses XAMPP MySQL database (`shopify_admin_dev`)
+- Set `DB_DIALECT=mysql` in `backend/.env`
+
+### Production (Supabase Postgres)
+- Uses Supabase hosted Postgres database
+- Set `DB_DIALECT=postgres` and Supabase credentials in `backend/.env`
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) for setup instructions
 
 ## Future Enhancements
 
-- Replace in-memory stores with a persistence layer (SQL/NoSQL).
+- Replace in-memory stores with a persistence layer (SQL/NoSQL). ✅ **Done** - Sequelize with MySQL/Postgres support
 - Add email-based invite/password reset flows.
 - Expand analytics (conversion metrics, revenue overlays).
 - Integrate real-time notifications for incoming orders.
