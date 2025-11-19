@@ -16,9 +16,14 @@ const logger = winston.createLogger({
 
 async function initializeDatabase() {
   try {
+    // Get database dialect for logging (without exposing credentials)
+    const dialect = db.sequelize.getDialect()
+    const dbConfig = db.sequelize.config
+    logger.info(`Connecting to ${dialect.toUpperCase()} database: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`)
+    
     // Test database connection
     await db.sequelize.authenticate()
-    logger.info('Database connection established successfully.')
+    logger.info(`✅ Database connection established successfully (dialect: ${dialect})`)
     
     // Configure connection pool for production
     if (process.env.NODE_ENV === 'production') {

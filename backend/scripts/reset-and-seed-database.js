@@ -4,10 +4,15 @@
  * 
  * This script:
  * 1. Clears all existing data (orders, returns, customers, products, users, settings, stores)
- * 2. Resets auto-increment counters
- * 3. Seeds fresh data for all stores with documented credentials
+ * 2. Seeds fresh data with documented credentials
  * 
- * Usage: node backend/scripts/reset-and-seed-database.js
+ * Usage: 
+ *   Development (full seed): node backend/scripts/reset-and-seed-database.js
+ *   Production (light seed): SEED_MODE=production node backend/scripts/reset-and-seed-database.js
+ * 
+ * Seed Modes:
+ *   - development (default): Seeds 5 client stores + 1 demo store + superadmin (thousands of rows)
+ *   - production: Seeds superadmin + 1 demo store only (minimal data for production setup)
  */
 
 require('dotenv').config()
@@ -18,42 +23,73 @@ const crypto = require('crypto')
 
 const { Store, User, Product, Customer, Order, Return, Setting } = db
 
+// Get seed mode from environment (default: development)
+const SEED_MODE = (process.env.SEED_MODE || 'development').toLowerCase()
+const SUPPORTED_SEED_MODES = ['development', 'production']
+if (!SUPPORTED_SEED_MODES.includes(SEED_MODE)) {
+  throw new Error(`Invalid SEED_MODE: ${SEED_MODE}. Supported modes: ${SUPPORTED_SEED_MODES.join(', ')}`)
+}
+
+// Get database dialect
+const dialect = db.sequelize.getDialect()
+
 async function resetAndSeedDatabase() {
   try {
-    console.log('🔄 Initializing database connection...')
+    console.log(`🔄 Initializing database connection (dialect: ${dialect}, seed mode: ${SEED_MODE})...`)
     await initializeDatabase()
     
     console.log('🗑️  Clearing all existing data...')
     
-    // Ensure storeId can be null for superadmin (drop FK, modify column, recreate FK)
+    // Ensure storeId can be null for superadmin (dialect-agnostic approach)
     try {
-      // Drop foreign key constraint if it exists
-      await db.sequelize.query(`
-        ALTER TABLE users DROP FOREIGN KEY IF EXISTS users_ibfk_1
-      `).catch(() => {
-        // Try alternative constraint name
-        return db.sequelize.query(`
-          ALTER TABLE users DROP FOREIGN KEY IF EXISTS users_storeId_fkey
+      if (dialect === 'mysql') {
+        // MySQL-specific syntax
+        await db.sequelize.query(`
+          ALTER TABLE users DROP FOREIGN KEY IF EXISTS users_ibfk_1
+        `).catch(() => {
+          // Try alternative constraint name
+          return db.sequelize.query(`
+            ALTER TABLE users DROP FOREIGN KEY IF EXISTS users_storeId_fkey
+          `)
+        }).catch(() => {
+          // Ignore if constraint doesn't exist
+        })
+        
+        await db.sequelize.query(`
+          ALTER TABLE users 
+          MODIFY COLUMN storeId CHAR(36) NULL
         `)
-      }).catch(() => {
-        // Ignore if constraint doesn't exist
-      })
-      
-      // Modify column to allow NULL
-      await db.sequelize.query(`
-        ALTER TABLE users 
-        MODIFY COLUMN storeId CHAR(36) NULL
-      `)
-      
-      // Recreate foreign key constraint
-      await db.sequelize.query(`
-        ALTER TABLE users 
-        ADD CONSTRAINT users_ibfk_1 
-        FOREIGN KEY (storeId) REFERENCES stores(id) 
-        ON UPDATE CASCADE ON DELETE CASCADE
-      `).catch(() => {
-        // Ignore if constraint already exists
-      })
+        
+        await db.sequelize.query(`
+          ALTER TABLE users 
+          ADD CONSTRAINT users_ibfk_1 
+          FOREIGN KEY (storeId) REFERENCES stores(id) 
+          ON UPDATE CASCADE ON DELETE CASCADE
+        `).catch(() => {
+          // Ignore if constraint already exists
+        })
+      } else if (dialect === 'postgres') {
+        // Postgres-specific syntax
+        await db.sequelize.query(`
+          ALTER TABLE users DROP CONSTRAINT IF EXISTS users_storeId_fkey
+        `).catch(() => {
+          // Ignore if constraint doesn't exist
+        })
+        
+        await db.sequelize.query(`
+          ALTER TABLE users 
+          ALTER COLUMN "storeId" DROP NOT NULL
+        `)
+        
+        await db.sequelize.query(`
+          ALTER TABLE users 
+          ADD CONSTRAINT users_storeId_fkey 
+          FOREIGN KEY ("storeId") REFERENCES stores(id) 
+          ON UPDATE CASCADE ON DELETE CASCADE
+        `).catch(() => {
+          // Ignore if constraint already exists
+        })
+      }
       
       console.log('✅ Updated users table to allow null storeId for superadmin')
     } catch (error) {
@@ -72,7 +108,107 @@ async function resetAndSeedDatabase() {
     
     console.log('✅ All data cleared')
     
-    console.log('🌱 Generating fresh seed data...')
+    // Determine what to seed based on mode
+    if (SEED_MODE === 'production') {
+      console.log('🌱 Production seed mode: Creating superadmin + demo store only...')
+      
+      // Create demo store
+      const demoStore = await Store.create({
+        id: crypto.randomUUID(),
+        name: 'Demo Store',
+        dashboardName: 'Demo Store',
+        domain: 'demo.shopifyadmin.pk',
+        category: 'General',
+        defaultCurrency: 'PKR',
+        country: 'PK',
+        logoUrl: null,
+        brandColor: '#1976d2',
+        isDemo: true,
+      })
+      
+      console.log('✅ Demo store created')
+      
+      // Create superadmin
+      const superAdminPassword = bcrypt.hashSync('superadmin123', 10)
+      await User.create({
+        email: 'superadmin@shopifyadmin.pk',
+        passwordHash: superAdminPassword,
+        name: 'Super Admin',
+        role: 'superadmin',
+        storeId: null,
+        fullName: 'Super Administrator',
+        phone: '+92-300-0000000',
+        profilePictureUrl: null,
+        defaultDateRangeFilter: 'last7',
+        notificationPreferences: {
+          newOrders: true,
+          lowStock: true,
+          returnsPending: true,
+        },
+        permissions: {
+          viewOrders: true, editOrders: true, deleteOrders: true,
+          viewProducts: true, editProducts: true, deleteProducts: true,
+          viewCustomers: true, editCustomers: true,
+          viewReturns: true, processReturns: true,
+          viewReports: true, manageUsers: true, manageSettings: true,
+        },
+        active: true,
+        passwordChangedAt: new Date(),
+      })
+      
+      // Create demo user
+      const demoPassword = bcrypt.hashSync('demo123', 10)
+      await User.create({
+        email: 'demo@shopifyadmin.pk',
+        passwordHash: demoPassword,
+        name: 'Demo User',
+        role: 'admin',
+        storeId: demoStore.id,
+        fullName: 'Demo Administrator',
+        phone: '+92-300-0000001',
+        profilePictureUrl: null,
+        defaultDateRangeFilter: 'last7',
+        notificationPreferences: {
+          newOrders: true,
+          lowStock: true,
+          returnsPending: true,
+        },
+        permissions: {},
+        active: true,
+        passwordChangedAt: new Date(),
+      })
+      
+      // Create demo store settings
+      await Setting.create({
+        id: crypto.randomUUID(),
+        storeId: demoStore.id,
+        logoUrl: null,
+        brandColor: '#1976d2',
+        defaultCurrency: 'PKR',
+        country: 'PK',
+        dashboardName: 'Demo Store',
+        defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
+      })
+      
+      console.log('✅ Production seed completed successfully!')
+      console.log('\n📊 Summary:')
+      console.log(`   Stores: 1 (Demo Store)`)
+      console.log(`   Users: 2 (Superadmin + Demo Admin)`)
+      console.log('\n🔐 Login Credentials:')
+      console.log('\n   Superadmin:')
+      console.log('   Email: superadmin@shopifyadmin.pk')
+      console.log('   Password: superadmin123')
+      console.log('\n   Demo Store:')
+      console.log('   Email: demo@shopifyadmin.pk')
+      console.log('   Password: demo123')
+      console.log('\n✨ You can now login with the above credentials!\n')
+      
+      process.exit(0)
+      return
+    }
+    
+    // Development mode: Full seed with all stores
+    console.log('🌱 Development seed mode: Generating full seed data...')
     const multiStoreData = generateMultiStoreData()
     
     console.log(`📦 Seeding ${multiStoreData.stores.length} stores...`)

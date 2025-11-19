@@ -858,6 +858,7 @@ app.get('/api/health', async (_req, res) => {
       environment: NODE_ENV,
       database: {
         status: dbStatus.status,
+        dialect: db.sequelize.getDialect(),
         latency: dbStatus.latency,
         error: dbStatus.error || null,
         pool: poolStats,

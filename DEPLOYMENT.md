@@ -376,12 +376,25 @@ npx sequelize-cli db:migrate:status
 
 ### Database Seeding
 
-Database auto-seeds on first server start in development mode. To manually seed:
+Database auto-seeds on first server start in development mode (MySQL only). To manually seed:
 
+**Development Mode (Full Seed - Default):**
 ```bash
 cd backend
 node scripts/reset-and-seed-database.js
 ```
+This seeds 5 client stores + 1 demo store + superadmin with thousands of rows (products, customers, orders, returns). Use this for local development and testing.
+
+**Production Mode (Light Seed):**
+```bash
+cd backend
+SEED_MODE=production node scripts/reset-and-seed-database.js
+```
+This seeds superadmin + 1 demo store only (minimal data). Use this for production Supabase setup to start fresh with essential accounts only.
+
+**Seed Modes:**
+- `development` (default): Full seed with all test stores and data
+- `production`: Light seed with superadmin and demo store only
 
 ### Database Backup
 
@@ -400,6 +413,211 @@ powershell backend/scripts/backup-database.ps1
 ```bash
 bash backend/scripts/restore-database.sh
 ```
+
+---
+
+## Using Supabase as Production Database (Postgres)
+
+This section provides step-by-step instructions for using Supabase Postgres as your production database.
+
+### Prerequisites
+
+- Supabase account (free tier available at https://supabase.com)
+- Supabase project created
+- Database credentials from Supabase dashboard
+
+### Step 1: Create Supabase Project
+
+1. **Sign up/Login to Supabase**: Visit https://supabase.com and sign up or log in
+2. **Create New Project**:
+   - Click "New Project"
+   - Enter project name: `shopify-admin-db` (or your preferred name)
+   - Select organization: `usmanahsan2114's OrgFree` (or your organization)
+   - Enter database password: `7!tR/HubhpWc!SF` (or generate a strong password)
+   - Select region closest to your users
+   - Click "Create new project"
+3. **Wait for Project Setup**: Supabase will provision your database (takes 1-2 minutes)
+
+### Step 2: Get Database Credentials
+
+1. **Navigate to Project Settings**:
+   - In your Supabase project dashboard, click "Settings" (gear icon)
+   - Click "Database" in the left sidebar
+2. **Get Connection String**:
+   - Scroll to "Connection string" section
+   - Select "URI" tab
+   - Copy the connection string (looks like: `postgresql://postgres:[YOUR_PASSWORD]@db.xxxxx.supabase.co:5432/postgres`)
+3. **Extract Credentials**:
+   - **DB_HOST**: The hostname (e.g., `db.yqzwfbufcmxzeqfbdlpf.supabase.co`)
+   - **DB_PORT**: `5432` (default Postgres port)
+   - **DB_NAME**: `postgres` (default database name)
+   - **DB_USER**: `postgres` (default user)
+   - **DB_PASSWORD**: The password you set when creating the project
+
+### Step 3: Configure Environment Variables
+
+Create or update `backend/.env` with Supabase credentials:
+
+```env
+NODE_ENV=production
+PORT=5000
+JWT_SECRET=your-strong-jwt-secret-min-32-chars
+
+# Supabase Postgres Configuration
+DB_DIALECT=postgres
+DB_HOST=db.yqzwfbufcmxzeqfbdlpf.supabase.co
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=7!tR/HubhpWc!SF
+DB_SSL=true
+DB_SSL_REJECT_UNAUTHORIZED=false
+
+# Connection Pool (optional, but recommended)
+DB_POOL_MAX=20
+DB_POOL_MIN=5
+DB_POOL_ACQUIRE=60000
+DB_POOL_IDLE=10000
+DB_POOL_EVICT=1000
+
+# CORS (update with your production domains)
+CORS_ORIGIN=https://admin.yourdomain.com
+
+# Error Tracking (optional but recommended)
+SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
+```
+
+**Important Notes:**
+- `DB_SSL=true` is **required** for Supabase connections
+- `DB_SSL_REJECT_UNAUTHORIZED=false` allows Supabase's self-signed certificates
+- Never commit `.env` file to version control
+
+### Step 4: Run Database Migrations
+
+With Supabase credentials configured, run migrations:
+
+```bash
+cd backend
+npx sequelize-cli db:migrate
+```
+
+This will create all tables (stores, users, products, customers, orders, returns, settings) in your Supabase database.
+
+**Verify Migrations:**
+```bash
+cd backend
+npx sequelize-cli db:migrate:status
+```
+
+### Step 5: Verify Tables in Supabase
+
+1. **Open Supabase SQL Editor**:
+   - In your Supabase project dashboard, click "SQL Editor" in the left sidebar
+   - Click "New query"
+2. **Check Tables**:
+   ```sql
+   SELECT table_name 
+   FROM information_schema.tables 
+   WHERE table_schema = 'public' 
+   AND table_type = 'BASE TABLE'
+   ORDER BY table_name;
+   ```
+3. **Verify Table Structure**:
+   ```sql
+   SELECT column_name, data_type, is_nullable
+   FROM information_schema.columns
+   WHERE table_name = 'stores'
+   ORDER BY ordinal_position;
+   ```
+
+You should see tables: `stores`, `users`, `products`, `customers`, `orders`, `returns`, `settings`, and `SequelizeMeta`.
+
+### Step 6: Seed Initial Data (Optional)
+
+For production, you may want to start with a minimal seed (superadmin + demo store):
+
+```bash
+cd backend
+SEED_MODE=production node scripts/reset-and-seed-database.js
+```
+
+This creates:
+- **Superadmin**: `superadmin@shopifyadmin.pk` / `superadmin123`
+- **Demo Store**: `demo@shopifyadmin.pk` / `demo123`
+
+**Note:** For full development seed (5 stores + thousands of rows), use:
+```bash
+SEED_MODE=development node scripts/reset-and-seed-database.js
+```
+⚠️ **Warning:** Only use full development seed in development/staging environments, not production.
+
+### Step 7: Verify Database Connection
+
+**Test Health Endpoint:**
+```bash
+curl http://localhost:5000/api/health
+```
+
+Or in your browser: `http://localhost:5000/api/health`
+
+Expected response:
+```json
+{
+  "status": "ok",
+  "timestamp": "2025-01-XX...",
+  "database": {
+    "status": "connected",
+    "dialect": "postgres",
+    "latency": 50
+  },
+  ...
+}
+```
+
+**Test Database Query:**
+In Supabase SQL Editor:
+```sql
+SELECT COUNT(*) as store_count FROM stores;
+SELECT COUNT(*) as user_count FROM users;
+```
+
+### Step 8: Switch Back to Local MySQL (Development)
+
+When developing locally, switch back to MySQL:
+
+```env
+DB_DIALECT=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=shopify_admin_dev
+DB_USER=root
+DB_PASSWORD=
+```
+
+Remove or comment out Supabase-specific settings (`DB_SSL`, etc.).
+
+### Troubleshooting
+
+**Error: "SSL connection required"**
+- Ensure `DB_SSL=true` is set in `.env`
+
+**Error: "Connection refused"**
+- Verify Supabase project is active (check dashboard)
+- Verify `DB_HOST` and `DB_PORT` are correct
+- Check firewall/network restrictions
+
+**Error: "Authentication failed"**
+- Verify `DB_USER` and `DB_PASSWORD` are correct
+- Reset database password in Supabase dashboard if needed
+
+**Error: "Database does not exist"**
+- Supabase creates `postgres` database by default
+- Verify `DB_NAME=postgres` in `.env`
+
+**Migrations failing:**
+- Ensure all previous migrations completed successfully
+- Check `SequelizeMeta` table exists in Supabase
+- Run `npx sequelize-cli db:migrate:status` to see pending migrations
 
 ---
 
