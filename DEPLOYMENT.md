@@ -92,12 +92,12 @@ Replace with your actual Vercel domain and custom domain (if applicable).
 
 From Supabase project settings → Database:
 
-- **Host**: `db.xxxxx.supabase.co` (from connection string)
+- **Host**: `db.yqzwfbufcmxzeqfbdlpf.supabase.co`
 - **Port**: `5432`
 - **Database**: `postgres`
 - **User**: `postgres`
-- **Password**: Your project password
-- **Connection String**: `postgresql://postgres:[YOUR_PASSWORD]@db.xxxxx.supabase.co:5432/postgres`
+- **Password**: `7!tR/HubhpWc!SF`
+- **Connection String**: `postgresql://postgres:7!tR/HubhpWc!SF@db.yqzwfbufcmxzeqfbdlpf.supabase.co:5432/postgres`
 
 ### Step 3: Configure Backend Environment
 
@@ -110,11 +110,11 @@ JWT_SECRET=your-production-jwt-secret-change-this
 
 # Production - Supabase Postgres
 DB_DIALECT=postgres
-DB_HOST=db.xxxxx.supabase.co
+DB_HOST=db.yqzwfbufcmxzeqfbdlpf.supabase.co
 DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres
-DB_PASSWORD=your-supabase-password
+DB_PASSWORD=7!tR/HubhpWc!SF
 
 # CORS
 CORS_ORIGIN=https://your-vercel-domain.vercel.app,https://admin.yourdomain.com
@@ -182,11 +182,11 @@ Deploy your backend to your preferred hosting service (VM, Railway, Render, Digi
 PORT=5000
 JWT_SECRET=<strong-production-secret>
 DB_DIALECT=postgres
-DB_HOST=<supabase-host>
+DB_HOST=db.yqzwfbufcmxzeqfbdlpf.supabase.co
 DB_PORT=5432
 DB_NAME=postgres
 DB_USER=postgres
-DB_PASSWORD=<supabase-password>
+DB_PASSWORD=7!tR/HubhpWc!SF
 DB_SSL=true
 CORS_ORIGIN=<vercel-frontend-url>,<custom-domain>
 ```
@@ -220,11 +220,11 @@ CORS_ORIGIN=http://localhost:5173,https://your-project.vercel.app,https://admin.
 | `PORT` | `5000` | Server port |
 | `JWT_SECRET` | `<secret>` | Strong random string |
 | `DB_DIALECT` | `postgres` | Database dialect |
-| `DB_HOST` | `<supabase-host>` | Supabase database host |
+| `DB_HOST` | `db.yqzwfbufcmxzeqfbdlpf.supabase.co` | Supabase database host |
 | `DB_PORT` | `5432` | Postgres port |
 | `DB_NAME` | `postgres` | Database name |
 | `DB_USER` | `postgres` | Database user |
-| `DB_PASSWORD` | `<password>` | Supabase password |
+| `DB_PASSWORD` | `7!tR/HubhpWc!SF` | Supabase password |
 | `DB_SSL` | `true` | Required for Supabase |
 | `CORS_ORIGIN` | `<frontend-urls>` | Comma-separated allowed origins |
 
