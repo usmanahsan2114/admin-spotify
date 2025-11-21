@@ -109,7 +109,7 @@ const StoresPage = () => {
     reset: resetStoreForm,
     formState: { errors: storeErrors },
   } = useForm<CreateStorePayload>({
-    resolver: yupResolver(storeSchema),
+    resolver: yupResolver(storeSchema) as any,
     defaultValues: {
       name: '',
       dashboardName: '',
@@ -131,7 +131,7 @@ const StoresPage = () => {
     reset: resetCredentialsForm,
     formState: { errors: credentialsErrors },
   } = useForm<StoreAdminCredentialsPayload>({
-    resolver: yupResolver(credentialsSchema.pick(['email', 'password', 'name'])),
+    resolver: yupResolver(credentialsSchema.pick(['email', 'password', 'name'])) as any,
     defaultValues: {
       email: '',
       password: '',
@@ -145,7 +145,7 @@ const StoresPage = () => {
     reset: resetUserCredentialsForm,
     formState: { errors: userCredentialsErrors },
   } = useForm<StoreAdminCredentialsPayload & { role?: string }>({
-    resolver: yupResolver(credentialsSchema),
+    resolver: yupResolver(credentialsSchema) as any,
     defaultValues: {
       email: '',
       password: '',
