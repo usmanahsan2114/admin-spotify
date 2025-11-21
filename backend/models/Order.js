@@ -92,6 +92,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('pending', 'paid', 'refunded'),
         defaultValue: 'pending',
       },
+      paymentMethod: {
+        type: DataTypes.STRING,
+        defaultValue: 'Card',
+        allowNull: true,
+      },
     },
     {
       tableName: 'orders',

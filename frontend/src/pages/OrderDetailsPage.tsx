@@ -104,18 +104,18 @@ const OrderDetailsPage = () => {
       // Ensure timeline is always an array (handle JSON string or null/undefined)
       const normalizedData = {
         ...data,
-        timeline: Array.isArray(data.timeline) 
-          ? data.timeline 
-          : (typeof data.timeline === 'string' 
-              ? (() => {
-                  try {
-                    const parsed = JSON.parse(data.timeline)
-                    return Array.isArray(parsed) ? parsed : []
-                  } catch {
-                    return []
-                  }
-                })()
-              : [])
+        timeline: Array.isArray(data.timeline)
+          ? data.timeline
+          : (typeof data.timeline === 'string'
+            ? (() => {
+              try {
+                const parsed = JSON.parse(data.timeline)
+                return Array.isArray(parsed) ? parsed : []
+              } catch {
+                return []
+              }
+            })()
+            : [])
       }
       setOrder(normalizedData)
       setStatus(normalizedData.status ?? 'Pending')
@@ -151,10 +151,10 @@ const OrderDetailsPage = () => {
     if (!order) return []
     const statusOrder = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
     const currentIndex = statusOrder.indexOf(order.status)
-    
+
     // Ensure timeline is an array
     const timeline = Array.isArray(order.timeline) ? order.timeline : []
-    
+
     return statusOrder.map((status, index) => ({
       status,
       progress: index <= currentIndex ? 100 : 0,
@@ -174,7 +174,7 @@ const OrderDetailsPage = () => {
         setSaving(false)
         return
       }
-      
+
       if (quantity > 1000) {
         setCalculationError('Quantity cannot exceed 1000. Please verify the order quantity.')
         setSaving(false)
@@ -292,8 +292,8 @@ const OrderDetailsPage = () => {
       </Breadcrumbs>
 
       {calculationError && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           onClose={() => setCalculationError(null)}
         >
           <Typography variant="body2" fontWeight={600}>
@@ -311,8 +311,8 @@ const OrderDetailsPage = () => {
             spacing={2}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
@@ -370,14 +370,14 @@ const OrderDetailsPage = () => {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                  <XAxis 
-                    dataKey="status" 
+                  <XAxis
+                    dataKey="status"
                     tick={{ fill: theme.palette.text.primary, fontSize: isSmall ? 10 : 12 }}
                     angle={isSmall ? -90 : -45}
                     textAnchor={isSmall ? 'middle' : 'end'}
                     height={isSmall ? 100 : 80}
                   />
-                  <YAxis 
+                  <YAxis
                     domain={[0, 100]}
                     tick={{ fill: theme.palette.text.primary }}
                     label={{ value: 'Progress %', angle: -90, position: 'insideLeft' }}
@@ -451,7 +451,7 @@ const OrderDetailsPage = () => {
                         checked={isPaid}
                         onChange={(event) => setIsPaid(event.target.checked)}
                       />
-                      <Typography>{isPaid ? 'Paid' : 'Unpaid'}</Typography>
+                      <Typography>{isPaid ? 'Paid' : (order.paymentMethod === 'COD' ? 'Unpaid (COD)' : 'Unpaid')}</Typography>
                     </Stack>
                   </Box>
                 </Stack>

@@ -17,6 +17,7 @@ export type Order = {
   quantity: number
   status: OrderStatus
   isPaid: boolean
+  paymentMethod?: string
   notes: string
   createdAt: string
   updatedAt?: string

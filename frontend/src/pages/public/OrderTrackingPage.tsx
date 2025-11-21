@@ -44,6 +44,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping'
 import PaymentIcon from '@mui/icons-material/Payment'
 import PendingIcon from '@mui/icons-material/Pending'
 import InventoryIcon from '@mui/icons-material/Inventory'
+import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart'
 
 const statusSteps = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
 
@@ -56,7 +57,7 @@ const OrderTrackingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const orderId = searchParams.get('orderId') || ''
   const email = searchParams.get('email') || ''
-  
+
   const [searchType, setSearchType] = useState<SearchType>('orderId')
   const [orderIdInput, setOrderIdInput] = useState(orderId)
   const [emailInput, setEmailInput] = useState(email)
@@ -81,11 +82,11 @@ const OrderTrackingPage = () => {
     setOrders([])
 
     try {
-      const orderUrl = storeId 
+      const orderUrl = storeId
         ? `/api/orders/${id}?storeId=${storeId}`
         : `/api/orders/${id}`
       const data = await apiFetch<Order>(orderUrl, { skipAuth: true })
-      
+
       // Verify email if provided
       if (emailToVerify && data.email.toLowerCase() !== emailToVerify.toLowerCase().trim()) {
         setError('Order not found or email does not match.')
@@ -126,9 +127,9 @@ const OrderTrackingPage = () => {
       if (storeId) {
         params.set('storeId', storeId)
       }
-      
+
       const data = await apiFetch<Order[]>(`/api/orders/search/by-contact?${params.toString()}`, { skipAuth: true })
-      
+
       if (data.length === 0) {
         setError(`No orders found for this ${searchType === 'email' ? 'email' : 'phone number'}.`)
         return
@@ -149,7 +150,7 @@ const OrderTrackingPage = () => {
         setError('Please enter an Order ID')
         return
       }
-      handleTrackOrder(orderIdInput, emailInput.trim() || undefined)
+      handleTrackOrder(orderIdInput)
     } else {
       handleSearchByContact()
     }
@@ -162,9 +163,19 @@ const OrderTrackingPage = () => {
     setSearchParams({ orderId: selectedOrder.id, email: selectedOrder.email })
   }
 
+  const getStatusSteps = () => {
+    if (order?.status === 'Refunded') {
+      return ['Pending', 'Accepted', 'Paid', 'Shipped', 'Refunded']
+    }
+    return ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
+  }
+
+  const steps = getStatusSteps()
+
   const getActiveStep = () => {
     if (!order) return 0
-    const index = statusSteps.indexOf(order.status)
+    if (order.status === 'Refunded') return steps.length
+    const index = steps.indexOf(order.status)
     return index >= 0 ? index : 0
   }
 
@@ -172,6 +183,8 @@ const OrderTrackingPage = () => {
     switch (status) {
       case 'Completed':
         return <CheckCircleIcon sx={{ color: 'success.main' }} />
+      case 'Refunded':
+        return <RemoveShoppingCartIcon sx={{ color: 'error.main' }} />
       case 'Shipped':
         return <LocalShippingIcon sx={{ color: 'info.main' }} />
       case 'Paid':
@@ -183,7 +196,7 @@ const OrderTrackingPage = () => {
     }
   }
 
-  const getStatusColor = (status: string): 'success' | 'info' | 'warning' | 'default' => {
+  const getStatusColor = (status: string): 'success' | 'info' | 'warning' | 'error' | 'default' => {
     switch (status) {
       case 'Completed':
       case 'Shipped':
@@ -191,6 +204,8 @@ const OrderTrackingPage = () => {
       case 'Paid':
       case 'Accepted':
         return 'info'
+      case 'Refunded':
+        return 'error'
       case 'Pending':
         return 'warning'
       default:
@@ -208,8 +223,8 @@ const OrderTrackingPage = () => {
       sx={{
         width: '100%',
         background: (theme) =>
-          theme.palette.mode === 'light' 
-            ? 'linear-gradient(135deg, #f5f7fb 0%, #e8ecf1 100%)' 
+          theme.palette.mode === 'light'
+            ? 'linear-gradient(135deg, #f5f7fb 0%, #e8ecf1 100%)'
             : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         transition: 'background 0.3s ease',
       }}
@@ -248,10 +263,10 @@ const OrderTrackingPage = () => {
         </IconButton>
 
         <Fade in timeout={800}>
-          <Card 
-            sx={{ 
-              maxWidth: 900, 
-              width: '100%', 
+          <Card
+            sx={{
+              maxWidth: 900,
+              width: '100%',
               boxShadow: 12,
               borderRadius: 3,
               overflow: 'hidden',
@@ -266,8 +281,8 @@ const OrderTrackingPage = () => {
               <Stack spacing={4}>
                 <Zoom in timeout={600}>
                   <Box textAlign="center">
-                    <Typography 
-                      variant="h3" 
+                    <Typography
+                      variant="h3"
                       fontWeight={700}
                       sx={{
                         background: (theme) =>
@@ -313,34 +328,18 @@ const OrderTrackingPage = () => {
                 <Slide direction="down" in timeout={400}>
                   <Stack spacing={2}>
                     {searchType === 'orderId' && (
-                      <>
-                        <TextField
-                          id="track-order-id"
-                          label="Order ID"
-                          value={orderIdInput}
-                          onChange={(e) => setOrderIdInput(e.target.value)}
-                          fullWidth
-                          placeholder="Enter your order ID"
-                          autoComplete="off"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleSubmit()
-                          }}
-                        />
-                        <TextField
-                          id="track-email"
-                          label="Email Address (Optional)"
-                          type="email"
-                          value={emailInput}
-                          onChange={(e) => setEmailInput(e.target.value)}
-                          fullWidth
-                          placeholder="Enter your email for verification"
-                          autoComplete="email"
-                          helperText="Optional: Enter email to verify order ownership"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') handleSubmit()
-                          }}
-                        />
-                      </>
+                      <TextField
+                        id="track-order-id"
+                        label="Order ID"
+                        value={orderIdInput}
+                        onChange={(e) => setOrderIdInput(e.target.value)}
+                        fullWidth
+                        placeholder="Enter your order ID"
+                        autoComplete="off"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') handleSubmit()
+                        }}
+                      />
                     )}
                     {searchType === 'email' && (
                       <TextField
@@ -401,8 +400,8 @@ const OrderTrackingPage = () => {
 
                 {error && (
                   <Fade in timeout={300}>
-                    <Alert 
-                      severity="error" 
+                    <Alert
+                      severity="error"
                       onClose={() => setError(null)}
                       sx={{
                         animation: 'shake 0.5s ease',
@@ -517,14 +516,16 @@ const OrderTrackingPage = () => {
                                           {ord.quantity}
                                         </Typography>
                                       </Box>
-                                      <Box flex={1}>
-                                        <Typography variant="caption" color="text.secondary">
-                                          Payment Status
-                                        </Typography>
-                                        <Typography variant="body1" fontWeight={600}>
-                                          {ord.isPaid ? 'Paid' : 'Unpaid'}
-                                        </Typography>
-                                      </Box>
+                                      {ord.total && (
+                                        <Box flex={1}>
+                                          <Typography variant="caption" color="text.secondary">
+                                            Total Amount
+                                          </Typography>
+                                          <Typography variant="body1" fontWeight={600} color="primary.main">
+                                            {formatCurrency(ord.total)}
+                                          </Typography>
+                                        </Box>
+                                      )}
                                     </Stack>
                                   </Stack>
                                 </Box>
@@ -545,11 +546,11 @@ const OrderTrackingPage = () => {
                       <Typography variant="h5" fontWeight={600} mb={3}>
                         Order Status
                       </Typography>
-                      
-                      <Stepper 
-                        activeStep={getActiveStep()} 
-                        orientation="vertical" 
-                        sx={{ 
+
+                      <Stepper
+                        activeStep={getActiveStep()}
+                        orientation="vertical"
+                        sx={{
                           mb: 3,
                           '& .MuiStepLabel-root': {
                             '& .MuiStepLabel-label': {
@@ -558,7 +559,7 @@ const OrderTrackingPage = () => {
                           },
                         }}
                       >
-                        {statusSteps.map((status, index) => (
+                        {steps.map((status, index) => (
                           <Step key={status}>
                             <StepLabel
                               StepIconComponent={() => (
@@ -595,9 +596,9 @@ const OrderTrackingPage = () => {
                         ))}
                       </Stepper>
 
-                      <Card 
-                        variant="outlined" 
-                        sx={{ 
+                      <Card
+                        variant="outlined"
+                        sx={{
                           mt: 3,
                           borderRadius: 2,
                           overflow: 'hidden',
@@ -639,8 +640,8 @@ const OrderTrackingPage = () => {
                                   <Typography variant="caption" color="text.secondary">
                                     Total Amount
                                   </Typography>
-                                  <Typography 
-                                    variant="h6" 
+                                  <Typography
+                                    variant="h6"
                                     fontWeight={600}
                                     sx={{
                                       color: 'primary.main',
@@ -661,6 +662,14 @@ const OrderTrackingPage = () => {
                                   month: 'long',
                                   day: 'numeric',
                                 })}
+                              </Typography>
+                            </Box>
+                            <Box>
+                              <Typography variant="caption" color="text.secondary">
+                                Payment Status
+                              </Typography>
+                              <Typography variant="body1" fontWeight={600}>
+                                {order.status === 'Refunded' ? 'Unpaid' : (order.isPaid ? 'Paid' : (order.paymentMethod === 'COD' ? 'Unpaid (COD)' : 'Unpaid'))}
                               </Typography>
                             </Box>
                             {order.notes && (
