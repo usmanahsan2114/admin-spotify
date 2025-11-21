@@ -1761,10 +1761,10 @@ app.post('/api/orders', validateOrder, async (req, res) => {
       try {
         const payload = jwt.verify(token, JWT_SECRET)
         if (payload.userId) {
-          // Find user to get name and email
+          // Find user to get storeId
           const user = await User.findByPk(payload.userId)
           if (user) {
-            submittedBy = `${user.name || user.email} (${user.email})`
+            submittedBy = user.id  // Store the UUID, not the name
             orderStoreId = orderStoreId || user.storeId
           } else {
             submittedBy = payload.userId
@@ -1830,8 +1830,14 @@ app.post('/api/orders', validateOrder, async (req, res) => {
       })
     }
 
+    // Generate unique order number
+    const orderDate = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const randomSuffix = crypto.randomBytes(3).toString('hex').toUpperCase()
+    const orderNumber = `ORD-${orderDate}-${randomSuffix}`
+
     const newOrder = await Order.create({
       storeId: orderStoreId,
+      orderNumber,
       productName,
       customerName,
       email,

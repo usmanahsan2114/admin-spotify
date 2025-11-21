@@ -187,7 +187,7 @@ const RegularDashboard = () => {
     const min = Math.min(...values)
     const max = Math.max(...values)
     const padding = (max - min) * 0.1 || max * 0.1 || 1
-    return [Math.max(0, min - padding), max + padding]
+    return [Math.floor(Math.max(0, min - padding)), Math.ceil(max + padding)]
   }, [salesOverTime])
 
   const revenueVsOrdersDomain = useMemo(() => {
@@ -201,8 +201,8 @@ const RegularDashboard = () => {
     const revenuePadding = (revenueMax - revenueMin) * 0.1 || revenueMax * 0.1 || 1
     const ordersPadding = (ordersMax - ordersMin) * 0.1 || ordersMax * 0.1 || 1
     return {
-      revenue: [Math.max(0, revenueMin - revenuePadding), revenueMax + revenuePadding],
-      orders: [Math.max(0, ordersMin - ordersPadding), ordersMax + ordersPadding]
+      revenue: [Math.floor(Math.max(0, revenueMin - revenuePadding)), Math.ceil(revenueMax + revenuePadding)],
+      orders: [Math.floor(Math.max(0, ordersMin - ordersPadding)), Math.ceil(ordersMax + ordersPadding)]
     }
   }, [revenueVsOrdersData])
 
@@ -229,7 +229,7 @@ const RegularDashboard = () => {
     const min = Math.min(...values)
     const max = Math.max(...values)
     const padding = (max - min) * 0.1 || max * 0.1 || 1
-    return [Math.max(0, min - padding), max + padding]
+    return [Math.floor(Math.max(0, min - padding)), Math.ceil(max + padding)]
   }, [growthChartData])
 
   // Customer acquisition data (from trend report)
@@ -247,7 +247,7 @@ const RegularDashboard = () => {
     const min = Math.min(...values)
     const max = Math.max(...values)
     const padding = (max - min) * 0.1 || max * 0.1 || 1
-    return [Math.max(0, min - padding), max + padding]
+    return [Math.floor(Math.max(0, min - padding)), Math.ceil(max + padding)]
   }, [customerAcquisitionData])
 
   const lowStockTrendDomain = useMemo(() => {
@@ -256,7 +256,7 @@ const RegularDashboard = () => {
     const min = Math.min(...values)
     const max = Math.max(...values)
     const padding = (max - min) * 0.1 || max * 0.1 || 1
-    return [Math.max(0, min - padding), max + padding]
+    return [Math.floor(Math.max(0, min - padding)), Math.ceil(max + padding)]
   }, [lowStockTrend])
 
   // Detailed Trend Analysis domain
@@ -270,7 +270,7 @@ const RegularDashboard = () => {
     const min = Math.min(...values)
     const max = Math.max(...values)
     const padding = (max - min) * 0.1 || max * 0.1 || 1
-    return [Math.max(0, min - padding), max + padding]
+    return [Math.floor(Math.max(0, min - padding)), Math.ceil(max + padding)]
   }, [trendReport])
 
   const summary = useMemo<SummaryCard[]>(() => {
@@ -458,10 +458,10 @@ const RegularDashboard = () => {
                   }
                   : {},
                 borderLeft: `4px solid ${card.intent === 'alert'
-                    ? theme.palette.error.main
-                    : card.intent === 'info'
-                      ? theme.palette.info.main
-                      : theme.palette.primary.main
+                  ? theme.palette.error.main
+                  : card.intent === 'info'
+                    ? theme.palette.info.main
+                    : theme.palette.primary.main
                   }`,
                 background: card.intent === 'alert'
                   ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.05)} 0%, transparent 100%)`
@@ -660,6 +660,7 @@ const RegularDashboard = () => {
                         orientation="right"
                         tick={{ fontSize: isMobile ? 9 : 11 }}
                         domain={revenueVsOrdersDomain.orders}
+                        allowDecimals={false}
                       />
                       <Tooltip
                         contentStyle={{
