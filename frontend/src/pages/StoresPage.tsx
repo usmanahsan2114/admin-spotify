@@ -273,11 +273,16 @@ const StoresPage = () => {
     try {
       setSaving(true)
       setError(null)
+      const payload = {
+        ...data,
+        logoUrl: data.logoUrl || null,
+      }
+
       if (selectedStore) {
-        await updateStore(selectedStore.id, data)
+        await updateStore(selectedStore.id, payload)
         setSuccess('Store updated successfully.')
       } else {
-        await createStore(data)
+        await createStore(payload)
         setSuccess('Store created successfully.')
       }
       handleCloseStoreDialog()
