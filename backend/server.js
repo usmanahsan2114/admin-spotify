@@ -464,29 +464,22 @@ const findCustomerByContact = async (email, phone, address, storeId = null) => {
 
   if (normalizedEmail) {
     whereConditions.push({
-      [Op.or]: [
-        { email: { [Op.like]: normalizedEmail } },
-        { alternativeEmails: { [Op.like]: `%${normalizedEmail}%` } },
-      ],
+      email: { [Op.like]: normalizedEmail },
     })
   }
 
   if (normalizedPhone) {
     whereConditions.push({
-      [Op.or]: [
-        { phone: { [Op.like]: `%${normalizedPhone}%` } },
-      ],
+      phone: { [Op.like]: `%${normalizedPhone}%` },
     })
   }
 
   if (normalizedAddress) {
     whereConditions.push({
-      [Op.or]: [
-        { address: { [Op.like]: `%${normalizedAddress}%` } },
-        { alternativeAddresses: { [Op.like]: `%${normalizedAddress}%` } },
-      ],
+      address: { [Op.like]: `%${normalizedAddress}%` },
     })
   }
+
 
   if (whereConditions.length === 0) return null
 
@@ -1789,7 +1782,22 @@ app.post('/api/orders', validateOrder, async (req, res) => {
         ...(orderStoreId ? { storeId: orderStoreId } : {}),
       },
     })
-    const productPrice = product ? product.price : 0
+
+    if (!product) {
+      return res.status(400).json({
+        message: `Product "${productName}" not found`
+      })
+    }
+
+    // Validate stock quantity
+    if (product.stockQuantity < quantity) {
+      return res.status(400).json({
+        message: `Insufficient stock. Only ${product.stockQuantity} units available.`,
+        availableStock: product.stockQuantity
+      })
+    }
+
+    const productPrice = product.price
     const orderTotal = productPrice * quantity
 
     // Determine storeId - from auth token, product, or request body
@@ -1898,6 +1906,170 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, r
   } catch (error) {
     logger.error('Failed to update order:', error)
     return res.status(500).json({ message: 'Failed to update order', error: error.message })
+  }
+})
+
+// Import orders from CSV with smart column detection
+app.post('/api/import/orders', authenticateToken, async (req, res) => {
+  const { detectOrderColumns, getMappingSummary, extractRowData } = require('./utils/columnDetector')
+
+  try {
+    const { csvData } = req.body
+
+    if (!csvData || csvData.trim() === '') {
+      return res.status(400).json({
+        message: 'No rows found in the import file.',
+        error: 'CSV data is empty or missing.'
+      })
+    }
+
+    const storeId = req.isSuperAdmin ? null : req.storeId
+
+    // Parse CSV data (expecting array of objects from frontend)
+    const rows = typeof csvData === 'string' ? JSON.parse(csvData) : csvData
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({
+        message: 'No rows found in the import file.',
+        error: 'CSV data must be a non-empty array.'
+      })
+    }
+
+    // Detect column mappings from headers (first row keys)
+    const headers = Object.keys(rows[0])
+    const columnMappings = detectOrderColumns(headers)
+    const mappingSummary = getMappingSummary(columnMappings)
+
+    // Check if all required fields are mapped
+    if (mappingSummary.requiredMissing > 0) {
+      return res.status(400).json({
+        message: 'Unable to detect required columns. Please ensure your CSV has columns for: Product Name, Customer Name, and Email.',
+        mappingSummary,
+        error: 'Missing required column mappings'
+      })
+    }
+
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [],
+      mappingSummary
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i]
+      try {
+        // Extract data using detected column mappings
+        const data = extractRowData(row, columnMappings)
+
+        const productName = data.productName?.trim()
+        const customerName = data.customerName?.trim()
+        const email = data.email?.trim()
+        const phone = data.phone?.trim() || ''
+        const quantity = parseInt(data.quantity || 1)
+        const notes = data.notes?.trim() || ''
+
+        if (!productName || !customerName || !email) {
+          results.failed++
+          results.errors.push({
+            index: i,
+            message: `Missing required fields (productName, customerName, or email)`
+          })
+          continue
+        }
+
+        // Validate quantity
+        if (isNaN(quantity) || quantity < 1) {
+          results.failed++
+          results.errors.push({
+            index: i,
+            message: `Invalid quantity: ${data.quantity}`
+          })
+          continue
+        }
+
+        // Find product by name
+        const product = await Product.findOne({
+          where: {
+            name: { [Op.like]: productName },
+            ...(storeId ? { storeId } : {})
+          }
+        })
+
+        if (!product) {
+          results.failed++
+          results.errors.push({
+            index: i,
+            message: `Product "${productName}" not found`
+          })
+          continue
+        }
+
+        const productPrice = product.price
+        const orderTotal = productPrice * quantity
+        const orderStoreId = storeId || product.storeId
+
+        // Find or create customer
+        let customer = await findCustomerByContact(email, phone, null, orderStoreId)
+        if (!customer) {
+          customer = await Customer.create({
+            storeId: orderStoreId,
+            name: customerName,
+            email,
+            phone: phone || null,
+            address: null,
+            alternativeEmails: [],
+            alternativeNames: [],
+            alternativePhones: [],
+            alternativeAddresses: []
+          })
+        }
+
+        // Create order
+        await Order.create({
+          storeId: orderStoreId,
+          productName,
+          customerName,
+          email,
+          phone: phone || '',
+          quantity,
+          status: 'Pending',
+          isPaid: false,
+          notes,
+          submittedBy: `${req.user?.email} (CSV Import)`,
+          total: orderTotal,
+          customerId: customer.id,
+          timeline: [{
+            id: crypto.randomUUID(),
+            description: 'Order created via CSV import',
+            timestamp: new Date().toISOString(),
+            actor: req.user?.email || 'System'
+          }]
+        })
+
+        results.created++
+      } catch (rowError) {
+        results.failed++
+        results.errors.push({
+          index: i,
+          message: rowError.message || 'Unknown error'
+        })
+        logger.error(`Failed to import order row ${i}:`, rowError)
+      }
+    }
+
+    logger.info(`[import/orders] Imported ${results.created} orders, ${results.failed} failed`)
+    return res.json({
+      message: 'Import completed',
+      summary: results
+    })
+  } catch (error) {
+    logger.error('Order import failed:', error)
+    return res.status(500).json({
+      message: 'Order import failed',
+      error: error.message
+    })
   }
 })
 
@@ -2355,6 +2527,8 @@ app.post('/api/returns', authenticateToken, validateReturn, async (req, res) => 
     })
     const totalReturnedQuantity = existingReturns.reduce((sum, r) => {
       const rData = r.toJSON ? r.toJSON() : r
+      // Exclude rejected returns from the count
+      if (rData.status === 'Rejected') return sum
       return sum + (rData.returnedQuantity || 0)
     }, 0)
     const remainingQuantity = orderData.quantity - totalReturnedQuantity
@@ -2977,10 +3151,16 @@ app.put('/api/users/me', authenticateToken, validateUserProfile, async (req, res
       }
     })
 
-    await user.update(updateData)
-    await user.reload()
+    // Re-fetch user instance to ensure we have a Sequelize model instance, not a plain object
+    const userInstance = await User.findByPk(req.user.id)
+    if (!userInstance) {
+      return res.status(404).json({ message: 'User not found.' })
+    }
 
-    const userData = user.toJSON ? user.toJSON() : user
+    await userInstance.update(updateData)
+    await userInstance.reload()
+
+    const userData = userInstance.toJSON ? userInstance.toJSON() : userInstance
     return res.json(sanitizeUser(userData))
   } catch (error) {
     logger.error('Failed to update user profile:', error)
@@ -2996,6 +3176,22 @@ app.post('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), 
     const existingUser = await findUserByEmail(email, storeId || req.storeId)
     if (existingUser) {
       return res.status(409).json({ message: 'An account with that email already exists.' })
+    }
+
+    // Enforce User Limits per Store (unless Super Admin)
+    if (!req.isSuperAdmin) {
+      const targetStoreId = req.storeId
+      if (role === 'admin') {
+        const adminCount = await User.count({ where: { storeId: targetStoreId, role: 'admin' } })
+        if (adminCount >= 1) {
+          return res.status(403).json({ message: 'Limit reached: Each store can have only 1 Admin. Contact Super Admin to increase limits.' })
+        }
+      } else if (role === 'staff') {
+        const staffCount = await User.count({ where: { storeId: targetStoreId, role: 'staff' } })
+        if (staffCount >= 3) {
+          return res.status(403).json({ message: 'Limit reached: Each store can have only 3 Staff members. Contact Super Admin to increase limits.' })
+        }
+      }
     }
 
     const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
@@ -3895,6 +4091,8 @@ app.post(
   authenticateToken,
   authorizeRole('admin'),
   async (req, res) => {
+    const { detectProductColumns, getMappingSummary, extractRowData } = require('./utils/columnDetector')
+
     try {
       const payload = Array.isArray(req.body)
         ? req.body
@@ -3906,6 +4104,20 @@ app.post(
         return res
           .status(400)
           .json({ message: 'Provide an array of products to import.' })
+      }
+
+      // Detect column mappings from headers (first row keys)
+      const headers = Object.keys(payload[0])
+      const columnMappings = detectProductColumns(headers)
+      const mappingSummary = getMappingSummary(columnMappings)
+
+      // Check if all required fields are mapped
+      if (mappingSummary.requiredMissing > 0) {
+        return res.status(400).json({
+          message: 'Unable to detect required columns. Please ensure your CSV has columns for: Product Name and Price.',
+          mappingSummary,
+          error: 'Missing required column mappings'
+        })
       }
 
       let created = 0
@@ -3920,45 +4132,49 @@ app.post(
             throw new Error('Invalid row format.')
           }
 
-          const name = String(item.name ?? '').trim()
+          // Extract data using detected column mappings
+          const data = extractRowData(item, columnMappings)
+
+          const name = String(data.name ?? '').trim()
           if (!name) {
             throw new Error('Name is required.')
           }
 
-          const price = Number(item.price ?? item.unitPrice ?? 0)
+          const price = Number(data.price ?? 0)
           if (Number.isNaN(price) || price < 0) {
             throw new Error('Price must be a non-negative number.')
           }
 
-          const stockQuantity = Number(item.stockQuantity ?? item.stock ?? 0)
+          const stockQuantity = Number(data.stockQuantity ?? 0)
           if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
             throw new Error('Stock quantity must be a non-negative integer.')
           }
 
           const reorderThresholdRaw =
-            item.reorderThreshold ?? Math.floor(stockQuantity / 2)
+            data.reorderThreshold ?? Math.floor(stockQuantity / 2)
           const reorderThreshold = Number(reorderThresholdRaw)
           if (!Number.isInteger(reorderThreshold) || reorderThreshold < 0) {
             throw new Error('Reorder threshold must be a non-negative integer.')
           }
 
           const status =
-            item.status && ['active', 'inactive'].includes(item.status)
-              ? item.status
+            data.status && ['active', 'inactive'].includes(String(data.status).toLowerCase())
+              ? String(data.status).toLowerCase()
               : 'active'
 
           let product = null
 
-          if (item.id) {
-            product = await findProductById(String(item.id))
-            // Verify product belongs to user's store
-            if (product) {
-              const pData = product.toJSON ? product.toJSON() : product
-              if (pData.storeId !== req.storeId) {
-                product = null // Don't allow updating products from other stores
-              }
-            }
+          // Try to find by SKU first if provided
+          if (data.sku) {
+            product = await Product.findOne({
+              where: {
+                sku: String(data.sku),
+                storeId: req.storeId,
+              },
+            })
           }
+
+          // Fall back to finding by name
           if (!product) {
             product = await Product.findOne({
               where: {
@@ -3975,22 +4191,22 @@ app.post(
               stockQuantity,
               reorderThreshold,
               status,
-              description: (item.description && String(item.description)) ?? (product.description || ''),
-              category: item.category ? String(item.category) : undefined,
-              imageUrl: item.imageUrl ? String(item.imageUrl) : undefined,
+              description: data.description ? String(data.description) : (product.description || ''),
+              category: data.category ? String(data.category) : product.category,
+              sku: data.sku ? String(data.sku) : product.sku,
             })
             updated += 1
           } else {
             await Product.create({
               storeId: req.storeId,
               name,
-              description: item.description ? String(item.description) : '',
+              description: data.description ? String(data.description) : '',
               price,
               stockQuantity,
               reorderThreshold,
               status,
-              category: item.category ? String(item.category) : undefined,
-              imageUrl: item.imageUrl ? String(item.imageUrl) : undefined,
+              category: data.category ? String(data.category) : undefined,
+              sku: data.sku ? String(data.sku) : undefined,
             })
             created += 1
           }
@@ -4004,16 +4220,21 @@ app.post(
       }
 
       return res.json({
+        message: `Import complete. Created: ${created}, Updated: ${updated}, Failed: ${errors.length}`,
         created,
         updated,
         failed: errors.length,
-        errors: errors.length > 0 ? errors : undefined,
+        errors,
+        mappingSummary
       })
     } catch (error) {
-      logger.error('Failed to import products:', error)
-      return res.status(500).json({ message: 'Failed to import products', error: error.message })
+      logger.error('Product import failed:', error)
+      return res.status(500).json({
+        message: 'Product import failed.',
+        error: error instanceof Error ? error.message : 'Unknown error.',
+      })
     }
-  },
+  }
 )
 
 // Sentry request handler (must be before other error handlers)

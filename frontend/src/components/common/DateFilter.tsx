@@ -44,7 +44,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
 
   // Use reference date matching seed data (Nov 15, 2025) for consistent filtering
   // This ensures date filters work correctly with seeded test data
-  const referenceDate = dayjs('2025-11-15')
+  const referenceDate = dayjs() // Use current date
 
   // Sync quickFilter state with value prop
   useEffect(() => {
@@ -100,7 +100,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
   const getQuickFilterRange = (filter: QuickFilter): DateRange => {
     // Use reference date matching seed data (Nov 15, 2025) for consistent filtering
     const now = referenceDate
-    
+
     switch (filter) {
       case 'today': {
         const start = now.startOf('day')
@@ -180,7 +180,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
     }
     const start = dayjs(startDateInput).startOf('day').toISOString()
     const end = dayjs(endDateInput).endOf('day').toISOString()
-    
+
     if (dayjs(start).isAfter(dayjs(end))) {
       // Swap if start is after end
       onChange({ startDate: end, endDate: start })
@@ -203,22 +203,22 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
     if (!value.startDate || !value.endDate) return 'All time'
     const start = dayjs(value.startDate)
     const end = dayjs(value.endDate)
-    
+
     // If same day, show single date
     if (start.isSame(end, 'day')) {
       return start.format('MMM D, YYYY')
     }
-    
+
     // If same month, show "MMM D - D, YYYY"
     if (start.isSame(end, 'month')) {
       return `${start.format('MMM D')} - ${end.format('D, YYYY')}`
     }
-    
+
     // If same year, show "MMM D - MMM D, YYYY"
     if (start.isSame(end, 'year')) {
       return `${start.format('MMM D')} - ${end.format('MMM D, YYYY')}`
     }
-    
+
     // Different years
     return `${start.format('MMM D, YYYY')} - ${end.format('MMM D, YYYY')}`
   }, [value])
@@ -248,8 +248,8 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
         <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
           <Box display="flex" alignItems="center" gap={1}>
             <CalendarTodayIcon fontSize="small" color="action" />
-            <Typography 
-              variant="subtitle2" 
+            <Typography
+              variant="subtitle2"
               fontWeight={600}
               sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
             >

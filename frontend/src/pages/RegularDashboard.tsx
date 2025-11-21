@@ -100,7 +100,7 @@ const RegularDashboard = () => {
   // Initialize with "This Month" (November 1-15, 2025) as default
   // Data is available from Jan 1, 2025 to Nov 15, 2025
   const [dateRange, setDateRange] = useState<DateRange>(() => {
-    const now = dayjs('2025-11-15') // Use fixed date for consistency (matches data generation)
+    const now = dayjs() // Use current date
     return {
       startDate: now.startOf('month').format('YYYY-MM-DD'), // Nov 1, 2025
       endDate: now.format('YYYY-MM-DD'), // Nov 15, 2025 (last date with data)
@@ -275,53 +275,53 @@ const RegularDashboard = () => {
 
   const summary = useMemo<SummaryCard[]>(() => {
     if (!metrics) return []
-    
+
     // Calculate average order value from filtered orders
-    const avgOrderValue = metrics.totalOrders > 0 
-      ? metrics.totalRevenue / metrics.totalOrders 
+    const avgOrderValue = metrics.totalOrders > 0
+      ? metrics.totalRevenue / metrics.totalOrders
       : 0
-    
+
     // Calculate completion rate from filtered orders
     const completedOrders = orders.filter(o => o.status === 'Completed').length
-    const completionRate = metrics.totalOrders > 0 
+    const completionRate = metrics.totalOrders > 0
       ? ((completedOrders / metrics.totalOrders) * 100).toFixed(1)
       : '0'
-    
+
     const cards: SummaryCard[] = [
-      { 
-        label: 'Total Revenue', 
+      {
+        label: 'Total Revenue',
         value: formatCurrency(metrics.totalRevenue),
         intent: 'info' as const,
         icon: <AttachMoneyIcon />,
         subtitle: `${metrics.totalOrders} orders`,
       },
-      { 
-        label: 'Total Orders', 
+      {
+        label: 'Total Orders',
         value: metrics.totalOrders.toString(),
         icon: <ShoppingCartIcon />,
         subtitle: `${completionRate}% completed`,
       },
-      { 
-        label: 'Avg Order Value', 
+      {
+        label: 'Avg Order Value',
         value: formatCurrency(avgOrderValue),
         intent: 'info' as const,
         icon: <AttachMoneyIcon />,
       },
-      { 
-        label: 'Completion Rate', 
+      {
+        label: 'Completion Rate',
         value: `${completionRate}%`,
         intent: 'info' as const,
         icon: <CheckCircleIcon />,
         subtitle: `${completedOrders} completed`,
       },
-      { 
-        label: 'Pending Orders', 
+      {
+        label: 'Pending Orders',
         value: metrics.pendingOrdersCount.toString(),
         intent: metrics.pendingOrdersCount > 0 ? ('alert' as const) : ('info' as const),
         icon: <WarningIcon />,
       },
-      { 
-        label: 'Total Products', 
+      {
+        label: 'Total Products',
         value: metrics.totalProducts.toString(),
         icon: <InventoryIcon />,
         subtitle: `${metrics.lowStockCount} low stock`,
@@ -398,18 +398,18 @@ const RegularDashboard = () => {
 
   return (
     <Box sx={{ minWidth: 0, width: '100%' }}>
-      <Box 
-        mb={{ xs: 2, sm: 3 }} 
-        display="flex" 
+      <Box
+        mb={{ xs: 2, sm: 3 }}
+        display="flex"
         flexDirection={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between" 
-        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
         gap={2}
       >
-        <Typography 
-          variant="h4" 
+        <Typography
+          variant="h4"
           component="h1"
-          sx={{ 
+          sx={{
             fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' },
             fontWeight: 600,
           }}
@@ -453,42 +453,41 @@ const RegularDashboard = () => {
                 overflow: 'hidden',
                 '&:hover': card.to
                   ? {
-                      transform: { xs: 'none', sm: 'translateY(-4px)' },
-                      boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
-                    }
+                    transform: { xs: 'none', sm: 'translateY(-4px)' },
+                    boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
+                  }
                   : {},
-                borderLeft: `4px solid ${
-                  card.intent === 'alert'
+                borderLeft: `4px solid ${card.intent === 'alert'
                     ? theme.palette.error.main
                     : card.intent === 'info'
-                    ? theme.palette.info.main
-                    : theme.palette.primary.main
-                }`,
+                      ? theme.palette.info.main
+                      : theme.palette.primary.main
+                  }`,
                 background: card.intent === 'alert'
                   ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.05)} 0%, transparent 100%)`
                   : card.intent === 'info'
-                  ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`
-                  : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
+                    ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`
+                    : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
               }}
             >
               <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
                 <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography 
-                      variant="body2" 
-                      color="text.secondary" 
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
                       gutterBottom
-                      sx={{ 
+                      sx={{
                         fontSize: { xs: '0.75rem', sm: '0.875rem' },
                         fontWeight: 500,
                       }}
                     >
                       {card.label}
                     </Typography>
-                    <Typography 
-                      variant="h4" 
+                    <Typography
+                      variant="h4"
                       fontWeight={700}
-                      sx={{ 
+                      sx={{
                         fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
                         wordBreak: 'break-word',
                         lineHeight: 1.2,
@@ -497,10 +496,10 @@ const RegularDashboard = () => {
                       {card.value}
                     </Typography>
                     {card.subtitle && (
-                      <Typography 
-                        variant="caption" 
+                      <Typography
+                        variant="caption"
                         color="text.secondary"
-                        sx={{ 
+                        sx={{
                           fontSize: { xs: '0.7rem', sm: '0.75rem' },
                           mt: 0.5,
                           display: 'block',
@@ -519,15 +518,15 @@ const RegularDashboard = () => {
                           card.intent === 'alert'
                             ? theme.palette.error.main
                             : card.intent === 'info'
-                            ? theme.palette.info.main
-                            : theme.palette.primary.main,
+                              ? theme.palette.info.main
+                              : theme.palette.primary.main,
                           0.1
                         ),
                         color: card.intent === 'alert'
                           ? theme.palette.error.main
                           : card.intent === 'info'
-                          ? theme.palette.info.main
-                          : theme.palette.primary.main,
+                            ? theme.palette.info.main
+                            : theme.palette.primary.main,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -563,10 +562,10 @@ const RegularDashboard = () => {
             <Card sx={{ gridColumn: { xs: '1', lg: '1 / -1' } }}>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
                 <Box mb={2}>
-                  <Typography 
-                    variant="h6" 
+                  <Typography
+                    variant="h6"
                     fontWeight={600}
-                    sx={{ 
+                    sx={{
                       fontSize: { xs: '1rem', sm: '1.25rem' },
                     }}
                   >
@@ -588,20 +587,20 @@ const RegularDashboard = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis 
-                        dataKey="dateLabel" 
+                      <XAxis
+                        dataKey="dateLabel"
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         angle={isMobile ? -45 : 0}
                         textAnchor={isMobile ? 'end' : 'middle'}
                         height={isMobile ? 60 : 40}
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         tickFormatter={(value) => formatCurrency(value)}
                         domain={salesOverTimeDomain}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
@@ -628,11 +627,11 @@ const RegularDashboard = () => {
           {revenueVsOrdersData.length > 0 && (
             <Card>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   fontWeight={600}
                   gutterBottom
-                  sx={{ 
+                  sx={{
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     mb: { xs: 1.5, sm: 2 },
                   }}
@@ -643,33 +642,33 @@ const RegularDashboard = () => {
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart data={revenueVsOrdersData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis 
-                        dataKey="date" 
+                      <XAxis
+                        dataKey="date"
                         tick={{ fontSize: isMobile ? 9 : 11 }}
                         angle={isMobile ? -45 : 0}
                         textAnchor={isMobile ? 'end' : 'middle'}
                         height={isMobile ? 60 : 40}
                       />
-                      <YAxis 
+                      <YAxis
                         yAxisId="left"
                         tick={{ fontSize: isMobile ? 9 : 11 }}
                         tickFormatter={(value) => formatCurrency(value)}
                         domain={revenueVsOrdersDomain.revenue}
                       />
-                      <YAxis 
-                        yAxisId="right" 
+                      <YAxis
+                        yAxisId="right"
                         orientation="right"
                         tick={{ fontSize: isMobile ? 9 : 11 }}
                         domain={revenueVsOrdersDomain.orders}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,
                         }}
-                        formatter={(value: number, name: string) => 
+                        formatter={(value: number, name: string) =>
                           name === 'revenue' ? formatCurrency(value) : value
                         }
                       />
@@ -702,11 +701,11 @@ const RegularDashboard = () => {
           {growthChartData.length > 0 && (
             <Card>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   fontWeight={600}
                   gutterBottom
-                  sx={{ 
+                  sx={{
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     mb: { xs: 1.5, sm: 2 },
                   }}
@@ -717,17 +716,17 @@ const RegularDashboard = () => {
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <BarChart data={growthChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis 
-                        dataKey="period" 
+                      <XAxis
+                        dataKey="period"
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         tickFormatter={(value) => formatCurrency(value)}
                         domain={growthChartDomain}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
@@ -735,8 +734,8 @@ const RegularDashboard = () => {
                         }}
                         formatter={(value: number) => formatCurrency(value)}
                       />
-                      <Bar 
-                        dataKey="value" 
+                      <Bar
+                        dataKey="value"
                         fill={theme.palette.primary.main}
                         radius={[8, 8, 0, 0]}
                       />
@@ -751,11 +750,11 @@ const RegularDashboard = () => {
           {statusDistribution.length > 0 && (
             <Card>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   fontWeight={600}
                   gutterBottom
-                  sx={{ 
+                  sx={{
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     mb: { xs: 1.5, sm: 2 },
                   }}
@@ -770,8 +769,8 @@ const RegularDashboard = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => 
-                          isMobile 
+                        label={({ name, percent }) =>
+                          isMobile
                             ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
                             : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
                         }
@@ -785,15 +784,15 @@ const RegularDashboard = () => {
                           <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,
                         }}
                       />
-                      <Legend 
+                      <Legend
                         wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
                         iconType="circle"
                       />
@@ -808,11 +807,11 @@ const RegularDashboard = () => {
           {categoryDistribution.length > 0 && (
             <Card>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   fontWeight={600}
                   gutterBottom
-                  sx={{ 
+                  sx={{
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     mb: { xs: 1.5, sm: 2 },
                   }}
@@ -827,8 +826,8 @@ const RegularDashboard = () => {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => 
-                          isMobile 
+                        label={({ name, percent }) =>
+                          isMobile
                             ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
                             : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
                         }
@@ -842,15 +841,15 @@ const RegularDashboard = () => {
                           <Cell key={`cat-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,
                         }}
                       />
-                      <Legend 
+                      <Legend
                         wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
                         iconType="circle"
                       />
@@ -865,11 +864,11 @@ const RegularDashboard = () => {
           {customerAcquisitionData.length > 0 && (
             <Card>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   fontWeight={600}
                   gutterBottom
-                  sx={{ 
+                  sx={{
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     mb: { xs: 1.5, sm: 2 },
                   }}
@@ -886,20 +885,20 @@ const RegularDashboard = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis 
-                        dataKey="date" 
+                      <XAxis
+                        dataKey="date"
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         angle={isMobile ? -45 : 0}
                         textAnchor={isMobile ? 'end' : 'middle'}
                         height={isMobile ? 60 : 40}
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         domain={customerAcquisitionDomain}
                         allowDecimals={false}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
@@ -925,11 +924,11 @@ const RegularDashboard = () => {
           {lowStockTrend.length > 0 && (
             <Card>
               <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography 
-                  variant="h6" 
+                <Typography
+                  variant="h6"
                   fontWeight={600}
                   gutterBottom
-                  sx={{ 
+                  sx={{
                     fontSize: { xs: '1rem', sm: '1.25rem' },
                     mb: { xs: 1.5, sm: 2 },
                   }}
@@ -940,30 +939,30 @@ const RegularDashboard = () => {
                   <ResponsiveContainer width="100%" height={chartHeight}>
                     <LineChart data={lowStockTrend}>
                       <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis 
-                        dataKey="dateLabel" 
+                      <XAxis
+                        dataKey="dateLabel"
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         angle={isMobile ? -45 : 0}
                         textAnchor={isMobile ? 'end' : 'middle'}
                         height={isMobile ? 60 : 40}
                       />
-                      <YAxis 
+                      <YAxis
                         tick={{ fontSize: isMobile ? 10 : 12 }}
                         domain={lowStockTrendDomain}
                         allowDecimals={false}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           fontSize: isMobile ? '0.75rem' : '0.875rem',
                           padding: isMobile ? '8px' : '12px',
                           backgroundColor: theme.palette.background.paper,
                           border: `1px solid ${theme.palette.divider}`,
                         }}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="lowStockCount" 
-                        stroke={theme.palette.warning.main} 
+                      <Line
+                        type="monotone"
+                        dataKey="lowStockCount"
+                        stroke={theme.palette.warning.main}
                         strokeWidth={isMobile ? 1.5 : 2}
                         dot={{ r: isMobile ? 3 : 4 }}
                       />
@@ -980,20 +979,20 @@ const RegularDashboard = () => {
       {growthReport && (
         <Box mb={{ xs: 3, sm: 4 }}>
           <Box mb={{ xs: 2, sm: 2.5 }}>
-            <Typography 
-              variant="h6" 
+            <Typography
+              variant="h6"
               fontWeight={600}
-              sx={{ 
+              sx={{
                 fontSize: { xs: '1rem', sm: '1.25rem' },
                 color: 'text.primary',
               }}
             >
               Performance Metrics
             </Typography>
-            <Typography 
-              variant="body2" 
+            <Typography
+              variant="body2"
               color="text.secondary"
-              sx={{ 
+              sx={{
                 fontSize: { xs: '0.75rem', sm: '0.875rem' },
                 mt: 0.5,
               }}
@@ -1004,9 +1003,9 @@ const RegularDashboard = () => {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { 
-                xs: '1fr', 
-                sm: 'repeat(2, 1fr)', 
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
                 md: 'repeat(2, 1fr)',
                 lg: 'repeat(4, 1fr)',
               },
@@ -1030,11 +1029,11 @@ const RegularDashboard = () => {
               growthPct={
                 growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
                   ? parseFloat(
-                      (
-                        (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
-                        (1 + growthReport.growthOrdersPct / 100)
-                      ).toFixed(1),
-                    )
+                    (
+                      (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
+                      (1 + growthReport.growthOrdersPct / 100)
+                    ).toFixed(1),
+                  )
                   : undefined
               }
               formatValue={(val) => formatCurrency(val as number)}
@@ -1063,9 +1062,9 @@ const RegularDashboard = () => {
               </Typography>
               <FormControl size="small" sx={{ minWidth: 150 }}>
                 <InputLabel>Metric</InputLabel>
-                <Select 
-                  value={trendMetric} 
-                  label="Metric" 
+                <Select
+                  value={trendMetric}
+                  label="Metric"
                   onChange={(e) => setTrendMetric(e.target.value as 'sales' | 'orders' | 'customers')}
                 >
                   <MenuItem value="sales">Sales</MenuItem>
@@ -1078,28 +1077,28 @@ const RegularDashboard = () => {
               <ResponsiveContainer width="100%" height={chartHeight}>
                 <LineChart data={trendReport.data}>
                   <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                  <XAxis 
-                    dataKey="dateLabel" 
+                  <XAxis
+                    dataKey="dateLabel"
                     tick={{ fontSize: isMobile ? 10 : 12 }}
                     angle={isMobile ? -45 : 0}
                     textAnchor={isMobile ? 'end' : 'middle'}
                     height={isMobile ? 60 : 40}
                   />
-                  <YAxis 
+                  <YAxis
                     tick={{ fontSize: isMobile ? 10 : 12 }}
-                    tickFormatter={(value) => 
+                    tickFormatter={(value) =>
                       trendMetric === 'sales' ? formatCurrency(value) : value.toString()
                     }
                     domain={trendReportDomain}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
+                  <Tooltip
+                    contentStyle={{
                       fontSize: isMobile ? '0.75rem' : '0.875rem',
                       padding: isMobile ? '8px' : '12px',
                       backgroundColor: theme.palette.background.paper,
                       border: `1px solid ${theme.palette.divider}`,
                     }}
-                    formatter={(value: number) => 
+                    formatter={(value: number) =>
                       trendMetric === 'sales' ? formatCurrency(value) : value
                     }
                   />

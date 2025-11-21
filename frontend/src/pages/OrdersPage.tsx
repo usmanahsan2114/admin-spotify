@@ -20,6 +20,7 @@ import {
   Tooltip,
   Typography,
   useMediaQuery,
+  Autocomplete,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -40,8 +41,10 @@ import * as yup from 'yup'
 import { downloadOrdersExport, fetchOrders, updateOrder, createOrder, importOrders, type CreateOrderPayload } from '../services/ordersService'
 import { fetchGrowthComparison, type GrowthComparisonResponse } from '../services/metricsService'
 import { fetchProducts } from '../services/productsService'
+import { fetchCustomers } from '../services/customersService'
 import type { Order, OrderStatus } from '../types/order'
 import type { Product } from '../types/product'
+import type { Customer } from '../types/customer'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
@@ -115,6 +118,7 @@ const OrdersPage = () => {
   const [importSummary, setImportSummary] = useState<{ created: number; updated: number; failed: number } | null>(null)
   const [importErrors, setImportErrors] = useState<Array<{ index: number; message: string }>>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [saving, setSaving] = useState(false)
 
   const navigate = useNavigate()
@@ -128,7 +132,7 @@ const OrdersPage = () => {
     reset: resetOrderForm,
     formState: { errors: orderErrors },
   } = useForm<CreateOrderPayload>({
-    resolver: yupResolver(orderSchema),
+    resolver: yupResolver(orderSchema) as any,
     defaultValues: {
       productName: '',
       customerName: '',
@@ -153,9 +157,10 @@ const OrdersPage = () => {
       setError(null)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
-      const [data, growthData] = await Promise.all([
+      const [data, growthData, customersData] = await Promise.all([
         fetchOrders(startDate, endDate),
         fetchGrowthComparison('month', startDate, endDate),
+        fetchCustomers(),
       ])
       setOrders(
         data.map((order) => ({
@@ -164,6 +169,7 @@ const OrdersPage = () => {
         })),
       )
       setGrowthComparison(growthData)
+      setCustomers(customersData)
     } catch (err) {
       setError(handleApiError(err, 'Failed to load orders.'))
     } finally {
@@ -177,7 +183,7 @@ const OrdersPage = () => {
 
   useEffect(() => {
     // Load products for order form
-    fetchProducts().then(setProducts).catch(() => {})
+    fetchProducts().then(setProducts).catch(() => { })
   }, [])
 
   const handleExport = async () => {
@@ -391,9 +397,9 @@ const OrdersPage = () => {
       flex: 1,
       minWidth: 150,
       valueGetter: (_value, row: Order) => row.createdAt || null,
-      valueFormatter: (params) => {
-        if (!params || params.value === null || params.value === undefined) return '—'
-        return formatDate(params.value as string)
+      valueFormatter: (value) => {
+        if (!value) return '—'
+        return formatDate(value as string)
       },
       sortComparator: (v1, v2) =>
         new Date(v1 as string).getTime() - new Date(v2 as string).getTime(),
@@ -463,14 +469,14 @@ const OrdersPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
                 Orders
               </Typography>
-              <Typography 
+              <Typography
                 color="text.secondary"
                 sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
               >
@@ -585,14 +591,14 @@ const OrdersPage = () => {
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={ordersByDay}>
                   <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                  <XAxis 
+                  <XAxis
                     dataKey="dateLabel"
                     tick={{ fontSize: isSmall ? 10 : 12 }}
                     angle={isSmall ? -45 : 0}
                     textAnchor={isSmall ? 'end' : 'middle'}
                     height={isSmall ? 60 : 40}
                   />
-                  <YAxis 
+                  <YAxis
                     allowDecimals={false}
                     domain={ordersByDayDomain}
                   />
@@ -673,9 +679,9 @@ const OrdersPage = () => {
               columnVisibilityModel={
                 isSmall
                   ? {
-                      email: false,
-                      quantity: false,
-                    }
+                    email: false,
+                    quantity: false,
+                  }
                   : undefined
               }
               sx={{
@@ -726,43 +732,48 @@ const OrdersPage = () => {
         <form onSubmit={handleOrderSubmit(onOrderSubmit)}>
           <DialogTitle>Add New Order</DialogTitle>
           <DialogContent>
-            <Stack spacing={2} sx={{ mt: 1 }}>
+            <Stack spacing={3} sx={{ mt: 1 }}>
               <Controller
                 name="productName"
                 control={orderControl}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Product Name"
-                    required
-                    select
-                    error={!!orderErrors.productName}
-                    helperText={orderErrors.productName?.message}
-                    fullWidth
-                    SelectProps={{
-                      native: true,
-                    }}
-                  >
-                    <option value="">Select a product</option>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.name}>
-                        {product.name}
-                      </option>
-                    ))}
-                  </TextField>
+                render={({ field: { onChange, value } }) => (
+                  <Autocomplete
+                    options={products.map((p) => p.name)}
+                    value={value || null}
+                    onChange={(_, newValue) => onChange(newValue)}
+                    freeSolo
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Product Name"
+                        required
+                        error={!!orderErrors.productName}
+                        helperText={orderErrors.productName?.message}
+                        fullWidth
+                      />
+                    )}
+                  />
                 )}
               />
               <Controller
                 name="customerName"
                 control={orderControl}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Customer Name"
-                    required
-                    error={!!orderErrors.customerName}
-                    helperText={orderErrors.customerName?.message}
-                    fullWidth
+                render={({ field: { onChange, value } }) => (
+                  <Autocomplete
+                    options={customers.map((c) => c.name)}
+                    value={value || null}
+                    onChange={(_, newValue) => onChange(newValue)}
+                    freeSolo
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Customer Name"
+                        required
+                        error={!!orderErrors.customerName}
+                        helperText={orderErrors.customerName?.message}
+                        fullWidth
+                      />
+                    )}
                   />
                 )}
               />
@@ -852,55 +863,57 @@ const OrdersPage = () => {
         fullWidth
         fullScreen={isSmall}
       >
-        <DialogTitle>Import Orders from CSV</DialogTitle>
+        <DialogTitle>Import Orders</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
             <Alert severity="info">
-              <Typography variant="body2" gutterBottom>
-                Upload a CSV file with the following columns:
-              </Typography>
               <Typography variant="body2" component="div">
                 <strong>Required:</strong> productName, customerName, email, quantity
                 <br />
                 <strong>Optional:</strong> phone, notes
               </Typography>
             </Alert>
-            <input
-              accept=".csv"
-              style={{ display: 'none' }}
-              id="import-orders-file"
-              type="file"
-              onChange={handleImportFile}
-              disabled={importing}
-            />
-            <label htmlFor="import-orders-file">
-              <Button
-                variant="outlined"
-                component="span"
-                startIcon={<UploadIcon />}
+
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <input
+                accept=".csv"
+                style={{ display: 'none' }}
+                id="import-orders-file"
+                type="file"
+                onChange={handleImportFile}
                 disabled={importing}
-                fullWidth
-              >
-                {importing ? 'Importing…' : 'Choose CSV File'}
-              </Button>
-            </label>
+              />
+              <label htmlFor="import-orders-file">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<UploadIcon />}
+                  disabled={importing}
+                  fullWidth
+                >
+                  {importing ? 'Importing…' : 'Choose CSV File'}
+                </Button>
+              </label>
+            </Box>
+
             {importSummary && (
               <Alert severity={importSummary.failed > 0 ? 'warning' : 'success'}>
                 <Typography variant="body2">
                   <strong>Import Summary:</strong>
                   <br />
-                  Created: {importSummary.created}
+                  Created: {importSummary?.created}
                   <br />
-                  Updated: {importSummary.updated}
-                  {importSummary.failed > 0 && (
+                  Updated: {importSummary?.updated}
+                  {importSummary?.failed > 0 && (
                     <>
                       <br />
-                      Failed: {importSummary.failed}
+                      Failed: {importSummary?.failed}
                     </>
                   )}
                 </Typography>
               </Alert>
             )}
+
             {importErrors.length > 0 && (
               <Alert severity="error">
                 <Typography variant="body2" fontWeight={600} gutterBottom>
@@ -926,9 +939,8 @@ const OrdersPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-    </Stack>
+    </Stack >
   )
 }
 
 export default OrdersPage
-
