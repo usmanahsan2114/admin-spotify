@@ -225,7 +225,6 @@ const StoresPage = () => {
       email: store.adminUser?.email || '',
       password: '',
       name: store.adminUser?.name || '',
-      role: 'admin',
     })
     setIsCredentialsDialogOpen(true)
   }

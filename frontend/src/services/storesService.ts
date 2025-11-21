@@ -35,11 +35,11 @@ export type CreateStorePayload = {
   dashboardName: string
   domain: string
   category: string
-  defaultCurrency?: string
-  country?: string
-  logoUrl?: string
-  brandColor?: string
-  isDemo?: boolean
+  defaultCurrency: string
+  country: string
+  logoUrl?: string | null
+  brandColor: string
+  isDemo: boolean
 }
 
 export type UpdateStorePayload = Partial<CreateStorePayload>
@@ -47,7 +47,7 @@ export type UpdateStorePayload = Partial<CreateStorePayload>
 export type StoreAdminCredentialsPayload = {
   email: string
   password?: string
-  name?: string
+  name: string
 }
 
 export const fetchStores = () => apiFetch<Store[]>('/api/stores')
