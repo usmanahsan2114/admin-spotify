@@ -36,7 +36,7 @@ const validatePasswordComplexity = (value) => {
   const hasUpperCase = /[A-Z]/.test(value)
   const hasLowerCase = /[a-z]/.test(value)
   const hasNumber = /[0-9]/.test(value)
-  
+
   return hasMinLength && hasUpperCase && hasLowerCase && hasNumber
 }
 
@@ -152,6 +152,9 @@ const validateUser = [
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('role').isIn(['admin', 'staff', 'superadmin']).withMessage('Role must be admin, staff, or superadmin'),
+  body('storeId').optional().isUUID().withMessage('Store ID must be a valid UUID'),
+  body('active').optional().isBoolean().withMessage('Active must be a boolean'),
+  body('permissions').optional().isObject().withMessage('Permissions must be an object'),
   handleValidationErrors,
 ]
 

@@ -76,7 +76,10 @@ const credentialsSchema = yup.object({
   email: yup.string().email('Valid email is required').required('Email is required'),
   password: yup
     .string()
-    .min(6, 'Password must be at least 6 characters')
+    .min(8, 'Password must be at least 8 characters')
+    .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .matches(/[0-9]/, 'Password must contain at least one number')
     .optional()
     .transform((value) => (value === '' ? undefined : value)),
   name: yup.string().required('Name is required'),
@@ -242,7 +245,7 @@ const StoresPage = () => {
   const handleOpenUserCredentialsDialog = async (store: StoreWithStats, user?: User) => {
     setSelectedStore(store)
     await loadStoreUsers(store.id)
-    
+
     if (user) {
       setSelectedUser(user)
       setIsUpdatingCredentials(true)
@@ -296,13 +299,13 @@ const StoresPage = () => {
 
   const onCredentialsSubmit = async (data: StoreAdminCredentialsPayload & { role?: string }) => {
     if (!selectedStore) return
-    
+
     // Validate password for new admin accounts
-    if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 6)) {
-      setError('Password is required and must be at least 6 characters for new accounts.')
+    if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 8)) {
+      setError('Password is required and must be at least 8 characters for new accounts.')
       return
     }
-    
+
     try {
       setSaving(true)
       setError(null)
@@ -326,17 +329,17 @@ const StoresPage = () => {
 
   const onUserCredentialsSubmit = async (data: StoreAdminCredentialsPayload & { role?: string }) => {
     if (!selectedStore) return
-    
+
     // Validate password for new users
-    if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 6)) {
-      setError('Password is required and must be at least 6 characters for new users.')
+    if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 8)) {
+      setError('Password is required and must be at least 8 characters for new users.')
       return
     }
-    
+
     try {
       setSaving(true)
       setError(null)
-      
+
       if (selectedUser) {
         // Update existing user
         const updatePayload: any = {
@@ -365,7 +368,7 @@ const StoresPage = () => {
         })
         setSuccess('User credentials created successfully.')
       }
-      
+
       handleCloseUserCredentialsDialog()
       await loadStoreUsers(selectedStore.id)
       await loadStores()
@@ -391,13 +394,13 @@ const StoresPage = () => {
 
   const handleDeleteStore = async () => {
     if (!storeToDelete) return
-    
+
     // Secure confirmation: user must type store name exactly
     if (deleteConfirmText !== storeToDelete.name) {
       setError(`Please type "${storeToDelete.name}" exactly to confirm deletion.`)
       return
     }
-    
+
     try {
       setDeleting(true)
       setError(null)
@@ -439,8 +442,8 @@ const StoresPage = () => {
         <Box display="flex" alignItems="center" gap={1} sx={{ width: '100%', minWidth: 0 }}>
           <StoreIcon fontSize="small" color="action" sx={{ flexShrink: 0 }} />
           <Box display="flex" alignItems="center" gap={1} sx={{ flex: 1, minWidth: 0 }}>
-            <Typography 
-              variant="body2" 
+            <Typography
+              variant="body2"
               fontWeight={600}
               sx={{
                 flex: 1,
@@ -453,18 +456,18 @@ const StoresPage = () => {
               {params.value}
             </Typography>
             {params.row.isDemo && (
-              <Chip 
-                label="Demo" 
-                size="small" 
-                color="info" 
-                sx={{ 
+              <Chip
+                label="Demo"
+                size="small"
+                color="info"
+                sx={{
                   flexShrink: 0,
-                  height: 20, 
+                  height: 20,
                   fontSize: '0.7rem',
                   '& .MuiChip-label': {
                     px: 1,
                   },
-                }} 
+                }}
               />
             )}
           </Box>
@@ -580,19 +583,19 @@ const StoresPage = () => {
   return (
     <Box>
       <Box mb={{ xs: 2, sm: 3 }}>
-        <Typography 
-          variant="h4" 
-          component="h1" 
+        <Typography
+          variant="h4"
+          component="h1"
           gutterBottom
-          sx={{ 
+          sx={{
             fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' },
             fontWeight: 600,
           }}
         >
           Store Credentials Management
         </Typography>
-        <Typography 
-          variant="body2" 
+        <Typography
+          variant="body2"
           color="text.secondary"
           sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
         >
@@ -646,14 +649,14 @@ const StoresPage = () => {
           columnVisibilityModel={
             isMobile
               ? {
-                  category: false,
-                  totalRevenue: false,
-                  orderCount: false,
-                  productCount: false,
-                  customerCount: false,
-                  userCount: false,
-                  adminUser: false,
-                }
+                category: false,
+                totalRevenue: false,
+                orderCount: false,
+                productCount: false,
+                customerCount: false,
+                userCount: false,
+                adminUser: false,
+              }
               : undefined
           }
           sx={{
@@ -670,10 +673,10 @@ const StoresPage = () => {
       </Card>
 
       {/* Add/Edit Store Dialog */}
-      <Dialog 
-        open={isStoreDialogOpen} 
-        onClose={handleCloseStoreDialog} 
-        maxWidth="md" 
+      <Dialog
+        open={isStoreDialogOpen}
+        onClose={handleCloseStoreDialog}
+        maxWidth="md"
         fullWidth
         fullScreen={isMobile}
       >
@@ -825,10 +828,10 @@ const StoresPage = () => {
       </Dialog>
 
       {/* Manage Admin Credentials Dialog */}
-      <Dialog 
-        open={isCredentialsDialogOpen} 
-        onClose={handleCloseCredentialsDialog} 
-        maxWidth="sm" 
+      <Dialog
+        open={isCredentialsDialogOpen}
+        onClose={handleCloseCredentialsDialog}
+        maxWidth="sm"
         fullWidth
         fullScreen={isMobile}
       >
@@ -906,10 +909,10 @@ const StoresPage = () => {
       </Dialog>
 
       {/* Manage All Users Credentials Dialog */}
-      <Dialog 
-        open={isUserCredentialsDialogOpen} 
-        onClose={handleCloseUserCredentialsDialog} 
-        maxWidth="md" 
+      <Dialog
+        open={isUserCredentialsDialogOpen}
+        onClose={handleCloseUserCredentialsDialog}
+        maxWidth="md"
         fullWidth
         fullScreen={isMobile}
       >
@@ -933,7 +936,7 @@ const StoresPage = () => {
               >
                 Add New User
               </Button>
-              
+
               {loadingUsers ? (
                 <Box display="flex" justifyContent="center" p={3}>
                   <CircularProgress />
@@ -951,59 +954,59 @@ const StoresPage = () => {
                           <TableCell align="right" sx={{ minWidth: { xs: 80, sm: 100 } }}>Actions</TableCell>
                         </TableRow>
                       </TableHead>
-                    <TableBody>
-                      {selectedStoreUsers.length === 0 ? (
-                        <TableRow>
-                          <TableCell 
-                            colSpan={isMobile ? 3 : 5} 
-                            align="center"
-                            sx={{ py: 2 }}
-                          >
-                            <Typography variant="body2" color="text.secondary">
-                              No users found
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        selectedStoreUsers.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell sx={{ minWidth: { xs: 100, sm: 120 } }}>{user.name || user.fullName || '—'}</TableCell>
-                            <TableCell sx={{ minWidth: { xs: 150, sm: 200 }, display: { xs: 'none', sm: 'table-cell' } }}>
-                              <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: 150, sm: 200 } }}>
-                                {user.email}
+                      <TableBody>
+                        {selectedStoreUsers.length === 0 ? (
+                          <TableRow>
+                            <TableCell
+                              colSpan={isMobile ? 3 : 5}
+                              align="center"
+                              sx={{ py: 2 }}
+                            >
+                              <Typography variant="body2" color="text.secondary">
+                                No users found
                               </Typography>
                             </TableCell>
-                            <TableCell sx={{ minWidth: { xs: 80, sm: 100 } }}>
-                              <Chip 
-                                label={user.role === 'admin' ? 'Admin' : 'Staff'} 
-                                size="small" 
-                                color={user.role === 'admin' ? 'primary' : 'default'} 
-                              />
-                            </TableCell>
-                            <TableCell sx={{ minWidth: { xs: 80, sm: 100 }, display: { xs: 'none', md: 'table-cell' } }}>
-                              <Chip 
-                                label={user.active === false ? 'Inactive' : 'Active'} 
-                                size="small" 
-                                color={user.active === false ? 'default' : 'success'} 
-                              />
-                            </TableCell>
-                            <TableCell align="right" sx={{ minWidth: { xs: 80, sm: 100 } }}>
-                              <Tooltip title="Edit Credentials">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleOpenUserCredentialsDialog(selectedStore!, user)}
-                                  color="primary"
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                        ) : (
+                          selectedStoreUsers.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell sx={{ minWidth: { xs: 100, sm: 120 } }}>{user.name || user.fullName || '—'}</TableCell>
+                              <TableCell sx={{ minWidth: { xs: 150, sm: 200 }, display: { xs: 'none', sm: 'table-cell' } }}>
+                                <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: 150, sm: 200 } }}>
+                                  {user.email}
+                                </Typography>
+                              </TableCell>
+                              <TableCell sx={{ minWidth: { xs: 80, sm: 100 } }}>
+                                <Chip
+                                  label={user.role === 'admin' ? 'Admin' : 'Staff'}
+                                  size="small"
+                                  color={user.role === 'admin' ? 'primary' : 'default'}
+                                />
+                              </TableCell>
+                              <TableCell sx={{ minWidth: { xs: 80, sm: 100 }, display: { xs: 'none', md: 'table-cell' } }}>
+                                <Chip
+                                  label={user.active === false ? 'Inactive' : 'Active'}
+                                  size="small"
+                                  color={user.active === false ? 'default' : 'success'}
+                                />
+                              </TableCell>
+                              <TableCell align="right" sx={{ minWidth: { xs: 80, sm: 100 } }}>
+                                <Tooltip title="Edit Credentials">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenUserCredentialsDialog(selectedStore!, user)}
+                                    color="primary"
+                                  >
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </Box>
               )}
             </Box>
@@ -1105,10 +1108,10 @@ const StoresPage = () => {
       </Dialog>
 
       {/* Delete Store Confirmation Dialog */}
-      <Dialog 
-        open={isDeleteDialogOpen} 
-        onClose={handleCloseDeleteDialog} 
-        maxWidth="sm" 
+      <Dialog
+        open={isDeleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="sm"
         fullWidth
         fullScreen={isMobile}
       >
@@ -1154,8 +1157,8 @@ const StoresPage = () => {
               error && deleteConfirmText !== storeToDelete?.name
                 ? error
                 : deleteConfirmText === storeToDelete?.name
-                ? '✓ Store name matches'
-                : 'Type the store name exactly as shown above'
+                  ? '✓ Store name matches'
+                  : 'Type the store name exactly as shown above'
             }
             disabled={deleting}
             autoFocus
