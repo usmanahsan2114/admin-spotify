@@ -21,6 +21,7 @@ import {
   Typography,
   useMediaQuery,
   Autocomplete,
+  Collapse,
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -120,6 +121,15 @@ const OrdersPage = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [saving, setSaving] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [showCustomerCreation, setShowCustomerCreation] = useState(false)
+  const [newCustomerData, setNewCustomerData] = useState({
+    address: '',
+    alternativeNames: '',
+    alternativeEmails: '',
+    alternativePhones: '',
+    alternativeAddresses: ''
+  })
 
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -130,6 +140,8 @@ const OrdersPage = () => {
     control: orderControl,
     handleSubmit: handleOrderSubmit,
     reset: resetOrderForm,
+    watch: watchOrderForm,
+    setValue: setOrderValue,
     formState: { errors: orderErrors },
   } = useForm<CreateOrderPayload>({
     resolver: yupResolver(orderSchema) as any,
@@ -142,6 +154,33 @@ const OrdersPage = () => {
       notes: '',
     },
   })
+
+  // Watch form fields for dynamic validation
+  const watchedProductName = watchOrderForm('productName')
+  const watchedCustomerName = watchOrderForm('customerName')
+  const watchedQuantity = watchOrderForm('quantity')
+
+  // Update selected product when product name changes
+  useEffect(() => {
+    if (watchedProductName) {
+      const product = products.find(p => p.name === watchedProductName)
+      setSelectedProduct(product || null)
+    } else {
+      setSelectedProduct(null)
+    }
+  }, [watchedProductName, products])
+
+  // Check if customer exists and reset customer creation state
+  useEffect(() => {
+    if (watchedCustomerName) {
+      const customerExists = customers.some(c => c.name === watchedCustomerName)
+      if (customerExists) {
+        setShowCustomerCreation(false)
+      }
+    } else {
+      setShowCustomerCreation(false)
+    }
+  }, [watchedCustomerName, customers])
 
   const handleApiError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -288,10 +327,37 @@ const OrdersPage = () => {
     try {
       setSaving(true)
       setError(null)
-      await createOrder(data)
+
+      // Validate quantity against stock
+      if (selectedProduct && data.quantity > selectedProduct.stockQuantity) {
+        setError(`Insufficient stock. Only ${selectedProduct.stockQuantity} units available.`)
+        setSaving(false)
+        return
+      }
+
+      // Prepare order payload with customer data if creating new customer
+      const orderPayload: any = { ...data }
+
+      if (showCustomerCreation) {
+        orderPayload.address = newCustomerData.address
+        orderPayload.alternativeNames = newCustomerData.alternativeNames
+        orderPayload.alternativeEmails = newCustomerData.alternativeEmails
+        orderPayload.alternativePhones = newCustomerData.alternativePhones
+        orderPayload.alternativeAddresses = newCustomerData.alternativeAddresses
+      }
+
+      await createOrder(orderPayload)
       setSuccess('Order created successfully.')
       setIsOrderDialogOpen(false)
       resetOrderForm()
+      setShowCustomerCreation(false)
+      setNewCustomerData({
+        address: '',
+        alternativeNames: '',
+        alternativeEmails: '',
+        alternativePhones: '',
+        alternativeAddresses: ''
+      })
       await loadOrders()
     } catch (err) {
       setError(handleApiError(err, 'Failed to create order.'))
@@ -759,22 +825,77 @@ const OrdersPage = () => {
                 name="customerName"
                 control={orderControl}
                 render={({ field: { onChange, value } }) => (
-                  <Autocomplete
-                    options={customers.map((c) => c.name)}
-                    value={value || null}
-                    onChange={(_, newValue) => onChange(newValue)}
-                    freeSolo
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Customer Name"
-                        required
-                        error={!!orderErrors.customerName}
-                        helperText={orderErrors.customerName?.message}
-                        fullWidth
-                      />
+                  <>
+                    <Autocomplete
+                      options={customers.map((c) => c.name)}
+                      value={value || null}
+                      onChange={(_, newValue) => onChange(newValue)}
+                      freeSolo
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Customer Name"
+                          required
+                          error={!!orderErrors.customerName}
+                          helperText={orderErrors.customerName?.message}
+                          fullWidth
+                        />
+                      )}
+                    />
+                    {watchedCustomerName && !customers.some(c => c.name === watchedCustomerName) && (
+                      <Alert
+                        severity="info"
+                        sx={{ mt: 1 }}
+                        action={
+                          <Button color="inherit" size="small" onClick={() => setShowCustomerCreation(!showCustomerCreation)}>
+                            {showCustomerCreation ? 'Hide Details' : 'Add Details'}
+                          </Button>
+                        }
+                      >
+                        Customer not found. Add details?
+                      </Alert>
                     )}
-                  />
+                    <Collapse in={showCustomerCreation}>
+                      <Stack spacing={2} sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                        <Typography variant="subtitle2">New Customer Information</Typography>
+                        <TextField
+                          label="Address"
+                          fullWidth
+                          size="small"
+                          value={newCustomerData.address}
+                          onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                        />
+                        <TextField
+                          label="Alternative Names (comma-separated)"
+                          fullWidth
+                          size="small"
+                          value={newCustomerData.alternativeNames}
+                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativeNames: e.target.value })}
+                        />
+                        <TextField
+                          label="Alternative Emails (comma-separated)"
+                          fullWidth
+                          size="small"
+                          value={newCustomerData.alternativeEmails}
+                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativeEmails: e.target.value })}
+                        />
+                        <TextField
+                          label="Alternative Phones (comma-separated)"
+                          fullWidth
+                          size="small"
+                          value={newCustomerData.alternativePhones}
+                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativePhones: e.target.value })}
+                        />
+                        <TextField
+                          label="Alternative Addresses (comma-separated)"
+                          fullWidth
+                          size="small"
+                          value={newCustomerData.alternativeAddresses}
+                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativeAddresses: e.target.value })}
+                        />
+                      </Stack>
+                    </Collapse>
+                  </>
                 )}
               />
               <Controller
@@ -815,9 +936,15 @@ const OrdersPage = () => {
                     type="number"
                     required
                     error={!!orderErrors.quantity}
-                    helperText={orderErrors.quantity?.message}
+                    helperText={
+                      orderErrors.quantity?.message ||
+                      (selectedProduct ? `Available stock: ${selectedProduct.stockQuantity} units` : '')
+                    }
                     fullWidth
-                    inputProps={{ min: 1 }}
+                    inputProps={{
+                      min: 1,
+                      max: selectedProduct?.stockQuantity
+                    }}
                   />
                 )}
               />
