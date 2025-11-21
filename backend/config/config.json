@@ -1,18 +1,32 @@
 {
   "development": {
-    "username": "root",
-    "password": "",
-    "database": "shopify_admin_dev",
-    "host": "localhost",
-    "dialect": "mysql",
+    "username": "postgres.yqzwfbufcmxzeqfbdlpf",
+    "password": "7!tR/HubhpWc!SF",
+    "database": "postgres",
+    "host": "aws-1-ap-northeast-2.pooler.supabase.com",
+    "port": 5432,
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
     "logging": false
   },
   "production": {
-    "username": "shopify_admin",
-    "password": "CHANGE_THIS_IN_ENV",
-    "database": "shopify_admin",
-    "host": "localhost",
-    "dialect": "mysql",
+    "username": "postgres.yqzwfbufcmxzeqfbdlpf",
+    "password": "7!tR/HubhpWc!SF",
+    "database": "postgres",
+    "host": "aws-1-ap-northeast-2.pooler.supabase.com",
+    "port": 5432,
+    "dialect": "postgres",
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
     "logging": false
   }
 }

@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config({ path: require('path').join(__dirname, '.env') })
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
@@ -255,7 +255,7 @@ const requestLogger = (req, res, next) => {
       ip: req.ip || req.connection.remoteAddress,
       userAgent: req.get('user-agent'),
     }
-    
+
     if (res.statusCode >= 400) {
       logger.warn('HTTP Request', logData)
     } else {
@@ -421,26 +421,26 @@ const serializeReturn = async (returnRequest) => {
   const customer =
     (returnRequest.customerId && await findCustomerById(returnRequest.customerId)) ||
     (order ? await findCustomerByContact(order.email, order.phone, null, order.storeId) : null)
-  
+
   const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
   return {
     ...returnData,
     history: Array.isArray(returnData.history) ? [...returnData.history] : [],
     customer: customer
       ? {
-          id: customer.id,
-          name: customer.name,
-          email: customer.email,
-        }
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+      }
       : null,
     order: order
       ? {
-          id: order.id,
-          productName: order.productName,
-          status: order.status,
-          quantity: order.quantity,
-          createdAt: order.createdAt,
-        }
+        id: order.id,
+        productName: order.productName,
+        status: order.status,
+        quantity: order.quantity,
+        createdAt: order.createdAt,
+      }
       : null,
   }
 }
@@ -455,13 +455,13 @@ const normalizeAddress = (value = '') => String(value || '').trim().toLowerCase(
 // Find customer by email, phone, or address (any match) - optionally filter by storeId (using Sequelize)
 const findCustomerByContact = async (email, phone, address, storeId = null) => {
   if (!email && !phone && !address) return null
-  
+
   const normalizedEmail = email ? normalizeEmail(email) : null
   const normalizedPhone = phone ? normalizePhone(phone) : null
   const normalizedAddress = address ? normalizeAddress(address) : null
-  
+
   const whereConditions = []
-  
+
   if (normalizedEmail) {
     whereConditions.push({
       [Op.or]: [
@@ -470,7 +470,7 @@ const findCustomerByContact = async (email, phone, address, storeId = null) => {
       ],
     })
   }
-  
+
   if (normalizedPhone) {
     whereConditions.push({
       [Op.or]: [
@@ -478,7 +478,7 @@ const findCustomerByContact = async (email, phone, address, storeId = null) => {
       ],
     })
   }
-  
+
   if (normalizedAddress) {
     whereConditions.push({
       [Op.or]: [
@@ -487,49 +487,49 @@ const findCustomerByContact = async (email, phone, address, storeId = null) => {
       ],
     })
   }
-  
+
   if (whereConditions.length === 0) return null
-  
+
   const where = {
     [Op.or]: whereConditions,
   }
-  
+
   if (storeId) where.storeId = storeId
-  
+
   const customer = await Customer.findOne({ where })
-  
+
   // Additional check for alternative emails/phones/addresses in JSON fields
   if (customer) {
     const customerData = customer.toJSON ? customer.toJSON() : customer
-    
+
     // Check alternative emails
     if (normalizedEmail && customerData.alternativeEmails && Array.isArray(customerData.alternativeEmails)) {
       const matchesEmail = customerData.alternativeEmails.some((altEmail) => normalizeEmail(altEmail) === normalizedEmail)
       if (matchesEmail) return customer
     }
-    
+
     // Check alternative phones (stored in alternativePhones JSON array)
     if (normalizedPhone && customerData.alternativePhones && Array.isArray(customerData.alternativePhones)) {
       const matchesPhone = customerData.alternativePhones.some((altPhone) => normalizePhone(altPhone) === normalizedPhone)
       if (matchesPhone) return customer
     }
-    
+
     // Check alternative addresses
     if (normalizedAddress && customerData.alternativeAddresses && Array.isArray(customerData.alternativeAddresses)) {
       const matchesAddress = customerData.alternativeAddresses.some((altAddress) => normalizeAddress(altAddress) === normalizedAddress)
       if (matchesAddress) return customer
     }
   }
-  
+
   return customer
 }
 
 // Merge customer information - add new info to existing customer
 const mergeCustomerInfo = (existingCustomer, newInfo) => {
   if (!existingCustomer) return newInfo
-  
+
   const merged = { ...existingCustomer }
-  
+
   // Merge names - keep existing name, add new name as alternative if different
   if (newInfo.name && newInfo.name.trim() && newInfo.name.trim() !== existingCustomer.name?.trim()) {
     if (!merged.alternativeNames) merged.alternativeNames = []
@@ -537,7 +537,7 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
       merged.alternativeNames.push(newInfo.name.trim())
     }
   }
-  
+
   // Merge emails - keep primary email, add new email as alternative if different
   if (newInfo.email && normalizeEmail(newInfo.email) !== normalizeEmail(existingCustomer.email || '')) {
     if (!merged.alternativeEmails) merged.alternativeEmails = []
@@ -546,13 +546,13 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
       merged.alternativeEmails.push(newInfo.email.trim())
     }
   }
-  
+
   // Merge phones - keep primary phone, add new phone as alternative if different
   if (newInfo.phone && normalizePhone(newInfo.phone) !== normalizePhone(existingCustomer.phone || '')) {
     const normalizedNewPhone = normalizePhone(newInfo.phone)
     const normalizedExistingPhone = normalizePhone(existingCustomer.phone || '')
     const normalizedExistingAltPhone = normalizePhone(existingCustomer.alternativePhone || '')
-    
+
     if (normalizedNewPhone && normalizedNewPhone !== normalizedExistingPhone && normalizedNewPhone !== normalizedExistingAltPhone) {
       if (!merged.alternativePhone) {
         merged.alternativePhone = newInfo.phone.trim()
@@ -562,7 +562,7 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
       }
     }
   }
-  
+
   // Merge addresses - keep existing address, add new address as alternative if different
   if (newInfo.address && normalizeAddress(newInfo.address) !== normalizeAddress(existingCustomer.address || '')) {
     if (!merged.alternativeAddresses) merged.alternativeAddresses = []
@@ -571,7 +571,7 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
       merged.alternativeAddresses.push(newInfo.address.trim())
     }
   }
-  
+
   merged.updatedAt = new Date().toISOString()
   return merged
 }
@@ -617,21 +617,21 @@ const serializeCustomer = async (customer) => {
 // Get orders for customer (using Sequelize)
 const getOrdersForCustomer = async (customer) => {
   if (!customer || !customer.id) return []
-  
+
   // Ensure alternativeEmails is an array
   const customerData = customer.toJSON ? customer.toJSON() : customer
   const alternativeEmails = ensureArray(customerData.alternativeEmails)
-  
+
   const customerEmails = [
     customerData.email,
     ...alternativeEmails
   ].filter(Boolean).map(normalizeEmail)
-  
+
   const customerPhones = [
     customerData.phone,
     customerData.alternativePhone,
   ].filter(Boolean).map(normalizePhone)
-  
+
   // Build where clause
   const where = {
     storeId: customerData.storeId,
@@ -641,12 +641,12 @@ const getOrdersForCustomer = async (customer) => {
       ...(customerPhones.length > 0 ? [{ phone: { [Op.like]: `%${customerPhones[0]}%` } }] : []),
     ],
   }
-  
+
   const orders = await Order.findAll({
     where,
     order: [['createdAt', 'DESC']],
   })
-  
+
   return orders.map(order => order.toJSON ? order.toJSON() : order)
 }
 
@@ -680,7 +680,7 @@ const adjustProductStockForReturn = async (returnRequest, transaction = null) =>
   if (!returnRequest || !returnRequest.orderId) return
   const order = await findOrderById(returnRequest.orderId)
   if (!order) return
-  
+
   const product = await findOrderProduct(order)
   if (product && returnRequest.returnedQuantity) {
     const productData = product.toJSON ? product.toJSON() : product
@@ -704,7 +704,7 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, JWT_SECRET)
-    
+
     // Find user in database
     const user = await User.findByPk(payload.userId)
     if (!user) {
@@ -750,12 +750,12 @@ const authenticateCustomer = (req, res, next) => {
 
 const authorizeRole =
   (...allowedRoles) =>
-  (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Insufficient permissions.' })
+    (req, res, next) => {
+      if (!req.user || !allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({ message: 'Insufficient permissions.' })
+      }
+      return next()
     }
-    return next()
-  }
 
 // Middleware to allow superadmin or require store admin
 const authorizeSuperAdminOrStoreAdmin = (req, res, next) => {
@@ -810,7 +810,7 @@ app.get('/api/health', async (_req, res) => {
   const startTime = Date.now()
   try {
     const serverUptime = process.uptime()
-    
+
     // Test database connection and get response time
     const dbStartTime = Date.now()
     const dbStatus = await db.sequelize.authenticate()
@@ -823,7 +823,7 @@ app.get('/api/health', async (_req, res) => {
         logger.error('Database health check failed:', error)
         return { status: 'disconnected', latency: dbLatency, error: error.message }
       })
-    
+
     // Get memory usage
     const memoryUsage = process.memoryUsage()
     const memoryMB = {
@@ -832,14 +832,14 @@ app.get('/api/health', async (_req, res) => {
       heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
       external: Math.round(memoryUsage.external / 1024 / 1024),
     }
-    
+
     // Get CPU usage (if available)
     const cpuUsage = process.cpuUsage()
     const cpuUsagePercent = {
       user: Math.round(cpuUsage.user / 1000), // microseconds to milliseconds
       system: Math.round(cpuUsage.system / 1000),
     }
-    
+
     // Get database connection pool stats
     const poolStats = db.sequelize.connectionManager.pool ? {
       size: db.sequelize.connectionManager.pool.size || 0,
@@ -847,10 +847,10 @@ app.get('/api/health', async (_req, res) => {
       using: db.sequelize.connectionManager.pool.using || 0,
       waiting: db.sequelize.connectionManager.pool.waiting || 0,
     } : null
-    
+
     // Calculate API response time
     const apiLatency = Date.now() - startTime
-    
+
     const health = {
       status: dbStatus.status === 'connected' ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
@@ -870,7 +870,7 @@ app.get('/api/health', async (_req, res) => {
       },
       version: require('./package.json').version || '1.0.0',
     }
-    
+
     const statusCode = dbStatus.status === 'connected' ? 200 : 503
     return res.status(statusCode).json(health)
   } catch (error) {
@@ -890,10 +890,10 @@ app.get('/api/health', async (_req, res) => {
 app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
     const { Order, Product, Customer, Return, User } = db
-    
+
     // Get database query performance metrics
     const queryStartTime = Date.now()
-    
+
     // Test common queries and measure performance
     const metrics = {
       timestamp: new Date().toISOString(),
@@ -908,10 +908,10 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       queries: {},
       counts: {},
     }
-    
+
     // Measure query performance for common operations
     const storeId = req.storeId
-    
+
     // Orders list query
     const ordersStart = Date.now()
     await Order.findAll({
@@ -920,7 +920,7 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       order: [['createdAt', 'DESC']],
     })
     metrics.queries.ordersList = Date.now() - ordersStart
-    
+
     // Products list query
     const productsStart = Date.now()
     await Product.findAll({
@@ -929,7 +929,7 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       order: [['name', 'ASC']],
     })
     metrics.queries.productsList = Date.now() - productsStart
-    
+
     // Low stock query
     const lowStockStart = Date.now()
     await Product.findAll({
@@ -940,7 +940,7 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       attributes: ['id', 'name', 'stockQuantity', 'reorderThreshold'],
     })
     metrics.queries.lowStock = Date.now() - lowStockStart
-    
+
     // Customers list query
     const customersStart = Date.now()
     await Customer.findAll({
@@ -949,7 +949,7 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       order: [['createdAt', 'DESC']],
     })
     metrics.queries.customersList = Date.now() - customersStart
-    
+
     // Returns list query
     const returnsStart = Date.now()
     await Return.findAll({
@@ -958,17 +958,17 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       order: [['dateRequested', 'DESC']],
     })
     metrics.queries.returnsList = Date.now() - returnsStart
-    
+
     // Get record counts
     metrics.counts.orders = await Order.count({ where: { storeId } })
     metrics.counts.products = await Product.count({ where: { storeId } })
     metrics.counts.customers = await Customer.count({ where: { storeId } })
     metrics.counts.returns = await Return.count({ where: { storeId } })
     metrics.counts.users = await User.count({ where: { storeId } })
-    
+
     // Overall query time
     metrics.database.totalQueryTime = Date.now() - queryStartTime
-    
+
     // Memory usage
     const memoryUsage = process.memoryUsage()
     metrics.memory = {
@@ -977,14 +977,14 @@ app.get('/api/performance/metrics', authenticateToken, authorizeRole('admin'), a
       heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
       external: Math.round(memoryUsage.external / 1024 / 1024),
     }
-    
+
     // CPU usage
     const cpuUsage = process.cpuUsage()
     metrics.cpu = {
       user: Math.round(cpuUsage.user / 1000),
       system: Math.round(cpuUsage.system / 1000),
     }
-    
+
     return res.json(metrics)
   } catch (error) {
     logger.error('Performance metrics failed:', error)
@@ -1006,25 +1006,29 @@ app.get('/api/stores', async (_req, res) => {
   }
 })
 
-// Get all stores with user counts and revenue (superadmin only)
-app.get('/api/stores/admin', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+// Get all stores with user counts and revenue (superadmin sees all, regular users see their own store)
+app.get('/api/stores/admin', authenticateToken, async (req, res) => {
   try {
+    // Build where clause based on user role
+    const where = req.isSuperAdmin ? {} : { id: req.storeId }
+
     const storesList = await Store.findAll({
+      where,
       attributes: ['id', 'name', 'dashboardName', 'domain', 'category', 'isDemo', 'createdAt', 'defaultCurrency', 'country', 'logoUrl', 'brandColor'],
       order: [['name', 'ASC']],
     })
-    
+
     // Get comprehensive stats for each store including revenue
     const storesWithCounts = await Promise.all(
       storesList.map(async (store) => {
         const storeId = store.id
-        
+
         // Get counts
         const userCount = await User.count({ where: { storeId } })
         const orderCount = await Order.count({ where: { storeId } })
         const productCount = await Product.count({ where: { storeId } })
         const customerCount = await Customer.count({ where: { storeId } })
-        
+
         // Get revenue (total from all orders)
         const orders = await Order.findAll({
           where: { storeId },
@@ -1035,26 +1039,26 @@ app.get('/api/stores/admin', authenticateToken, authorizeRole('superadmin'), asy
           const orderTotal = order.total != null ? parseFloat(order.total) || 0 : 0
           return sum + orderTotal
         }, 0)
-        
+
         // Get pending orders count
-        const pendingOrdersCount = await Order.count({ 
-          where: { 
+        const pendingOrdersCount = await Order.count({
+          where: {
             storeId,
             status: 'Pending'
-          } 
+          }
         })
-        
+
         // Get low stock products count
         const { Sequelize } = require('sequelize')
         const lowStockCount = await Product.count({
           where: {
             storeId,
-            [Op.and]: [
-              Sequelize.literal('stockQuantity <= reorderThreshold')
-            ]
+            stockQuantity: {
+              [Op.lte]: Sequelize.col('reorderThreshold')
+            }
           }
         })
-        
+
         // Get admin user for this store
         const adminUser = await User.findOne({
           where: {
@@ -1064,7 +1068,7 @@ app.get('/api/stores/admin', authenticateToken, authorizeRole('superadmin'), asy
           attributes: ['id', 'email', 'name', 'active'],
           raw: true
         })
-        
+
         const storeData = store.toJSON ? store.toJSON() : store
         return {
           ...storeData,
@@ -1084,7 +1088,7 @@ app.get('/api/stores/admin', authenticateToken, authorizeRole('superadmin'), asy
         }
       })
     )
-    
+
     return res.json(storesWithCounts)
   } catch (error) {
     logger.error('[ERROR] /api/stores/admin:', error)
@@ -1096,13 +1100,13 @@ app.get('/api/stores/admin', authenticateToken, authorizeRole('superadmin'), asy
 app.post('/api/stores', authenticateToken, authorizeRole('superadmin'), validateStore, async (req, res) => {
   try {
     const { name, dashboardName, domain, category, defaultCurrency, country, logoUrl, brandColor, isDemo } = req.body
-    
+
     // Check if domain already exists
     const existingStore = await Store.findOne({ where: { domain } })
     if (existingStore) {
       return res.status(409).json({ message: 'A store with this domain already exists.' })
     }
-    
+
     const newStore = await Store.create({
       name: String(name).trim(),
       dashboardName: String(dashboardName).trim(),
@@ -1114,14 +1118,14 @@ app.post('/api/stores', authenticateToken, authorizeRole('superadmin'), validate
       brandColor: brandColor || '#1976d2',
       isDemo: Boolean(isDemo),
     })
-    
+
     // Create default settings for the store
     await Setting.create({
       storeId: newStore.id,
       defaultCurrency: defaultCurrency || 'PKR',
       country: country || 'PK',
     })
-    
+
     const storeData = newStore.toJSON ? newStore.toJSON() : newStore
     return res.status(201).json(storeData)
   } catch (error) {
@@ -1137,9 +1141,9 @@ app.put('/api/stores/:id', authenticateToken, authorizeRole('superadmin'), valid
     if (!store) {
       return res.status(404).json({ message: 'Store not found.' })
     }
-    
+
     const { name, dashboardName, domain, category, defaultCurrency, country, logoUrl, brandColor, isDemo } = req.body
-    
+
     // Check if domain is being changed and if new domain already exists
     if (domain && domain !== store.domain) {
       const existingStore = await Store.findOne({ where: { domain } })
@@ -1147,7 +1151,7 @@ app.put('/api/stores/:id', authenticateToken, authorizeRole('superadmin'), valid
         return res.status(409).json({ message: 'A store with this domain already exists.' })
       }
     }
-    
+
     const updateData = {}
     if (name !== undefined) updateData.name = String(name).trim()
     if (dashboardName !== undefined) updateData.dashboardName = String(dashboardName).trim()
@@ -1158,10 +1162,10 @@ app.put('/api/stores/:id', authenticateToken, authorizeRole('superadmin'), valid
     if (logoUrl !== undefined) updateData.logoUrl = logoUrl ? String(logoUrl).trim() : null
     if (brandColor !== undefined) updateData.brandColor = brandColor
     if (isDemo !== undefined) updateData.isDemo = Boolean(isDemo)
-    
+
     await store.update(updateData)
     await store.reload()
-    
+
     const storeData = store.toJSON ? store.toJSON() : store
     return res.json(storeData)
   } catch (error) {
@@ -1177,9 +1181,9 @@ app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('
     if (!store) {
       return res.status(404).json({ message: 'Store not found.' })
     }
-    
+
     const { email, password, name } = req.body
-    
+
     // Check if admin user already exists for this store
     let adminUser = await User.findOne({
       where: {
@@ -1187,7 +1191,7 @@ app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('
         role: 'admin'
       }
     })
-    
+
     if (adminUser) {
       // Update existing admin
       const updateData = {}
@@ -1206,7 +1210,7 @@ app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('
         updateData.passwordChangedAt = new Date()
       }
       if (name) updateData.name = String(name).trim()
-      
+
       await adminUser.update(updateData)
       await adminUser.reload()
     } else {
@@ -1214,7 +1218,7 @@ app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('
       if (!password) {
         return res.status(400).json({ message: 'Password is required for new admin account.' })
       }
-      
+
       const passwordHash = await bcrypt.hash(password, 10)
       adminUser = await User.create({
         storeId: store.id,
@@ -1232,7 +1236,7 @@ app.post('/api/stores/:id/admin-credentials', authenticateToken, authorizeRole('
         },
       })
     }
-    
+
     const userData = adminUser.toJSON ? adminUser.toJSON() : adminUser
     return res.json({
       id: userData.id,
@@ -1255,41 +1259,41 @@ app.delete('/api/stores/:id', authenticateToken, authorizeRole('superadmin'), as
     if (!store) {
       return res.status(404).json({ message: 'Store not found.' })
     }
-    
+
     // Prevent deletion of demo store (if needed)
     if (store.isDemo) {
       return res.status(400).json({ message: 'Demo store cannot be deleted.' })
     }
-    
+
     const storeId = store.id
     const storeName = store.name
-    
+
     // Delete all related data in transaction
     await db.sequelize.transaction(async (transaction) => {
       // Delete orders
       await Order.destroy({ where: { storeId }, transaction })
-      
+
       // Delete returns
       await Return.destroy({ where: { storeId }, transaction })
-      
+
       // Delete products
       await Product.destroy({ where: { storeId }, transaction })
-      
+
       // Delete customers
       await Customer.destroy({ where: { storeId }, transaction })
-      
+
       // Delete settings (if exists)
       await db.Setting.destroy({ where: { storeId }, transaction }).catch(() => {
         // Settings table might not exist, ignore error
       })
-      
+
       // Delete users associated with this store
       await User.destroy({ where: { storeId }, transaction })
-      
+
       // Finally, delete the store itself
       await store.destroy({ transaction })
     })
-    
+
     logger.info(`[STORES] Store deleted: ${storeName} (${storeId})`)
     return res.json({ message: `Store "${storeName}" has been deleted successfully along with all associated data.` })
   } catch (error) {
@@ -1318,7 +1322,7 @@ app.post('/api/demo/reset-data', authenticateToken, authorizeRole('admin'), asyn
     // Re-seed demo store data
     const { generateMultiStoreData } = require('./generateMultiStoreData')
     const multiStoreData = generateMultiStoreData()
-    
+
     // Find demo store template
     const demoStoreTemplate = multiStoreData.stores.find(s => s.isDemo)
     if (!demoStoreTemplate) {
@@ -1361,7 +1365,7 @@ app.post('/api/demo/reset-data', authenticateToken, authorizeRole('admin'), asyn
 
     logger.info('[DEMO] Demo store data reset successfully')
 
-    return res.json({ 
+    return res.json({
       message: 'Demo store data reset successfully.',
       resetAt: new Date().toISOString(),
     })
@@ -1376,7 +1380,7 @@ app.post('/api/login', validateLogin, async (req, res) => {
     const { email, password } = req.body
 
     const normalizedEmail = normalizeEmail(email)
-    
+
     // Use exact match for email (already normalized to lowercase)
     // MySQL's default collation handles case-insensitive matching, but we normalize anyway
     const user = await User.findOne({
@@ -1390,7 +1394,7 @@ app.post('/api/login', validateLogin, async (req, res) => {
       logger.warn(`[LOGIN] User not found: ${email} (normalized: ${normalizedEmail})`)
       recordFailedAttempt(email) // Record failed attempt
       // Only log sample users in development if user lookup succeeds (to avoid extra DB calls)
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         error: {
           message: 'Invalid email or password.',
@@ -1402,7 +1406,7 @@ app.post('/api/login', validateLogin, async (req, res) => {
     if (!bcrypt.compareSync(password, user.passwordHash)) {
       logger.warn(`[LOGIN] Password mismatch for: ${email}`)
       recordFailedAttempt(email) // Record failed attempt
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         error: {
           message: 'Invalid email or password.',
@@ -1419,7 +1423,7 @@ app.post('/api/login', validateLogin, async (req, res) => {
     }
 
     const userData = user.toJSON ? user.toJSON() : user
-    
+
     // Superadmin doesn't have a storeId, regular users do
     const store = user.storeId ? await findStoreById(user.storeId) : null
 
@@ -1458,7 +1462,7 @@ app.post('/api/signup', validateSignup, async (req, res) => {
 
     const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
     const passwordHash = await bcrypt.hash(password, 10)
-    
+
     // Set default permissions based on role
     let userPermissions
     if (userRole === 'admin') {
@@ -1478,7 +1482,7 @@ app.post('/api/signup', validateSignup, async (req, res) => {
         viewReports: true, manageUsers: false, manageSettings: false,
       }
     }
-    
+
     // Get storeId from request or default to first store
     let targetStoreId = storeId
     if (!targetStoreId) {
@@ -1550,11 +1554,11 @@ const findUserByEmail = async (email, storeId = null) => {
 const findSuperAdminByEmail = async (email) => {
   if (!email) return null
   const normalizedEmail = normalizeEmail(email)
-  return await User.findOne({ 
-    where: { 
+  return await User.findOne({
+    where: {
       email: normalizedEmail,
       role: 'superadmin',
-    } 
+    }
   })
 }
 
@@ -1571,12 +1575,12 @@ app.get('/api/orders/search/by-contact', async (req, res) => {
 
     // Get storeId from query param if provided (for public search)
     const storeId = req.query.storeId || null
-    
+
     // Find customer by contact info (matches by email, phone, or address) - optionally filter by storeId
     const customer = await findCustomerByContact(email, phone, null, storeId)
-    
+
     let matchingOrders = []
-    
+
     if (customer) {
       // Get all orders for this customer (using the enhanced matching)
       matchingOrders = await getOrdersForCustomer(customer)
@@ -1584,7 +1588,7 @@ app.get('/api/orders/search/by-contact', async (req, res) => {
       // Fallback: search orders directly if no customer found
       const where = {}
       if (storeId) where.storeId = storeId
-      
+
       if (email) {
         const normalizedEmail = normalizeEmail(email)
         where.email = { [Op.like]: normalizedEmail }
@@ -1592,7 +1596,7 @@ app.get('/api/orders/search/by-contact', async (req, res) => {
         const normalizedPhone = normalizePhone(phone)
         where.phone = { [Op.like]: `%${normalizedPhone}%` }
       }
-      
+
       const ordersList = await Order.findAll({
         where,
         order: [['createdAt', 'DESC']],
@@ -1634,11 +1638,11 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
   try {
     // Build where clause with storeId filter (superadmin sees all)
     const where = buildStoreWhere(req)
-    
+
     // Apply date filtering if provided
     const startDate = req.query.startDate
     const endDate = req.query.endDate
-    
+
     if (startDate || endDate) {
       where.createdAt = {}
       if (startDate) {
@@ -1652,13 +1656,13 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
         where.createdAt[Op.lte] = end
       }
     }
-    
+
     // Pagination support
     const limit = parseInt(req.query.limit || '100', 10) // Default 100, max 1000
     const offset = parseInt(req.query.offset || '0', 10)
     const maxLimit = 1000 // Prevent excessive queries
     const safeLimit = Math.min(limit, maxLimit)
-    
+
     // Fetch orders from database with pagination
     const ordersList = await Order.findAll({
       where,
@@ -1666,13 +1670,13 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
       limit: safeLimit,
       offset: offset,
     })
-    
+
     // Get total count for pagination metadata (only if limit/offset provided)
     let totalCount = null
     if (req.query.limit || req.query.offset) {
       totalCount = await Order.count({ where })
     }
-    
+
     // Ensure all orders have required fields before sending
     const sanitizedOrders = ordersList.map((order) => {
       const orderData = order.toJSON ? order.toJSON() : order
@@ -1683,7 +1687,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
         total: orderData.total !== undefined && orderData.total !== null ? orderData.total : 0,
       }
     })
-    
+
     // Return paginated response if pagination params provided
     if (req.query.limit || req.query.offset) {
       return res.json({
@@ -1696,7 +1700,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
         },
       })
     }
-    
+
     return res.json(sanitizedOrders)
   } catch (error) {
     logger.error('Failed to fetch orders:', error)
@@ -1710,21 +1714,21 @@ app.get('/api/orders/:id', async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: 'Order not found.' })
     }
-    
+
     const orderData = order.toJSON ? order.toJSON() : order
-    
+
     // Filter by storeId if provided (for public store-specific access)
     const storeId = req.query.storeId
     if (storeId && orderData.storeId !== storeId) {
       return res.status(404).json({ message: 'Order not found.' })
     }
-    
+
     // Allow public access for order tracking (no authentication required)
     // But still check if authenticated for full details
     const authHeader = req.headers.authorization || ''
     const token = authHeader.split(' ')[1]
     let isAuthenticated = false
-    
+
     if (token) {
       try {
         jwt.verify(token, JWT_SECRET)
@@ -1733,14 +1737,14 @@ app.get('/api/orders/:id', async (req, res) => {
         // Not authenticated, but allow basic order info
       }
     }
-    
+
     const relatedReturns = isAuthenticated
       ? await Return.findAll({
-          where: { orderId: orderData.id },
-          order: [['dateRequested', 'DESC']],
-        }).then(returns => Promise.all(returns.map(r => serializeReturn(r))))
+        where: { orderId: orderData.id },
+        order: [['dateRequested', 'DESC']],
+      }).then(returns => Promise.all(returns.map(r => serializeReturn(r))))
       : []
-    
+
     return res.json({
       ...orderData,
       returns: relatedReturns,
@@ -1874,7 +1878,7 @@ app.put('/api/orders/:id', authenticateToken, validateOrderUpdate, async (req, r
     // Update timeline - create a new array to avoid mutation issues
     const existingTimeline = Array.isArray(orderData.timeline) ? [...orderData.timeline] : []
     const updatedFields = Object.keys(req.body).filter((key) => allowedFields.includes(key) && req.body[key] !== undefined)
-    
+
     if (updatedFields.length > 0) {
       existingTimeline.push({
         id: crypto.randomUUID(),
@@ -1910,11 +1914,11 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
   try {
     logger.info('[DEBUG] /api/customers - Starting request')
     const storeWhere = buildStoreWhere(req)
-    
+
     // Apply date filtering if provided
     const startDate = req.query.startDate
     const endDate = req.query.endDate
-    
+
     if (startDate || endDate) {
       storeWhere.createdAt = {}
       if (startDate) {
@@ -1928,9 +1932,9 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
         storeWhere.createdAt[Op.lte] = end
       }
     }
-    
+
     logger.info('[DEBUG] /api/customers - storeWhere:', JSON.stringify(storeWhere))
-    
+
     // Fetch customers with optimized query (no order serialization for list view)
     let customersList = []
     try {
@@ -1946,11 +1950,11 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
       logger.error('[ERROR] Customer error stack:', customerError.stack)
       throw customerError
     }
-    
+
     // Use aggregation queries to get order counts and totals in bulk (much faster)
     const customerIds = customersList.map(c => c.id)
     logger.info(`[DEBUG] /api/customers - Processing ${customerIds.length} customer IDs`)
-    
+
     // Get order counts and totals per customer - simplified approach
     const orderStats = []
     if (customerIds.length > 0) {
@@ -1960,7 +1964,7 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
         for (let i = 0; i < customerIds.length; i += BATCH_SIZE) {
           const batch = customerIds.slice(i, i + BATCH_SIZE)
           logger.info(`[DEBUG] /api/customers - Processing batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} customers)`)
-          
+
           for (const customerId of batch) {
             try {
               const orders = await Order.findAll({
@@ -1972,7 +1976,7 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
                 raw: true,
                 limit: 1000, // Limit to prevent huge queries
               })
-              
+
               orderStats.push({
                 customerId,
                 orderCount: orders.length,
@@ -2001,9 +2005,9 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
         // Continue with empty stats if batch processing fails
       }
     }
-    
+
     logger.info(`[DEBUG] /api/customers - Processed ${orderStats.length} order stats`)
-    
+
     // Create a map for quick lookup
     const statsMap = new Map()
     orderStats.forEach(stat => {
@@ -2015,14 +2019,14 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
         })
       }
     })
-    
+
     // Serialize customers with pre-calculated stats (no individual queries)
     logger.info('[DEBUG] /api/customers - Serializing customer data...')
     const payload = customersList.map(customer => {
       try {
         const customerData = customer.toJSON ? customer.toJSON() : customer
         const stats = statsMap.get(customerData.id) || { orderCount: 0, totalSpent: 0, lastOrderDate: null }
-        
+
         return {
           id: customerData.id,
           name: customerData.name || 'Unknown',
@@ -2057,7 +2061,7 @@ app.get('/api/customers', authenticateToken, async (req, res) => {
         }
       }
     })
-    
+
     logger.info(`[DEBUG] /api/customers - Returning ${payload.length} customers`)
     return res.json(payload)
   } catch (error) {
@@ -2085,10 +2089,10 @@ app.post('/api/customers', authenticateToken, validateCustomer, async (req, res)
         address: address ? String(address).trim() : existingData.address,
         alternativePhone: alternativePhone ? String(alternativePhone).trim() : existingData.alternativePhone,
       })
-      
+
       await existingCustomer.update(mergedInfo)
       await existingCustomer.reload()
-      
+
       const serialized = await serializeCustomer(existingCustomer)
       return res.json(serialized)
     }
@@ -2098,7 +2102,7 @@ app.post('/api/customers', authenticateToken, validateCustomer, async (req, res)
     if (!targetStoreId) {
       return res.status(400).json({ message: 'Store ID is required.' })
     }
-    
+
     const newCustomer = await Customer.create({
       storeId: targetStoreId,
       name: String(name).trim(),
@@ -2126,12 +2130,12 @@ app.get('/api/customers/me/orders', authenticateCustomer, async (req, res) => {
     if (!customerId) {
       return res.status(401).json({ message: 'Customer authentication required.' })
     }
-    
+
     const customer = await findCustomerById(customerId)
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found.' })
     }
-    
+
     const ordersForCustomer = await getOrdersForCustomer(customer)
     return res.json(ordersForCustomer)
   } catch (error) {
@@ -2160,13 +2164,13 @@ app.get('/api/customers/:id', authenticateToken, async (req, res) => {
       where: buildStoreWhere(req, { customerId: customerData.id }),
       order: [['dateRequested', 'DESC']],
     })
-    
+
     const serializedReturns = await Promise.all(
       storeReturns.map(r => serializeReturn(r))
     )
-    
+
     const serializedCustomer = await serializeCustomer(customer)
-    
+
     return res.json({
       ...serializedCustomer,
       orders: ordersForCustomer,
@@ -2225,22 +2229,22 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, async (req, r
             address: address !== undefined ? address : customerData.address,
             alternativePhone: alternativePhone !== undefined ? alternativePhone : customerData.alternativePhone,
           })
-          
+
           // Transfer orders to the existing customer
           await Order.update(
             { customerId: existingByContact.id },
             { where: { customerId: customerData.id }, transaction }
           )
-          
+
           // Update the existing customer with merged info
           await existingByContact.update(finalMerged, { transaction })
-          
+
           // Delete the old customer
           await customer.destroy({ transaction })
-          
+
           await transaction.commit()
           await existingByContact.reload()
-          
+
           const serialized = await serializeCustomer(existingByContact)
           return res.json(serialized)
         }
@@ -2257,7 +2261,7 @@ app.put('/api/customers/:id', authenticateToken, validateCustomer, async (req, r
       address: address !== undefined ? address : customerData.address,
       alternativePhone: alternativePhone !== undefined ? alternativePhone : customerData.alternativePhone,
     })
-    
+
     await customer.update(mergedInfo, { transaction })
     await transaction.commit()
     await customer.reload()
@@ -2276,11 +2280,11 @@ app.get('/api/returns', authenticateToken, async (req, res) => {
   try {
     // Build where clause with storeId filter (superadmin sees all)
     const where = buildStoreWhere(req)
-    
+
     // Apply date filtering if provided
     const startDate = req.query.startDate
     const endDate = req.query.endDate
-    
+
     if (startDate || endDate) {
       where.dateRequested = {}
       if (startDate) {
@@ -2292,16 +2296,16 @@ app.get('/api/returns', authenticateToken, async (req, res) => {
         where.dateRequested[Op.lte] = end
       }
     }
-    
+
     const returnsList = await Return.findAll({
       where,
       order: [['dateRequested', 'DESC']],
     })
-    
+
     const serializedReturns = await Promise.all(
       returnsList.map(r => serializeReturn(r))
     )
-    
+
     return res.json(serializedReturns)
   } catch (error) {
     logger.error('Failed to fetch returns:', error)
@@ -2315,14 +2319,14 @@ app.get('/api/returns/:id', authenticateToken, async (req, res) => {
     if (!returnRequest) {
       return res.status(404).json({ message: 'Return request not found.' })
     }
-    
+
     const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
-    
+
     // Verify return belongs to user's store (superadmin can access any store)
     if (!req.isSuperAdmin && returnData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Return does not belong to your store.' })
     }
-    
+
     const serialized = await serializeReturn(returnRequest)
     return res.json(serialized)
   } catch (error) {
@@ -2496,25 +2500,25 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
   try {
     let startDate = null
     let endDate = null
-    
+
     if (req.query.startDate) {
       startDate = new Date(req.query.startDate)
       startDate.setHours(0, 0, 0, 0)
       logger.debug(`[metrics/overview] Parsed startDate: ${startDate.toISOString()}`)
     }
-    
+
     if (req.query.endDate) {
       endDate = new Date(req.query.endDate)
       endDate.setHours(23, 59, 59, 999)
       logger.debug(`[metrics/overview] Parsed endDate: ${endDate.toISOString()}`)
     }
-    
+
     logger.debug(`[metrics/overview] Query params - startDate: ${req.query.startDate}, endDate: ${req.query.endDate}`)
-    
+
     // Build where clauses (superadmin sees all stores)
     const orderWhere = buildStoreWhere(req)
     const customerWhere = buildStoreWhere(req)
-    
+
     if (startDate || endDate) {
       orderWhere.createdAt = {}
       customerWhere.createdAt = {}
@@ -2527,36 +2531,36 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
         customerWhere.createdAt[Op.lte] = endDate
       }
     }
-    
+
     // Fetch data from database (superadmin sees all stores)
     const productWhere = buildStoreWhere(req)
     const returnWhere = buildStoreWhere(req, { status: 'Submitted' })
-    
+
     logger.debug(`[metrics/overview] orderWhere: ${JSON.stringify(orderWhere, null, 2)}`)
     logger.debug(`[metrics/overview] customerWhere: ${JSON.stringify(customerWhere, null, 2)}`)
-    
+
     // Optimize: Use count queries instead of loading all data for metrics
     const [ordersList, productsList, returnsList, customersList] = await Promise.all([
-      Order.findAll({ 
+      Order.findAll({
         where: orderWhere,
         attributes: ['id', 'status', 'total', 'createdAt'], // Only fetch needed fields
       }),
-      Product.findAll({ 
+      Product.findAll({
         where: productWhere,
         attributes: ['id', 'stockQuantity', 'reorderThreshold'], // Only fetch needed fields
       }),
-      Return.findAll({ 
+      Return.findAll({
         where: returnWhere,
         attributes: ['id'], // Only need count
       }),
-      Customer.findAll({ 
+      Customer.findAll({
         where: customerWhere,
         attributes: ['id', 'createdAt'], // Only fetch needed fields
       }),
     ])
-    
+
     logger.debug(`[metrics/overview] Found ${ordersList.length} orders, ${customersList.length} customers`)
-    
+
     const totalOrders = ordersList.length
     const pendingOrdersCount = ordersList.filter(o => {
       const oData = o.toJSON ? o.toJSON() : o
@@ -2568,7 +2572,7 @@ app.get('/api/metrics/overview', authenticateToken, async (req, res) => {
       return pData.stockQuantity <= pData.reorderThreshold
     }).length
     const pendingReturnsCount = returnsList.length
-    
+
     // Calculate new customers in date range or last 7 days
     // Use November 15, 2025 as reference date for consistent results
     const referenceDate = new Date('2025-11-15T23:59:59.999Z')
@@ -2620,43 +2624,43 @@ app.get('/api/metrics/low-stock-trend', authenticateToken, async (req, res) => {
     const referenceDate = new Date('2025-11-15T23:59:59.999Z')
     let startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(referenceDate.getTime() - 7 * 24 * 60 * 60 * 1000)
     let endDate = req.query.endDate ? new Date(req.query.endDate) : referenceDate
-    
+
     // Ensure proper time boundaries
     startDate.setHours(0, 0, 0, 0)
     endDate.setHours(23, 59, 59, 999)
-    
+
     // Fetch products (superadmin sees all stores)
     const productsList = await Product.findAll({
       where: buildStoreWhere(req),
     })
-    
+
     const baseLowStockCount = productsList.filter(p => {
       const pData = p.toJSON ? p.toJSON() : p
       return pData.stockQuantity <= pData.reorderThreshold
     }).length
-    
+
     // Calculate number of days
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
     const numDays = Math.min(Math.max(daysDiff, 1), 90) // Limit to 90 days
-    
+
     const trendData = Array.from({ length: numDays }).map((_, index) => {
       const date = new Date(startDate)
       date.setDate(date.getDate() + index)
       date.setHours(0, 0, 0, 0)
-      
+
       const dateKey = date.toISOString().split('T')[0]
-      
+
       // For demo purposes, simulate trend data based on current low stock count
       const variation = Math.floor(Math.random() * 3) - 1
       const count = Math.max(0, baseLowStockCount + variation)
-      
+
       return {
         date: dateKey,
         dateLabel: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         lowStockCount: count,
       }
     })
-    
+
     return res.json(trendData)
   } catch (error) {
     logger.error('Failed to fetch low stock trend:', error)
@@ -2671,21 +2675,21 @@ app.get('/api/metrics/sales-over-time', authenticateToken, async (req, res) => {
     const referenceDate = new Date('2025-11-15T23:59:59.999Z')
     let startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(referenceDate.getTime() - 30 * 24 * 60 * 60 * 1000)
     let endDate = req.query.endDate ? new Date(req.query.endDate) : referenceDate
-    
+
     // Ensure proper time boundaries
     startDate.setHours(0, 0, 0, 0)
     endDate.setHours(23, 59, 59, 999)
-    
+
     // Group orders by day
     const dailyData = {}
     const currentDate = new Date(startDate)
-    
+
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split('T')[0]
       dailyData[dateKey] = { orders: 0, revenue: 0 }
       currentDate.setDate(currentDate.getDate() + 1)
     }
-    
+
     // Fetch orders by storeId (superadmin sees all stores)
     const orderWhere = buildStoreWhere(req, {
       createdAt: {
@@ -2696,7 +2700,7 @@ app.get('/api/metrics/sales-over-time', authenticateToken, async (req, res) => {
     const ordersList = await Order.findAll({
       where: orderWhere,
     })
-    
+
     ordersList.forEach((order) => {
       const oData = order.toJSON ? order.toJSON() : order
       if (!oData.createdAt) return
@@ -2709,17 +2713,17 @@ app.get('/api/metrics/sales-over-time', authenticateToken, async (req, res) => {
         dailyData[dateKey].revenue += orderTotal
       }
     })
-    
+
     const dataPoints = Object.entries(dailyData).map(([date, data]) => ({
       date,
       dateLabel: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       orders: data.orders,
       revenue: data.revenue,
     }))
-    
+
     const totalOrders = dataPoints.reduce((sum, point) => sum + point.orders, 0)
     const totalRevenue = dataPoints.reduce((sum, point) => sum + point.revenue, 0)
-    
+
     return res.json({
       data: dataPoints,
       summary: {
@@ -2740,18 +2744,18 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
   try {
     const period = req.query.period || 'month' // 'week' or 'month'
     const basePeriod = req.query.basePeriod || 'previous' // 'previous' or 'year'
-    
+
     // Use November 15, 2025 as reference date for consistent results
     const now = new Date('2025-11-15T23:59:59.999Z')
     let currentStart, currentEnd, previousStart, previousEnd
-    
+
     // If date filter is provided, use it as the current period
     if (req.query.startDate && req.query.endDate) {
       currentStart = new Date(req.query.startDate)
       currentStart.setHours(0, 0, 0, 0)
       currentEnd = new Date(req.query.endDate)
       currentEnd.setHours(23, 59, 59, 999)
-      
+
       // Calculate previous period based on the date range length
       const rangeLength = currentEnd.getTime() - currentStart.getTime()
       previousEnd = new Date(currentStart)
@@ -2766,7 +2770,7 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
       currentStart = new Date(now)
       currentStart.setDate(now.getDate() - dayOfWeek)
       currentStart.setHours(0, 0, 0, 0)
-      
+
       // Previous week
       previousEnd = new Date(currentStart)
       previousEnd.setMilliseconds(-1)
@@ -2776,13 +2780,13 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
       // Current month
       currentEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
       currentStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0)
-      
+
       // Previous month
       previousEnd = new Date(currentStart)
       previousEnd.setMilliseconds(-1)
       previousStart = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0)
     }
-    
+
     const getPeriodData = async (start, end) => {
       const orderWhere = buildStoreWhere(req, {
         createdAt: {
@@ -2793,10 +2797,10 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
       const periodOrders = await Order.findAll({
         where: orderWhere,
       })
-      
+
       const ordersData = periodOrders.map(o => o.toJSON ? o.toJSON() : o)
       const uniqueEmails = new Set(ordersData.map(o => o.email).filter(Boolean))
-      
+
       return {
         orders: ordersData.length,
         revenue: ordersData.reduce((sum, order) => {
@@ -2806,17 +2810,17 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
         customers: uniqueEmails.size,
       }
     }
-    
+
     const [currentData, previousData] = await Promise.all([
       getPeriodData(currentStart, currentEnd),
       getPeriodData(previousStart, previousEnd),
     ])
-    
+
     const calculateGrowth = (current, previous) => {
       if (previous === 0) return current > 0 ? 100 : 0
       return ((current - previous) / previous) * 100
     }
-    
+
     // Determine period label based on whether custom dates were used
     const currentPeriodLabel = req.query.startDate && req.query.endDate
       ? 'Selected Period'
@@ -2824,7 +2828,7 @@ app.get('/api/metrics/growth-comparison', authenticateToken, async (req, res) =>
     const previousPeriodLabel = req.query.startDate && req.query.endDate
       ? 'Previous Period'
       : (period === 'week' ? 'Previous 7 days' : 'Last month')
-    
+
     return res.json({
       period,
       current: {
@@ -2869,11 +2873,11 @@ app.get('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), a
   try {
     // Fetch users (superadmin sees all, admin sees only their store)
     const where = buildStoreWhere(req)
-    
+
     // Apply date filtering if provided (filter by createdAt)
     const startDate = req.query.startDate
     const endDate = req.query.endDate
-    
+
     if (startDate || endDate) {
       where.createdAt = {}
       if (startDate) {
@@ -2887,7 +2891,7 @@ app.get('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), a
         where.createdAt[Op.lte] = end
       }
     }
-    
+
     const usersList = await User.findAll({
       where,
       order: [['createdAt', 'DESC']],
@@ -2996,7 +3000,7 @@ app.post('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), 
 
     const userRole = role && ['admin', 'staff'].includes(role) ? role : 'staff'
     const passwordHash = await bcrypt.hash(password, 10)
-    
+
     // Set default permissions based on role if not provided
     let userPermissions = permissions
     if (!userPermissions) {
@@ -3018,13 +3022,13 @@ app.post('/api/users', authenticateToken, authorizeRole('admin', 'superadmin'), 
         }
       }
     }
-    
+
     // Superadmin can create users for any store, regular admin only for their store
     const targetStoreId = req.isSuperAdmin ? (storeId || req.storeId) : req.storeId
     if (!targetStoreId) {
       return res.status(400).json({ message: 'Store ID is required.' })
     }
-    
+
     // Verify store exists
     const targetStore = await Store.findByPk(targetStoreId)
     if (!targetStore) {
@@ -3149,7 +3153,7 @@ app.get('/api/settings/business/public', async (req, res) => {
     // Get storeId from query param
     // If no storeId provided, return generic settings (for public pages like login/signup)
     const storeId = req.query.storeId
-    
+
     if (!storeId) {
       // Return generic settings for public pages (no store-specific branding)
       return res.json({
@@ -3159,10 +3163,10 @@ app.get('/api/settings/business/public', async (req, res) => {
         country: 'PK',
       })
     }
-    
+
     // If storeId provided, return store-specific settings (for store-specific public pages)
     const storeSettings = await getStoreSettings(storeId)
-    
+
     if (!storeSettings) {
       // Return default settings if store not found
       return res.json({
@@ -3172,7 +3176,7 @@ app.get('/api/settings/business/public', async (req, res) => {
         country: 'PK',
       })
     }
-    
+
     return res.json(storeSettings)
   } catch (error) {
     console.error('[ERROR] /api/settings/business/public:', error)
@@ -3193,12 +3197,12 @@ app.get('/api/settings/business', authenticateToken, authorizeRole('admin', 'sup
         brandColor: '#1976d2',
       })
     }
-    
+
     const targetStoreId = req.isSuperAdmin && req.query.storeId ? req.query.storeId : req.storeId
     if (!targetStoreId) {
       return res.status(400).json({ message: 'Store ID is required.' })
     }
-    
+
     // Return store-specific settings
     const storeSettings = await getStoreSettings(targetStoreId)
     if (!storeSettings) {
@@ -3218,12 +3222,12 @@ app.put('/api/settings/business', authenticateToken, authorizeRole('admin', 'sup
     if (!targetStoreId) {
       return res.status(400).json({ message: 'Store ID is required.' })
     }
-    
+
     const store = await findStoreById(targetStoreId)
     if (!store) {
       return res.status(404).json({ message: 'Store not found.' })
     }
-    
+
     const allowedFields = ['logoUrl', 'brandColor', 'defaultCurrency', 'country', 'dashboardName']
     const updateData = {}
     Object.entries(req.body).forEach(([key, value]) => {
@@ -3231,10 +3235,10 @@ app.put('/api/settings/business', authenticateToken, authorizeRole('admin', 'sup
         updateData[key] = value
       }
     })
-    
+
     // Update store or create/update Setting record
     await store.update(updateData)
-    
+
     // Also update Setting if it exists
     let setting = await Setting.findOne({ where: { storeId: targetStoreId } })
     if (setting) {
@@ -3245,7 +3249,7 @@ app.put('/api/settings/business', authenticateToken, authorizeRole('admin', 'sup
         ...updateData,
       })
     }
-    
+
     const storeSettings = await getStoreSettings(targetStoreId)
     return res.json(storeSettings)
   } catch (error) {
@@ -3260,17 +3264,17 @@ app.get('/api/products/public', async (req, res) => {
   try {
     // Filter by storeId if provided
     const storeId = req.query.storeId
-    
+
     const where = { status: 'active' }
     if (storeId) {
       where.storeId = storeId
     }
-    
+
     const productsList = await Product.findAll({
       where,
       order: [['name', 'ASC']],
     })
-    
+
     // Return only active products with basic info (public access)
     const publicProducts = productsList.map((p) => {
       const productData = p.toJSON ? p.toJSON() : p
@@ -3284,7 +3288,7 @@ app.get('/api/products/public', async (req, res) => {
         status: productData.status,
       }
     })
-    
+
     return res.json(publicProducts)
   } catch (error) {
     logger.error('[ERROR] /api/products/public:', error)
@@ -3301,15 +3305,15 @@ app.get('/api/products', authenticateToken, async (req, res) => {
       // Calculate lowStock condition: stockQuantity <= reorderThreshold
       // Use Sequelize.literal for column comparison
       const { Sequelize } = require('sequelize')
-      where[Op.and] = [
-        Sequelize.literal('stockQuantity <= reorderThreshold')
-      ]
+      where.stockQuantity = {
+        [Op.lte]: Sequelize.col('reorderThreshold')
+      }
     }
 
     // Apply date filtering if provided (filter by createdAt)
     const startDate = req.query.startDate
     const endDate = req.query.endDate
-    
+
     if (startDate || endDate) {
       where.createdAt = {}
       if (startDate) {
@@ -3350,12 +3354,17 @@ app.get('/api/products', authenticateToken, async (req, res) => {
 app.get('/api/products/low-stock', authenticateToken, async (req, res) => {
   try {
     const { Sequelize } = require('sequelize')
+
+    // Build base where clause with store filtering
+    const where = buildStoreWhere(req)
+
+    // Add low stock condition
+    where.stockQuantity = {
+      [Op.lte]: Sequelize.col('reorderThreshold')
+    }
+
     const productsList = await Product.findAll({
-      where: buildStoreWhere(req, {
-        [Op.and]: [
-          Sequelize.literal('stockQuantity <= reorderThreshold')
-        ]
-      }),
+      where,
       order: [['name', 'ASC']],
     })
 
@@ -3380,20 +3389,20 @@ app.get('/api/products/:id', authenticateToken, async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found.' })
     }
-    
+
     const productData = product.toJSON ? product.toJSON() : product
-    
+
     // Verify product belongs to user's store (superadmin can access any store)
     if (!req.isSuperAdmin && productData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Product does not belong to your store.' })
     }
-    
+
     // Add lowStock flag
     const productWithLowStock = {
       ...productData,
       lowStock: productData.stockQuantity <= productData.reorderThreshold,
     }
-    
+
     return res.json(productWithLowStock)
   } catch (error) {
     logger.error('Failed to fetch product:', error)
@@ -3503,24 +3512,24 @@ app.post('/api/products/:id/reorder', authenticateToken, authorizeRole('admin', 
     if (!product) {
       return res.status(404).json({ message: 'Product not found.' })
     }
-    
+
     const productData = product.toJSON ? product.toJSON() : product
-    
+
     // Verify product belongs to user's store (superadmin can access any store)
     if (!req.isSuperAdmin && productData.storeId !== req.storeId) {
       return res.status(403).json({ message: 'Product does not belong to your store.' })
     }
-    
+
     // Mark as reordered (in a real app, this would update a flag or create a purchase order)
     await product.update({ updatedAt: new Date() })
     await product.reload()
-    
+
     const updatedProduct = product.toJSON ? product.toJSON() : product
     const productWithLowStock = {
       ...updatedProduct,
       lowStock: updatedProduct.stockQuantity <= updatedProduct.reorderThreshold,
     }
-    
+
     return res.json(productWithLowStock)
   } catch (error) {
     logger.error('Failed to reorder product:', error)
@@ -3543,7 +3552,7 @@ app.get('/api/reports/growth', authenticateToken, async (req, res) => {
       currentStart.setHours(0, 0, 0, 0)
       currentEnd = new Date(req.query.endDate)
       currentEnd.setHours(23, 59, 59, 999)
-      
+
       // Calculate previous period based on the date range length
       const rangeLength = currentEnd.getTime() - currentStart.getTime()
       previousEnd = new Date(currentStart)
@@ -3652,7 +3661,7 @@ app.get('/api/reports/growth', authenticateToken, async (req, res) => {
     const periodLabel = req.query.startDate && req.query.endDate
       ? 'Selected Period'
       : (period === 'week' ? 'Last 7 days' : period === 'quarter' ? 'This quarter' : 'This month')
-    
+
     return res.json({
       totalSales,
       totalOrders,
@@ -3773,12 +3782,12 @@ app.get('/api/export/orders', authenticateToken, async (req, res) => {
       'Is Paid',
       'Total',
     ]
-    
+
     const ordersList = await Order.findAll({
       where: buildStoreWhere(req),
       order: [['createdAt', 'DESC']],
     })
-    
+
     const rows = ordersList.map((order) => {
       const oData = order.toJSON ? order.toJSON() : order
       return [
@@ -3793,7 +3802,7 @@ app.get('/api/export/orders', authenticateToken, async (req, res) => {
         oData.total ?? '',
       ]
     })
-    
+
     return sendCsv(res, `orders_export_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows)
   } catch (error) {
     logger.error('Failed to export orders:', error)
@@ -3814,12 +3823,12 @@ app.get('/api/export/products', authenticateToken, async (req, res) => {
       'Category',
       'Updated At',
     ]
-    
+
     const productsList = await Product.findAll({
       where: buildStoreWhere(req),
       order: [['name', 'ASC']],
     })
-    
+
     const rows = productsList.map((product) => {
       const pData = product.toJSON ? product.toJSON() : product
       return [
@@ -3834,7 +3843,7 @@ app.get('/api/export/products', authenticateToken, async (req, res) => {
         pData.updatedAt ?? '',
       ]
     })
-    
+
     return sendCsv(
       res,
       `products_export_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -3850,16 +3859,16 @@ app.get('/api/export/products', authenticateToken, async (req, res) => {
 app.get('/api/export/customers', authenticateToken, async (req, res) => {
   try {
     const headers = ['Customer ID', 'Name', 'Email', 'Phone', 'Orders', 'Last Order Date']
-    
+
     const customersList = await Customer.findAll({
       where: { storeId: req.storeId },
       order: [['createdAt', 'DESC']],
     })
-    
+
     const serializedCustomers = await Promise.all(
       customersList.map(c => serializeCustomer(c))
     )
-    
+
     const rows = serializedCustomers.map((customer) => [
       customer.id,
       customer.name,
@@ -3868,7 +3877,7 @@ app.get('/api/export/customers', authenticateToken, async (req, res) => {
       customer.orderCount ?? 0,
       customer.lastOrderDate ?? '',
     ])
-    
+
     return sendCsv(
       res,
       `customers_export_${new Date().toISOString().slice(0, 10)}.csv`,
@@ -4022,12 +4031,12 @@ async function startServer() {
   try {
     // Initialize database connection
     await initializeDatabase()
-    
+
     // Seed database if empty (only in development)
     if (process.env.NODE_ENV === 'development') {
       const storeCount = await Store.count()
       const userCount = await User.count()
-      
+
       // Seed if no stores OR no users (in case stores exist but users don't)
       if (storeCount === 0 || userCount === 0) {
         if (storeCount > 0 && userCount === 0) {
@@ -4041,11 +4050,11 @@ async function startServer() {
           await Setting.destroy({ where: {}, force: true })
           await Store.destroy({ where: {}, force: true })
         }
-        
+
         logger.info('[INIT] Database is empty, seeding initial data...')
         const { generateMultiStoreData } = require('./generateMultiStoreData')
         const multiStoreData = generateMultiStoreData()
-        
+
         // Seed stores
         await Store.bulkCreate(multiStoreData.stores.map(store => ({
           id: store.id,
@@ -4059,7 +4068,7 @@ async function startServer() {
           brandColor: store.brandColor || '#1976d2',
           isDemo: store.isDemo || false,
         })))
-        
+
         // Seed users
         await User.bulkCreate(multiStoreData.users.map(user => ({
           id: user.id,
@@ -4081,7 +4090,7 @@ async function startServer() {
           active: user.active !== undefined ? user.active : true,
           passwordChangedAt: new Date(), // Set to current date to skip password change requirement (for testing)
         })))
-        
+
         // Create superadmin user
         const superAdminPassword = bcrypt.hashSync('superadmin123', 10)
         const superAdminExists = await User.findOne({ where: { email: 'superadmin@shopifyadmin.pk' } })
@@ -4113,7 +4122,7 @@ async function startServer() {
           })
           logger.info('[INIT] Superadmin user created: superadmin@shopifyadmin.pk / superadmin123')
         }
-        
+
         // Seed products
         await Product.bulkCreate(multiStoreData.products.map(product => ({
           id: product.id,
@@ -4127,7 +4136,7 @@ async function startServer() {
           imageUrl: product.imageUrl || null,
           status: product.status || 'active',
         })))
-        
+
         // Seed customers
         await Customer.bulkCreate(multiStoreData.customers.map(customer => ({
           id: customer.id,
@@ -4141,7 +4150,7 @@ async function startServer() {
           alternativePhones: customer.alternativePhones || [],
           alternativeAddresses: customer.alternativeAddresses || [],
         })))
-        
+
         // Seed orders
         await Order.bulkCreate(multiStoreData.orders.map(order => ({
           id: order.id,
@@ -4163,7 +4172,7 @@ async function startServer() {
           shippingAddress: order.shippingAddress || null,
           paymentStatus: order.paymentStatus || (order.isPaid ? 'paid' : 'pending'),
         })))
-        
+
         // Seed returns
         await Return.bulkCreate(multiStoreData.returns.map(returnItem => ({
           id: returnItem.id,
@@ -4178,7 +4187,7 @@ async function startServer() {
           history: returnItem.history || [],
           dateRequested: returnItem.dateRequested || returnItem.createdAt || new Date(),
         })))
-        
+
         // Seed settings
         const settings = multiStoreData.stores.map(store => ({
           id: crypto.randomUUID(),
@@ -4191,7 +4200,7 @@ async function startServer() {
           defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
         }))
         await Setting.bulkCreate(settings)
-        
+
         const finalStoreCount = await Store.count()
         const finalUserCount = await User.count()
         logger.info(`[INIT] Database seeded successfully: ${finalStoreCount} stores, ${finalUserCount} users`)
@@ -4200,13 +4209,13 @@ async function startServer() {
         logger.info(`[INIT] Database already seeded: ${storeCount} stores, ${userCount} users`)
       }
     }
-    
+
     // Start server
     const server = app.listen(PORT, () => {
       logger.info(`Server started on port ${PORT}`)
       logger.info(`Environment: ${NODE_ENV}`)
       logger.info(`Health check available at http://localhost:${PORT}/api/health`)
-      
+
       // Signal PM2 that server is ready
       if (process.send) {
         process.send('ready')
@@ -4216,10 +4225,10 @@ async function startServer() {
     // Graceful shutdown handlers
     const gracefulShutdown = async (signal) => {
       logger.info(`${signal} received, shutting down gracefully`)
-      
+
       server.close(async () => {
         logger.info('HTTP server closed')
-        
+
         try {
           // Close database connections
           await db.sequelize.close()
@@ -4227,10 +4236,10 @@ async function startServer() {
         } catch (error) {
           logger.error('Error closing database connections:', error)
         }
-        
+
         process.exit(0)
       })
-      
+
       // Force shutdown after 10 seconds
       setTimeout(() => {
         logger.error('Forced shutdown after timeout')
@@ -4240,13 +4249,13 @@ async function startServer() {
 
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
     process.on('SIGINT', () => gracefulShutdown('SIGINT'))
-    
+
     // Handle uncaught exceptions
     process.on('uncaughtException', (error) => {
       logger.error('Uncaught Exception:', error)
       gracefulShutdown('uncaughtException')
     })
-    
+
     // Handle unhandled promise rejections
     process.on('unhandledRejection', (reason, promise) => {
       logger.error('Unhandled Rejection at:', promise, 'reason:', reason)

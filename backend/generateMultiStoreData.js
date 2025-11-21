@@ -36,11 +36,9 @@ const pakistanCities = [
 
 // Pakistan first names (common Pakistani names)
 const pakistaniFirstNames = [
-  // Male names
   'Ahmed', 'Ali', 'Hassan', 'Hussain', 'Muhammad', 'Usman', 'Bilal', 'Hamza', 'Omar', 'Zain',
   'Ibrahim', 'Yusuf', 'Ahmad', 'Saad', 'Taha', 'Zainab', 'Fatima', 'Ayesha', 'Maryam', 'Amina',
   'Hira', 'Sana', 'Sara', 'Zara', 'Alisha', 'Hania', 'Mariam', 'Areeba', 'Hafsa', 'Iqra',
-  // More names
   'Abdullah', 'Umar', 'Haris', 'Rayyan', 'Ayan', 'Arham', 'Zayan', 'Eesa', 'Hadi', 'Rayan',
   'Aiza', 'Anaya', 'Hoorain', 'Minal', 'Noor', 'Rimsha', 'Sidra', 'Tayyaba', 'Urooj', 'Wajiha',
   'Fahad', 'Kamran', 'Nadeem', 'Rashid', 'Shahid', 'Tariq', 'Waseem', 'Yasir', 'Zubair', 'Adnan',
@@ -68,76 +66,28 @@ const pakistaniStaffNames = [
   { first: 'Iqra', last: 'Hussain' }, { first: 'Kiran', last: 'Sheikh' }, { first: 'Lubna', last: 'Iqbal' },
 ]
 
-// Store templates - 5 stores with lots of data + 1 demo store
+// Store templates - ONLY TechHub and Demo
 const storeTemplates = [
   {
     name: 'TechHub Electronics',
-    dashboardName: 'TechHub Electronics Dashboard',
+    dashboardName: 'TechHub Dashboard',
     domain: 'techhub.pk',
     category: 'Electronics',
     defaultCurrency: 'PKR',
     country: 'PK',
-    city: 'Karachi',
+    city: 'Lahore',
     address: 'Shop 45, Clifton Block 5, Karachi, Sindh 75600',
     phone: '+92-21-35871234',
     isDemo: false,
   },
   {
-    name: 'Fashion Forward',
-    dashboardName: 'Fashion Forward Dashboard',
-    domain: 'fashionforward.pk',
-    category: 'Apparel',
-    defaultCurrency: 'PKR',
-    country: 'PK',
-    city: 'Lahore',
-    address: 'Shop 12, MM Alam Road, Gulberg, Lahore, Punjab 54000',
-    phone: '+92-42-35789123',
-    isDemo: false,
-  },
-  {
-    name: 'Home & Living Store',
-    dashboardName: 'Home & Living Dashboard',
-    domain: 'homeliving.pk',
-    category: 'Home & Living',
-    defaultCurrency: 'PKR',
-    country: 'PK',
-    city: 'Islamabad',
-    address: 'Shop 8, F-7 Markaz, Islamabad, ICT 44000',
-    phone: '+92-51-23456789',
-    isDemo: false,
-  },
-  {
-    name: 'Fitness Gear Pro',
-    dashboardName: 'Fitness Gear Pro Dashboard',
-    domain: 'fitnessgear.pk',
-    category: 'Fitness',
-    defaultCurrency: 'PKR',
-    country: 'PK',
-    city: 'Rawalpindi',
-    address: 'Shop 23, Bahria Town Phase 7, Rawalpindi, Punjab 46000',
-    phone: '+92-51-34567890',
-    isDemo: false,
-  },
-  {
-    name: 'Beauty Essentials',
-    dashboardName: 'Beauty Essentials Dashboard',
-    domain: 'beautyessentials.pk',
-    category: 'Beauty',
+    name: 'Demo Store',
+    dashboardName: 'Demo Dashboard',
+    domain: 'demo.shopifyadmin.pk',
+    category: 'General',
     defaultCurrency: 'PKR',
     country: 'PK',
     city: 'Karachi',
-    address: 'Shop 67, Tariq Road, Karachi, Sindh 75500',
-    phone: '+92-21-36789012',
-    isDemo: false,
-  },
-  {
-    name: 'Demo Store',
-    dashboardName: 'Demo Store - Try It Out',
-    domain: 'demo.shopifyadmin.pk',
-    category: 'Demo',
-    defaultCurrency: 'PKR',
-    country: 'PK',
-    city: 'Lahore',
     address: 'Demo Address, Lahore, Punjab',
     phone: '+92-42-00000000',
     isDemo: true,
@@ -147,315 +97,44 @@ const storeTemplates = [
 // Detailed product templates by category with Pakistan-specific descriptions
 const productTemplatesByCategory = {
   Electronics: [
-    { 
-      name: 'Wireless Earbuds Pro', 
-      price: 4500, 
+    {
+      name: 'Wireless Earbuds Pro',
+      price: 4500,
       reorderThreshold: 12,
       description: 'Premium wireless earbuds with active noise cancellation, 30-hour battery life, and crystal-clear sound quality. Perfect for music lovers and professionals in Pakistan. Compatible with all smartphones and devices.',
     },
-    { 
-      name: 'Smart Watch Series 5', 
-      price: 12000, 
+    {
+      name: 'Smart Watch Series 5',
+      price: 12000,
       reorderThreshold: 8,
       description: 'Advanced smartwatch with heart rate monitoring, GPS tracking, and 7-day battery life. Water-resistant design perfect for Pakistani weather. Includes fitness tracking, sleep monitoring, and smartphone notifications.',
     },
-    { 
-      name: 'Bluetooth Speaker', 
-      price: 3500, 
+    {
+      name: 'Bluetooth Speaker',
+      price: 3500,
       reorderThreshold: 10,
       description: 'Portable Bluetooth speaker with 360-degree sound, 20W output, and 12-hour battery. Dust and water resistant (IPX7). Perfect for outdoor gatherings and parties in Pakistan. Supports wireless charging.',
     },
-    { 
-      name: 'Wireless Mouse', 
-      price: 1500, 
+    {
+      name: 'Wireless Mouse',
+      price: 1500,
       reorderThreshold: 15,
       description: 'Ergonomic wireless mouse with 2.4GHz connectivity, 1600 DPI sensor, and 18-month battery life. Comfortable design for long working hours. Compatible with Windows, Mac, and Linux.',
     },
-    { 
-      name: 'Mechanical Keyboard', 
-      price: 8500, 
+    {
+      name: 'Mechanical Keyboard',
+      price: 8500,
       reorderThreshold: 8,
       description: 'RGB mechanical keyboard with Cherry MX switches, customizable backlighting, and anti-ghosting technology. Perfect for gaming and professional typing. Durable construction for long-term use.',
     },
-    { 
-      name: 'Portable Phone Charger', 
-      price: 2500, 
-      reorderThreshold: 12,
-      description: '20000mAh power bank with fast charging support for all smartphones. Dual USB ports and Type-C input. LED indicator for battery level. Perfect for travel and daily use in Pakistan.',
-    },
-    { 
-      name: 'Fitness Tracker', 
-      price: 4500, 
-      reorderThreshold: 10,
-      description: 'Fitness tracker with heart rate monitor, step counter, sleep tracking, and 7-day battery life. Water-resistant design. Tracks calories, distance, and workout sessions. Perfect for fitness enthusiasts.',
-    },
-    { 
-      name: 'Smart Watch Band', 
-      price: 1200, 
-      reorderThreshold: 15,
-      description: 'Premium leather and silicone watch bands compatible with all smartwatch models. Adjustable sizing, comfortable fit, and stylish design. Available in multiple colors.',
-    },
-    { 
-      name: 'Laptop Stand', 
-      price: 3500, 
-      reorderThreshold: 10,
-      description: 'Adjustable aluminum laptop stand with ergonomic design. Improves posture and laptop cooling. Fits laptops from 10" to 17". Foldable for easy storage and travel.',
-    },
-    { 
-      name: 'USB-C Hub', 
-      price: 4500, 
-      reorderThreshold: 8,
-      description: '7-in-1 USB-C hub with HDMI, USB 3.0 ports, SD card reader, and power delivery. Compatible with MacBook, iPad Pro, and Windows laptops. Compact and portable design.',
-    },
   ],
-  Apparel: [
-    { 
-      name: 'Signature Hoodie', 
-      price: 3500, 
-      reorderThreshold: 20,
-      description: 'Premium cotton blend hoodie with soft fleece lining. Perfect for Pakistani winters. Available in multiple sizes and colors. Comfortable fit with adjustable hood and front pocket.',
-    },
-    { 
-      name: 'Cotton T-Shirt Pack', 
-      price: 2500, 
-      reorderThreshold: 25,
-      description: 'Pack of 3 premium cotton t-shirts. Breathable fabric perfect for Pakistani climate. Pre-shrunk, colorfast, and durable. Available in various color combinations and sizes.',
-    },
-    { 
-      name: 'Denim Jacket', 
-      price: 5500, 
-      reorderThreshold: 15,
-      description: 'Classic denim jacket with modern fit. 100% cotton denim, comfortable lining, and multiple pockets. Perfect for casual wear in Pakistan. Available in blue and black.',
-    },
-    { 
-      name: 'Athletic Shorts', 
-      price: 2000, 
-      reorderThreshold: 20,
-      description: 'Moisture-wicking athletic shorts perfect for sports and workouts. Lightweight fabric, elastic waistband, and side pockets. Ideal for Pakistani summers and gym sessions.',
-    },
-    { 
-      name: 'Wool Sweater', 
-      price: 4500, 
-      reorderThreshold: 12,
-      description: 'Warm wool blend sweater for cold weather. Soft, comfortable, and durable. Classic design suitable for all occasions. Perfect for Pakistani winters in northern regions.',
-    },
-    { 
-      name: 'Leather Belt', 
-      price: 2800, 
-      reorderThreshold: 18,
-      description: 'Genuine leather belt with adjustable sizing. Classic buckle design, durable construction. Available in brown and black. Perfect for formal and casual wear.',
-    },
-    { 
-      name: 'Baseball Cap', 
-      price: 1200, 
-      reorderThreshold: 30,
-      description: 'Adjustable baseball cap with breathable fabric. UV protection and moisture-wicking. Perfect for outdoor activities in Pakistan. Available in multiple colors and designs.',
-    },
-    { 
-      name: 'Winter Gloves', 
-      price: 1500, 
-      reorderThreshold: 20,
-      description: 'Warm winter gloves with touchscreen compatibility. Insulated lining, waterproof exterior. Perfect for cold weather in northern Pakistan. Available in multiple sizes.',
-    },
-    { 
-      name: 'Running Leggings', 
-      price: 2800, 
-      reorderThreshold: 18,
-      description: 'Compression running leggings with moisture-wicking fabric. High-waisted design, side pockets for essentials. Perfect for running and gym workouts in Pakistan.',
-    },
-    { 
-      name: 'Polo Shirt', 
-      price: 2200, 
-      reorderThreshold: 22,
-      description: 'Classic polo shirt in premium cotton blend. Collared design, button placket, and comfortable fit. Perfect for casual and semi-formal occasions. Available in multiple colors.',
-    },
-  ],
-  'Home & Living': [
-    { 
-      name: 'Herbal Candle Trio', 
-      price: 2500, 
-      reorderThreshold: 10,
-      description: 'Set of 3 scented herbal candles with natural fragrances. Long-burning soy wax candles perfect for creating a relaxing atmosphere. Includes lavender, jasmine, and rose scents.',
-    },
-    { 
-      name: 'Throw Pillow Set', 
-      price: 3500, 
-      reorderThreshold: 15,
-      description: 'Set of 4 decorative throw pillows with premium covers. Soft filling, machine washable covers. Perfect for adding comfort and style to living rooms and bedrooms.',
-    },
-    { 
-      name: 'Scented Diffuser', 
-      price: 4500, 
-      reorderThreshold: 12,
-      description: 'Reed diffuser with essential oils for continuous fragrance. Elegant glass bottle with natural reed sticks. Long-lasting scent perfect for homes and offices in Pakistan.',
-    },
-    { 
-      name: 'Ceramic Plant Pot', 
-      price: 1500, 
-      reorderThreshold: 20,
-      description: 'Decorative ceramic plant pot with drainage holes. Modern design suitable for indoor and outdoor plants. Perfect for adding greenery to Pakistani homes. Available in multiple sizes.',
-    },
-    { 
-      name: 'Minimal Desk Lamp', 
-      price: 5500, 
-      reorderThreshold: 8,
-      description: 'Modern LED desk lamp with adjustable brightness and color temperature. USB charging port, touch controls, and flexible gooseneck design. Perfect for study and work spaces.',
-    },
-    { 
-      name: 'Bamboo Cutting Board', 
-      price: 2800, 
-      reorderThreshold: 15,
-      description: 'Premium bamboo cutting board with juice groove. Eco-friendly, antimicrobial, and easy to clean. Perfect for Pakistani kitchens. Durable and knife-friendly surface.',
-    },
-    { 
-      name: 'Stainless Steel Cookware Set', 
-      price: 12000, 
-      reorderThreshold: 5,
-      description: 'Complete 10-piece stainless steel cookware set. Includes pots, pans, and lids. Compatible with all cooktops including gas stoves common in Pakistan. Dishwasher safe.',
-    },
-    { 
-      name: 'Artisan Coffee Mug', 
-      price: 1200, 
-      reorderThreshold: 25,
-      description: 'Handcrafted ceramic coffee mug with unique design. Perfect for morning chai and coffee. Comfortable handle, microwave and dishwasher safe. Available in multiple designs.',
-    },
-    { 
-      name: 'Desktop Organizer Set', 
-      price: 3500, 
-      reorderThreshold: 12,
-      description: 'Bamboo desktop organizer with multiple compartments. Perfect for organizing office supplies, stationery, and small items. Modern design suitable for home and office desks.',
-    },
-    { 
-      name: 'Wall Art Print', 
-      price: 4500, 
-      reorderThreshold: 10,
-      description: 'Framed wall art print with high-quality printing. Ready to hang, multiple design options. Perfect for decorating Pakistani homes. Available in various sizes and styles.',
-    },
-  ],
-  Fitness: [
-    { 
-      name: 'Premium Yoga Mat', 
-      price: 3500, 
-      reorderThreshold: 12,
-      description: 'Extra-thick yoga mat with non-slip surface. Perfect for yoga, pilates, and floor exercises. Easy to clean and carry. Ideal for home workouts and fitness centers in Pakistan.',
-    },
-    { 
-      name: 'Eco Water Bottle', 
-      price: 1800, 
-      reorderThreshold: 20,
-      description: 'Stainless steel water bottle with double-wall insulation. Keeps drinks cold for 24 hours or hot for 12 hours. BPA-free, leak-proof design. Perfect for gym and outdoor activities.',
-    },
-    { 
-      name: 'Yoga Block Set', 
-      price: 1500, 
-      reorderThreshold: 25,
-      description: 'Set of 2 high-density foam yoga blocks. Lightweight, durable, and supportive. Perfect for improving yoga poses and flexibility. Suitable for all skill levels.',
-    },
-    { 
-      name: 'Resistance Bands', 
-      price: 2000, 
-      reorderThreshold: 20,
-      description: 'Set of 5 resistance bands with different resistance levels. Includes door anchor and exercise guide. Perfect for home workouts, strength training, and rehabilitation.',
-    },
-    { 
-      name: 'Dumbbell Set', 
-      price: 5500, 
-      reorderThreshold: 8,
-      description: 'Adjustable dumbbell set with multiple weight options. Compact design perfect for home gyms. Durable construction with comfortable grips. Ideal for strength training.',
-    },
-    { 
-      name: 'Foam Roller', 
-      price: 2800, 
-      reorderThreshold: 15,
-      description: 'High-density foam roller for muscle recovery and massage. Perfect for post-workout recovery. Helps relieve muscle tension and improve flexibility. Suitable for all fitness levels.',
-    },
-    { 
-      name: 'Jump Rope', 
-      price: 800, 
-      reorderThreshold: 30,
-      description: 'Adjustable speed jump rope with weighted handles. Perfect for cardio workouts and weight loss. Suitable for indoor and outdoor use. Ideal for fitness enthusiasts in Pakistan.',
-    },
-    { 
-      name: 'Exercise Ball', 
-      price: 2500, 
-      reorderThreshold: 18,
-      description: 'Anti-burst exercise ball with pump included. Perfect for core workouts, balance training, and rehabilitation. Available in multiple sizes. Supports up to 600kg weight.',
-    },
-    { 
-      name: 'Kettlebell', 
-      price: 4500, 
-      reorderThreshold: 10,
-      description: 'Cast iron kettlebell with comfortable handle. Perfect for full-body workouts and strength training. Durable construction, multiple weight options available.',
-    },
-    { 
-      name: 'Pull-up Bar', 
-      price: 3500, 
-      reorderThreshold: 12,
-      description: 'Doorway pull-up bar with adjustable width. No drilling required, easy installation. Perfect for home workouts. Supports up to 150kg weight. Includes multiple grip positions.',
-    },
-  ],
-  Beauty: [
-    { 
-      name: 'Face Cleanser Set', 
-      price: 2800, 
-      reorderThreshold: 15,
-      description: 'Complete face cleansing set with cleanser, toner, and moisturizer. Suitable for all skin types. Made with natural ingredients. Perfect for Pakistani skincare routines.',
-    },
-    { 
-      name: 'Moisturizing Cream', 
-      price: 2200, 
-      reorderThreshold: 18,
-      description: 'Deep moisturizing cream with hyaluronic acid and vitamin E. Suitable for dry and sensitive skin. Non-greasy formula perfect for Pakistani climate. Long-lasting hydration.',
-    },
-    { 
-      name: 'Sunscreen SPF 50', 
-      price: 1800, 
-      reorderThreshold: 20,
-      description: 'Broad-spectrum sunscreen SPF 50 with UVA/UVB protection. Water-resistant, non-greasy formula. Essential for Pakistani sun protection. Suitable for all skin types.',
-    },
-    { 
-      name: 'Lip Balm Trio', 
-      price: 1200, 
-      reorderThreshold: 25,
-      description: 'Set of 3 nourishing lip balms with natural ingredients. Prevents chapped lips, perfect for dry weather. Available in multiple flavors. Long-lasting hydration.',
-    },
-    { 
-      name: 'Hair Shampoo & Conditioner', 
-      price: 2500, 
-      reorderThreshold: 20,
-      description: 'Sulfate-free shampoo and conditioner set. Nourishes and strengthens hair. Suitable for all hair types. Perfect for Pakistani hair care routines. 500ml each bottle.',
-    },
-    { 
-      name: 'Face Mask Set', 
-      price: 3500, 
-      reorderThreshold: 12,
-      description: 'Set of 5 sheet masks with different benefits. Hydrating, brightening, and anti-aging formulas. Perfect for weekly skincare routines. Made with natural ingredients.',
-    },
-    { 
-      name: 'Eye Cream', 
-      price: 4500, 
-      reorderThreshold: 15,
-      description: 'Anti-aging eye cream with retinol and peptides. Reduces dark circles and fine lines. Suitable for sensitive skin. Perfect for complete skincare routine.',
-    },
-    { 
-      name: 'Body Lotion', 
-      price: 2000, 
-      reorderThreshold: 22,
-      description: 'Rich body lotion with shea butter and coconut oil. Deeply moisturizes and softens skin. Perfect for dry skin in Pakistani climate. Non-sticky, fast-absorbing formula.',
-    },
-    { 
-      name: 'Nail Polish Set', 
-      price: 1800, 
-      reorderThreshold: 20,
-      description: 'Set of 6 long-lasting nail polishes in trendy colors. Quick-dry formula, chip-resistant. Perfect for at-home manicures. Includes base coat and top coat.',
-    },
-    { 
-      name: 'Makeup Brush Set', 
-      price: 4500, 
-      reorderThreshold: 10,
-      description: 'Professional makeup brush set with 12 brushes. Synthetic bristles, soft and durable. Perfect for complete makeup application. Includes travel case.',
-    },
-  ],
+  General: [
+    { name: 'Demo Product 1', price: 2500, reorderThreshold: 15, description: 'Premium demo product for testing purposes.' },
+    { name: 'Demo Product 2', price: 4500, reorderThreshold: 12, description: 'Another demo product with comprehensive details.' },
+    { name: 'Demo Product 3', price: 1800, reorderThreshold: 20, description: 'Test product with full specifications.' },
+    { name: 'Demo Product 4', price: 3500, reorderThreshold: 10, description: 'Sample product for demonstration.' },
+    { name: 'Demo Product 5', price: 5500, reorderThreshold: 8, description: 'Premium demo product with advanced features.' },
+  ]
 }
 
 // Generate random Pakistani customer name
@@ -498,7 +177,7 @@ const randomPakistanAddress = (cityInfo) => {
 
 // Generate order number with unique date from orderDate
 const generateOrderNumber = (storeIndex, orderIndex, orderDate) => {
-  const storePrefix = ['TH', 'FF', 'HL', 'FG', 'BE', 'DM'][storeIndex]
+  const storePrefix = ['TH', 'DM'][storeIndex]
   const date = new Date(orderDate).toISOString().slice(0, 10).replace(/-/g, '')
   const orderNum = String(orderIndex + 1).padStart(6, '0')
   return `${storePrefix}-${date}-${orderNum}`
@@ -518,7 +197,7 @@ const generateTimeline = (orderDate, status, customerName) => {
       actor: customerName,
     },
   ]
-  
+
   if (status !== 'Pending') {
     const paymentDate = addDays(orderDate, Math.random() * 2)
     timeline.push({
@@ -528,7 +207,7 @@ const generateTimeline = (orderDate, status, customerName) => {
       actor: 'Store Admin',
     })
   }
-  
+
   if (['Shipped', 'Completed'].includes(status)) {
     const shipDate = addDays(orderDate, Math.random() * 3 + 1)
     timeline.push({
@@ -538,7 +217,7 @@ const generateTimeline = (orderDate, status, customerName) => {
       actor: 'Logistics Team',
     })
   }
-  
+
   if (status === 'Completed') {
     const deliveryDate = addDays(orderDate, Math.random() * 5 + 3)
     timeline.push({
@@ -548,7 +227,7 @@ const generateTimeline = (orderDate, status, customerName) => {
       actor: 'Delivery Partner',
     })
   }
-  
+
   return timeline
 }
 
@@ -563,7 +242,7 @@ const generateReturnHistory = (returnDate, status) => {
       status: 'Submitted',
     },
   ]
-  
+
   if (['Approved', 'Refunded'].includes(status)) {
     const approveDate = addDays(returnDate, Math.random() * 2 + 1)
     history.push({
@@ -574,7 +253,7 @@ const generateReturnHistory = (returnDate, status) => {
       status: 'Approved',
     })
   }
-  
+
   if (status === 'Refunded') {
     const refundDate = addDays(returnDate, Math.random() * 3 + 2)
     history.push({
@@ -585,7 +264,7 @@ const generateReturnHistory = (returnDate, status) => {
       status: 'Refunded',
     })
   }
-  
+
   if (status === 'Rejected') {
     const rejectDate = addDays(returnDate, Math.random() * 2 + 1)
     history.push({
@@ -596,49 +275,45 @@ const generateReturnHistory = (returnDate, status) => {
       status: 'Rejected',
     })
   }
-  
+
   return history
 }
 
-// Generate comprehensive multi-store data
 const generateMultiStoreData = () => {
-  // Regular stores: January 1, 2025 to November 30, 2025
-  // Demo store: January 1, 2025 to December 31, 2026 (extended for future visibility)
   const startDate = new Date('2025-01-01T00:00:00.000Z')
-  const regularStoreEndDate = new Date('2025-11-30T23:59:59.999Z') // November 30, 2025 (Nov has 30 days)
-  const demoStoreEndDate = new Date('2026-12-31T23:59:59.999Z') // December 31, 2026 for demo store
-  
-  // Calculate date ranges - from Jan 1, 2025 to respective end dates
-  const oneYearAgo = startDate // January 1, 2025
-  // Last 3 months calculation for regular stores (approximately September 1, 2025)
-  const threeMonthsAgoRegular = new Date(regularStoreEndDate.getTime() - 90 * 24 * 60 * 60 * 1000)
-  threeMonthsAgoRegular.setHours(0, 0, 0, 0)
-  
+  const endDate = new Date('2025-12-31T23:59:59.999Z')
+
+  const organizations = []
   const stores = []
   const allUsers = []
   const allProducts = []
   const allCustomers = []
   const allOrders = []
   const allReturns = []
-  
-    // Generate stores
+
   storeTemplates.forEach((template, storeIndex) => {
+    const organizationId = crypto.randomUUID()
     const storeId = crypto.randomUUID()
-    // Store created dates: spread across early 2025 (Jan-Mar) for non-demo stores
-    const storeCreatedAt = template.isDemo 
-      ? new Date('2025-01-01T00:00:00.000Z').toISOString() 
-      : randomDate(new Date('2025-01-01T00:00:00.000Z'), new Date('2025-03-31T23:59:59.999Z')).toISOString()
+    const storeEndDate = endDate
+    // Start stores early in the year to allow for a full year of data
+    const storeCreatedAt = new Date('2025-01-01T00:00:00.000Z').toISOString()
+
     const cityInfo = pakistanCities.find(c => c.city === template.city) || pakistanCities[0]
-    
-    // Use appropriate end date based on store type
-    const storeEndDate = template.isDemo ? demoStoreEndDate : regularStoreEndDate
-    const storeThreeMonthsAgo = template.isDemo 
-      ? new Date(demoStoreEndDate.getTime() - 90 * 24 * 60 * 60 * 1000)
-      : threeMonthsAgoRegular
-    storeThreeMonthsAgo.setHours(0, 0, 0, 0)
-    
+
+    // Create Organization
+    const organization = {
+      id: organizationId,
+      name: `${template.name} Org`,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    organizations.push(organization)
+
+    // Create Store
     const store = {
       id: storeId,
+      organizationId: organizationId,
       name: template.name,
       dashboardName: template.dashboardName,
       domain: template.domain,
@@ -649,538 +324,154 @@ const generateMultiStoreData = () => {
       brandColor: ['#1976d2', '#d32f2f', '#388e3c', '#f57c00', '#7b1fa2', '#00acc1'][storeIndex % 6],
       isDemo: template.isDemo || false,
       createdAt: storeCreatedAt,
+      updatedAt: storeCreatedAt,
     }
     stores.push(store)
-    
-    // Demo store gets comprehensive data till Dec 31, 2026
-    if (template.isDemo) {
-      // Demo store: Extensive data till Dec 31, 2026 - 1 admin, 150+ products, 500+ customers, 2000+ orders, 100+ returns
-      const demoAdminPassword = bcrypt.hashSync('demo123', 10)
-      const demoAdmin = {
-        id: crypto.randomUUID(),
-        storeId: storeId,
-        email: 'demo@demo.shopifyadmin.pk',
-        passwordHash: demoAdminPassword,
-        name: 'Demo Admin',
-        role: 'staff', // Use staff role since demo is not valid
-        fullName: 'Demo Admin User',
-        phone: '+92-42-12345678',
-        profilePictureUrl: null,
-        defaultDateRangeFilter: 'last7',
-        notificationPreferences: { newOrders: true, lowStock: true, returnsPending: true },
-        permissions: {
-          viewOrders: true,
-          editOrders: false,
-          deleteOrders: false,
-          viewProducts: true,
-          editProducts: false,
-          deleteProducts: false,
-          viewCustomers: true,
-          editCustomers: false,
-          viewReturns: true,
-          processReturns: false,
-          viewReports: true,
-          manageUsers: false,
-          manageSettings: false,
-        },
-        active: true,
-        passwordChangedAt: new Date(), // Set to current date to skip password change requirement (for testing)
-        createdAt: storeCreatedAt,
-        updatedAt: storeCreatedAt,
-      }
-      allUsers.push(demoAdmin)
-      
-      // Demo products - Generate 150+ products with all fields populated
-      const demoProductTemplates = [
-        { name: 'Demo Product 1', price: 2500, reorderThreshold: 15, description: 'Premium demo product for testing purposes with detailed description and comprehensive features.' },
-        { name: 'Demo Product 2', price: 4500, reorderThreshold: 12, description: 'Another demo product with comprehensive details for testing all functionalities.' },
-        { name: 'Demo Product 3', price: 1800, reorderThreshold: 20, description: 'Test product with full specifications and features for comprehensive testing.' },
-        { name: 'Demo Product 4', price: 3500, reorderThreshold: 10, description: 'Sample product for demonstration and testing scenarios with detailed information.' },
-        { name: 'Demo Product 5', price: 5500, reorderThreshold: 8, description: 'Premium demo product with advanced features and details for extended testing.' },
-        { name: 'Demo Product 6', price: 1200, reorderThreshold: 25, description: 'Basic demo product for testing various functionalities and use cases.' },
-        { name: 'Demo Product 7', price: 2800, reorderThreshold: 18, description: 'Standard demo product with complete information and specifications.' },
-        { name: 'Demo Product 8', price: 4200, reorderThreshold: 14, description: 'Feature-rich demo product for comprehensive testing and evaluation.' },
-        { name: 'Demo Product 9', price: 3200, reorderThreshold: 16, description: 'Quality demo product with detailed specifications and features.' },
-        { name: 'Demo Product 10', price: 4800, reorderThreshold: 10, description: 'Advanced demo product for testing all features and capabilities.' },
-      ]
-      
-      const demoProductVariations = ['Standard', 'Premium', 'Deluxe', 'Pro', 'Plus', 'Elite', 'Classic', 'Modern', 'Vintage', 'Limited Edition', 'Special Edition', 'Ultra', 'Max', 'Super', 'Ultimate']
-      const demoColors = ['Black', 'White', 'Blue', 'Red', 'Green', 'Silver', 'Gold', 'Gray', 'Brown', 'Pink', 'Purple', 'Orange']
-      const demoSizes = ['Small', 'Medium', 'Large', 'XL', 'XXL', 'Standard', 'Compact', 'Full Size', 'Extra Small']
-      
-      const demoProductCount = 150
-      for (let i = 0; i < demoProductCount; i++) {
-        const template = demoProductTemplates[i % demoProductTemplates.length]
-        let productName = template.name
-        if (i >= demoProductTemplates.length) {
-          const variation = demoProductVariations[Math.floor(i / demoProductTemplates.length) % demoProductVariations.length]
-          const color = demoColors[i % demoColors.length]
-          const size = demoSizes[i % demoSizes.length]
-          const variationType = i % 3
-          if (variationType === 0) {
-            productName = `${variation} ${template.name}`
-          } else if (variationType === 1) {
-            productName = `${template.name} - ${color}`
-          } else {
-            productName = `${template.name} (${size})`
-          }
-        }
-        
-        const priceVariation = 1 + ((Math.random() * 0.3) - 0.15) // ±15%
-        const variedPrice = Math.round(template.price * priceVariation)
-        const stockQuantity = Math.floor(Math.random() * 100) + 20
-        const lowStock = stockQuantity <= template.reorderThreshold
-        const createdAt = randomDate(startDate, storeEndDate)
-        const updatedAt = randomDate(createdAt, storeEndDate)
-        
-        const product = {
-          id: crypto.randomUUID(),
-          storeId: storeId,
-          name: productName,
-          description: template.description + (i >= demoProductTemplates.length ? ` Available in ${demoColors[i % demoColors.length].toLowerCase()} color and ${demoSizes[i % demoSizes.length].toLowerCase()} size. Perfect for comprehensive testing scenarios.` : ''),
-          price: variedPrice,
-          stockQuantity: stockQuantity,
-          reorderThreshold: template.reorderThreshold,
-          lowStock: lowStock,
-          status: Math.random() > 0.1 ? 'active' : 'inactive',
-          category: 'Demo',
-          imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + i}?auto=format&fit=crop&w=800&q=60`,
-          createdAt: createdAt.toISOString(),
-          updatedAt: updatedAt.toISOString(),
-        }
-        allProducts.push(product)
-      }
-      
-      // Demo customers - 500+ customers with all fields populated
-      const demoCustomers = []
-      const demoCustomerMap = new Map()
-      const demoCustomerCount = 500
-      
-      for (let i = 0; i < demoCustomerCount; i++) {
-        const name = randomPakistaniCustomerName()
-        const email = randomEmail(name, 'demo.shopifyadmin.pk')
-        if (demoCustomerMap.has(email)) continue
-        
-        const phone = randomPakistanPhone()
-        const altPhone = Math.random() > 0.6 ? randomPakistanPhone() : null
-        const altPhone2 = Math.random() > 0.8 ? randomPakistanPhone() : null
-        const address = randomPakistanAddress(cityInfo)
-        const altAddress = Math.random() > 0.7 ? randomPakistanAddress(cityInfo) : null
-        const altAddress2 = Math.random() > 0.9 ? randomPakistanAddress(cityInfo) : null
-        const altName = Math.random() > 0.7 ? randomPakistaniCustomerName() : null
-        const altName2 = Math.random() > 0.9 ? randomPakistaniCustomerName() : null
-        const altEmail = Math.random() > 0.7 ? randomEmail(name, 'gmail.com') : null
-        const altEmail2 = Math.random() > 0.9 ? randomEmail(name, 'yahoo.com') : null
-        
-        const customerCreatedAt = Math.random() > 0.3 
-          ? randomDate(storeThreeMonthsAgo, storeEndDate) // 70% in last 3 months
-          : randomDate(startDate, storeThreeMonthsAgo) // 30% earlier
-        
-        const customer = {
-          id: crypto.randomUUID(),
-          storeId: storeId,
-          name,
-          email,
-          phone,
-          address,
-          alternativePhones: [altPhone, altPhone2].filter(Boolean),
-          alternativeEmails: [altEmail, altEmail2].filter(Boolean),
-          alternativeNames: [altName, altName2].filter(Boolean),
-          alternativeAddresses: [altAddress, altAddress2].filter(Boolean),
-          createdAt: customerCreatedAt.toISOString(),
-          orderIds: [],
-        }
-        demoCustomers.push(customer)
-        demoCustomerMap.set(email, customer)
-        allCustomers.push(customer)
-      }
-      
-      // Demo orders - 2000+ orders distributed across 2025-2026
-      const demoStoreProducts = allProducts.filter(p => p.storeId === storeId)
-      let orderIndex = 0
-      
-      // Distribute orders: 30% in last 3 months, 20% in mid-recent, 50% in earlier period
-      const demoRecentPeriodStart = new Date(storeEndDate.getTime() - 90 * 24 * 60 * 60 * 1000)
-      const demoMidRecentPeriodStart = new Date(storeEndDate.getTime() - 180 * 24 * 60 * 60 * 1000)
-      const demoOrderCount = 2000
-      const demoRecentOrders = Math.floor(demoOrderCount * 0.3)
-      const demoMidRecentOrders = Math.floor(demoOrderCount * 0.2)
-      const demoOlderOrders = demoOrderCount - demoRecentOrders - demoMidRecentOrders
-      
-      for (let i = 0; i < demoOrderCount; i++) {
-        let orderDate
-        if (i < demoRecentOrders) {
-          orderDate = randomDate(demoRecentPeriodStart, storeEndDate)
-        } else if (i < demoRecentOrders + demoMidRecentOrders) {
-          orderDate = randomDate(demoMidRecentPeriodStart, demoRecentPeriodStart)
-        } else {
-          orderDate = randomDate(startDate, demoMidRecentPeriodStart)
-        }
-        const product = demoStoreProducts[Math.floor(Math.random() * demoStoreProducts.length)]
-        const customer = demoCustomers[Math.floor(Math.random() * demoCustomers.length)]
-        const quantity = Math.floor(Math.random() * 3) + 1
-        const total = product.price * quantity
-        const status = ['Pending', 'Paid', 'Shipped', 'Completed'][Math.floor(Math.random() * 4)]
-        
-        const order = {
-          id: crypto.randomUUID(),
-          storeId: storeId,
-          orderNumber: generateOrderNumber(storeIndex, orderIndex++, orderDate),
-          productName: product.name,
-          customerName: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          quantity,
-          status,
-          isPaid: status !== 'Pending',
-          paymentStatus: status === 'Pending' ? 'pending' : (status === 'Refunded' ? 'refunded' : 'paid'),
-          notes: Math.random() > 0.6 ? `Demo order notes: ${['Gift wrap requested', 'Express delivery', 'Call before delivery', 'Leave at gate'][Math.floor(Math.random() * 4)]}` : '',
-          createdAt: orderDate.toISOString(),
-          updatedAt: orderDate.toISOString(),
-          submittedBy: demoAdmin.id,
-          total,
-          timeline: generateTimeline(orderDate, status, customer.name),
-          customerId: customer.id,
-          shippingAddress: {
-            name: customer.name,
-            phone: customer.phone,
-            address: customer.address,
-            city: cityInfo.city,
-            postalCode: Math.floor(Math.random() * 90000) + 10000,
-          },
-          items: [{
-            productName: product.name,
-            quantity: quantity,
-            price: product.price,
-            total: total,
-          }],
-        }
-        allOrders.push(order)
-        customer.orderIds.push(order.id)
-      }
-      
-      // Demo returns (100+ returns for comprehensive testing)
-      const demoOrders = allOrders.filter(o => o.storeId === storeId)
-      const demoReturnCount = Math.min(100, Math.floor(demoOrders.length * 0.05)) // 5% of orders or max 100
-      const ordersForReturns = demoOrders.slice(0, demoReturnCount)
-      
-      ordersForReturns.forEach((order) => {
-        const returnDate = randomDate(new Date(order.createdAt), storeEndDate)
-        const returnRequest = {
-          id: crypto.randomUUID(),
-          storeId: storeId,
-          orderId: order.id,
-          customerId: order.customerId,
-          reason: ['Product defect', 'Wrong size', 'Not as described', 'Changed mind', 'Quality issue'][Math.floor(Math.random() * 5)],
-          returnedQuantity: 1,
-          dateRequested: returnDate.toISOString(),
-          status: ['Submitted', 'Approved', 'Refunded'][Math.floor(Math.random() * 3)],
-          history: generateReturnHistory(returnDate, 'Approved'),
-        }
-        allReturns.push(returnRequest)
-      })
-      
-      return // Skip normal generation for demo store
-    }
-    
-    // Generate admin user for this store
+
+    // Generate Admin User
     const adminName = `${template.name} Admin`
-    const adminEmail = `admin@${template.domain}`
+    const adminEmail = template.isDemo ? 'demo@demo.shopifyadmin.pk' : `admin@${template.domain}`
     const adminUser = {
       id: crypto.randomUUID(),
       storeId: storeId,
       email: adminEmail,
       name: adminName,
       role: 'admin',
-      passwordHash: bcrypt.hashSync('admin123', 10),
+      passwordHash: bcrypt.hashSync(template.isDemo ? 'demo123' : 'admin123', 10),
       active: true,
-      permissions: {
-        viewOrders: true, editOrders: true, deleteOrders: true,
-        viewProducts: true, editProducts: true, deleteProducts: true,
-        viewCustomers: true, editCustomers: true,
-        viewReturns: true, processReturns: true,
-        viewReports: true, manageUsers: true, manageSettings: true,
-      },
-      createdAt: store.createdAt,
-      updatedAt: store.createdAt,
-      profilePictureUrl: null,
+      createdAt: storeCreatedAt,
+      updatedAt: storeCreatedAt,
       fullName: adminName,
       phone: template.phone,
-      defaultDateRangeFilter: 'last7',
-      notificationPreferences: {
-        newOrders: true,
-        lowStock: true,
-        returnsPending: true,
-      },
+      notificationPreferences: { newOrders: true, lowStock: true, returnsPending: true },
+      permissions: { viewOrders: true, editOrders: true, viewProducts: true, editProducts: true, viewCustomers: true, viewReports: true },
     }
+
+    if (template.isDemo) {
+      adminUser.role = 'staff'
+      adminUser.permissions = {
+        viewOrders: true, editOrders: false, deleteOrders: false,
+        viewProducts: true, editProducts: false, deleteProducts: false,
+        viewCustomers: true, editCustomers: false,
+        viewReturns: true, processReturns: false,
+        viewReports: true, manageUsers: false, manageSettings: false,
+      }
+    }
+
     allUsers.push(adminUser)
-    
-    // Generate staff users for this store (12-18 staff members - increased for comprehensive testing)
-    const staffCount = Math.floor(Math.random() * 7) + 12 // 12-18 staff (increased for better testing)
+
+    // Generate Staff (Limit to 3 per store as per request)
+    const staffCount = 3
     const staffUsers = []
     for (let i = 0; i < staffCount; i++) {
-      const staffFullName = randomPakistaniStaffName()
-      const staffEmail = `staff${i + 1}@${template.domain}`
+      const staffName = randomPakistaniStaffName()
       const staffUser = {
         id: crypto.randomUUID(),
         storeId: storeId,
-        email: staffEmail,
-        name: staffFullName,
+        email: randomEmail(staffName, template.domain),
+        name: staffName,
         role: 'staff',
         passwordHash: bcrypt.hashSync('staff123', 10),
         active: true,
-        permissions: {
-          viewOrders: true, editOrders: true, deleteOrders: false,
-          viewProducts: true, editProducts: true, deleteProducts: false,
-          viewCustomers: true, editCustomers: false,
-          viewReturns: true, processReturns: true,
-          viewReports: true, manageUsers: false, manageSettings: false,
-        },
-        // Staff created after store, distributed over time
-        createdAt: randomDate(new Date(store.createdAt), storeEndDate).toISOString(),
-        updatedAt: randomDate(new Date(store.createdAt), storeEndDate).toISOString(),
-        profilePictureUrl: null,
-        fullName: staffFullName,
+        createdAt: storeCreatedAt,
+        updatedAt: storeCreatedAt,
+        fullName: staffName,
         phone: randomPakistanPhone(),
-        defaultDateRangeFilter: 'last7',
-        notificationPreferences: {
-          newOrders: true,
-          lowStock: true,
-          returnsPending: true,
-        },
+        notificationPreferences: { newOrders: true },
+        permissions: { viewOrders: true, viewProducts: true },
       }
-      allUsers.push(staffUser)
       staffUsers.push(staffUser)
+      allUsers.push(staffUser)
     }
-    
-    // Generate products for this store (200-300 products with detailed descriptions) - significantly increased
-    // Each store gets unique product variations based on storeIndex
-    const productTemplates = productTemplatesByCategory[template.category] || productTemplatesByCategory.Electronics
-    const productCount = Math.floor(Math.random() * 101) + 200 // 200-300 products (significantly increased for comprehensive testing)
+
+    // Generate Products
+    const categoryProducts = productTemplatesByCategory[template.category] || productTemplatesByCategory['General']
     const storeProducts = []
-    
-    // Generate variations of templates to reach target count
-    // Use storeIndex to ensure unique variations per store
-    const variations = ['Standard', 'Premium', 'Deluxe', 'Pro', 'Plus', 'Elite', 'Classic', 'Modern', 'Vintage', 'Limited Edition']
-    const colors = ['Black', 'White', 'Blue', 'Red', 'Green', 'Silver', 'Gold', 'Gray', 'Brown', 'Pink']
-    const sizes = ['Small', 'Medium', 'Large', 'XL', 'XXL', 'Standard', 'Compact', 'Full Size']
-    
-    for (let i = 0; i < productCount; i++) {
-      // Shift template index per store to ensure uniqueness
-      const templateIndex = (i + storeIndex * 10) % productTemplates.length
-      const prodTemplate = productTemplates[templateIndex]
-      
-      // Create variations by adding prefixes/suffixes - unique per store
-      let productName = prodTemplate.name
-      if (i >= productTemplates.length) {
-        // Add variation after first set of templates - use storeIndex for uniqueness
-        const variationIndex = (Math.floor(i / productTemplates.length) + storeIndex) % variations.length
-        const variation = variations[variationIndex]
-        const colorIndex = (i + storeIndex * 5) % colors.length
-        const color = colors[colorIndex]
-        const sizeIndex = (i + storeIndex * 3) % sizes.length
-        const size = sizes[sizeIndex]
-        
-        // Add variation based on position - different pattern per store
-        const variationType = (i + storeIndex) % 3
-        if (variationType === 0) {
-          productName = `${variation} ${prodTemplate.name}`
-        } else if (variationType === 1) {
-          productName = `${prodTemplate.name} - ${color}`
-        } else {
-          productName = `${prodTemplate.name} (${size})`
-        }
-      }
-      
-      // Vary price slightly (±10-20%) - add storeIndex to seed for uniqueness
-      const priceSeed = (Math.random() + storeIndex * 0.1) % 1
-      const priceVariation = 1 + (priceSeed * 0.2 - 0.1) // ±10% with store variation
-      const variedPrice = Math.round(prodTemplate.price * priceVariation)
-      
-      // Stock quantity varies per store
-      const baseStock = Math.floor(Math.random() * 200) + 30 + (storeIndex * 5)
-      const lowStock = baseStock <= prodTemplate.reorderThreshold
-      // Products created throughout 2025 (till Nov 30 for regular stores)
-      const createdAt = randomDate(oneYearAgo, storeEndDate)
-      const updatedAt = randomDate(createdAt, storeEndDate)
-      
+
+    // Generate 50 products per store for better variety
+    for (let i = 0; i < 50; i++) {
+      const prodTemplate = categoryProducts[i % categoryProducts.length]
       const product = {
         id: crypto.randomUUID(),
         storeId: storeId,
-        name: productName,
-        description: prodTemplate.description + (i >= productTemplates.length ? ` Available in multiple variants.` : ''),
-        price: variedPrice,
-        stockQuantity: baseStock,
+        name: `${prodTemplate.name} ${Math.floor(i / categoryProducts.length) + 1}`, // Unique names
+        description: prodTemplate.description,
+        price: prodTemplate.price + (Math.floor(Math.random() * 1000) - 500), // Vary price slightly
+        stockQuantity: Math.floor(Math.random() * 100) + 5,
         reorderThreshold: prodTemplate.reorderThreshold,
-        lowStock: lowStock,
-        status: Math.random() > 0.1 ? 'active' : 'inactive',
+        lowStock: false,
+        status: Math.random() > 0.9 ? 'inactive' : 'active', // Some inactive products
         category: template.category,
-        imageUrl: `https://images.unsplash.com/photo-${1520000000000 + storeIndex * 1000 + i}?auto=format&fit=crop&w=800&q=60`,
-        createdAt: createdAt.toISOString(),
-        updatedAt: updatedAt.toISOString(),
+        imageUrl: null,
+        createdAt: storeCreatedAt,
+        updatedAt: storeCreatedAt,
       }
       storeProducts.push(product)
       allProducts.push(product)
     }
-    
-    // Generate customers for this store (2000-3000 customers with comprehensive data) - significantly increased
-    const customerCount = Math.floor(Math.random() * 1001) + 2000 // 2000-3000 customers (significantly increased for comprehensive testing)
+
+    // Generate Customers
     const storeCustomers = []
-    const customerMap = new Map() // email -> customer
-    
-    for (let i = 0; i < customerCount; i++) {
+    const customerMap = new Map()
+    // Generate 50 customers per store
+    for (let i = 0; i < 50; i++) {
       const name = randomPakistaniCustomerName()
-      const email = randomEmail(name, template.domain)
-      
-      // Avoid duplicates
+      const email = randomEmail(name, 'gmail.com')
       if (customerMap.has(email)) continue
-      
-      // Customers created throughout 2025, more in recent months for better filter results
-      const customerCreatedAt = Math.random() > 0.3 
-        ? randomDate(storeThreeMonthsAgo, storeEndDate) // 70% in last 3 months (recent activity)
-        : randomDate(oneYearAgo, storeThreeMonthsAgo) // 30% earlier (Jan-Sep 2025)
-      
-      // Generate alternative contact info (30% chance)
-      const hasAltPhone = Math.random() > 0.7
-      const hasAltEmail = Math.random() > 0.8
-      const hasAltName = Math.random() > 0.9
-      const hasAltAddress = Math.random() > 0.85
-      
+
       const customer = {
         id: crypto.randomUUID(),
         storeId: storeId,
-        name,
-        email,
+        name: name,
+        email: email,
         phone: randomPakistanPhone(),
         address: randomPakistanAddress(cityInfo),
-        alternativePhones: hasAltPhone ? [randomPakistanPhone()] : [],
-        alternativeEmails: hasAltEmail ? [randomEmail(name, 'gmail.com')] : [],
-        alternativeNames: hasAltName ? [randomPakistaniCustomerName()] : [],
-        alternativeAddresses: hasAltAddress ? [randomPakistanAddress(cityInfo)] : [],
-        createdAt: customerCreatedAt.toISOString(),
+        createdAt: randomDate(new Date(storeCreatedAt), storeEndDate).toISOString(), // Customers join throughout the year
+        updatedAt: storeCreatedAt,
         orderIds: [],
       }
       storeCustomers.push(customer)
       customerMap.set(email, customer)
       allCustomers.push(customer)
     }
-    
-    // Generate orders for this store - distributed over full year 2025 (till Nov 30)
-    // Significantly increased for comprehensive testing
-    const orderCount = Math.floor(Math.random() * 2001) + 3000 // 3000-5000 orders (significantly increased for comprehensive testing)
-    const storeOrders = []
-    let orderIndex = 0
-    
-    // Distribute orders across 2025 with emphasis on recent months for better graph visibility
-    // 30% in October-November 2025 (most recent), 20% in August-September, 50% in earlier months
-    const octNovStart = new Date('2025-10-01T00:00:00.000Z')
-    const augStart = new Date('2025-08-01T00:00:00.000Z')
-    const recentOrders = Math.floor(orderCount * 0.3) // October-November 2025 (till Nov 30)
-    const midRecentOrders = Math.floor(orderCount * 0.2) // August-September 2025
-    const olderOrders = orderCount - recentOrders - midRecentOrders // January-July 2025
-    
-    // Helper function to create an order
-    const createOrder = (orderDate) => {
+
+    // Generate Orders
+    // Generate 150 orders per store for dense data
+    const orderCount = 150
+    for (let i = 0; i < orderCount; i++) {
+      const orderDate = randomDate(new Date(storeCreatedAt), storeEndDate)
       const product = storeProducts[Math.floor(Math.random() * storeProducts.length)]
+      const customer = storeCustomers[Math.floor(Math.random() * storeCustomers.length)]
       const quantity = Math.floor(Math.random() * 5) + 1
       const total = product.price * quantity
-      
-      // Get or create customer
-      let customer = storeCustomers[Math.floor(Math.random() * storeCustomers.length)]
-      if (Math.random() > 0.7) {
-        // 30% chance of new customer
-        const name = randomPakistaniCustomerName()
-        const email = randomEmail(name, template.domain)
-        if (!customerMap.has(email)) {
-          customer = {
-            id: crypto.randomUUID(),
-            storeId: storeId,
-            name,
-            email,
-            phone: randomPakistanPhone(),
-            address: randomPakistanAddress(cityInfo),
-            alternativePhones: [],
-            alternativeEmails: [],
-            alternativeNames: [],
-            alternativeAddresses: [],
-            createdAt: orderDate.toISOString(),
-            orderIds: [],
-          }
-          storeCustomers.push(customer)
-          customerMap.set(email, customer)
-          allCustomers.push(customer)
-        } else {
-          customer = customerMap.get(email)
-        }
-      }
-      
-      // Determine status based on order age (relative to now)
-      const daysSinceOrder = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24))
-      let status, isPaid, paymentStatus
-      if (daysSinceOrder < 1) {
-        status = Math.random() > 0.5 ? 'Pending' : 'Accepted'
-        isPaid = status === 'Accepted'
-        paymentStatus = status === 'Accepted' ? 'paid' : 'pending'
-      } else if (daysSinceOrder < 3) {
-        status = Math.random() > 0.3 ? 'Paid' : 'Accepted'
-        isPaid = true
-        paymentStatus = 'paid'
-      } else if (daysSinceOrder < 7) {
-        status = Math.random() > 0.4 ? 'Shipped' : 'Paid'
-        isPaid = true
-        paymentStatus = 'paid'
-      } else if (daysSinceOrder < 30) {
-        status = Math.random() > 0.2 ? 'Completed' : 'Shipped'
-        isPaid = true
-        paymentStatus = 'paid'
-      } else {
-        status = Math.random() > 0.9 ? 'Refunded' : 'Completed'
-        isPaid = status !== 'Refunded'
-        paymentStatus = status === 'Refunded' ? 'refunded' : 'paid'
-      }
-      
-      // Randomly assign to admin or staff
-      const submittedBy = Math.random() > 0.5 
-        ? adminUser.id 
-        : staffUsers[Math.floor(Math.random() * staffUsers.length)].id
-      
-      // Generate shipping address (may differ from customer address)
-      const shippingAddress = Math.random() > 0.8 
-        ? {
-            name: customer.name,
-            phone: customer.phone,
-            address: randomPakistanAddress(cityInfo),
-            city: cityInfo.city,
-            postalCode: Math.floor(Math.random() * 90000) + 10000,
-          }
-        : {
-            name: customer.name,
-            phone: customer.phone,
-            address: customer.address,
-            city: cityInfo.city,
-            postalCode: Math.floor(Math.random() * 90000) + 10000,
-          }
-      
+      const status = orderStatuses[Math.floor(Math.random() * orderStatuses.length)]
+
       const order = {
         id: crypto.randomUUID(),
         storeId: storeId,
-        orderNumber: generateOrderNumber(storeIndex, orderIndex++, orderDate),
+        orderNumber: generateOrderNumber(storeIndex, i, orderDate),
         productName: product.name,
         customerName: customer.name,
         email: customer.email,
         phone: customer.phone,
-        quantity,
-        status,
-        isPaid,
-        paymentStatus,
-        notes: Math.random() > 0.7 ? `Special instructions: ${['Gift wrap requested', 'Express shipping', 'Leave at door', 'Call before delivery', 'Office delivery', 'Weekend delivery only'][Math.floor(Math.random() * 6)]}` : '',
+        quantity: quantity,
+        status: status,
+        isPaid: status !== 'Pending' && status !== 'Cancelled',
+        paymentStatus: status === 'Pending' ? 'pending' : (status === 'Cancelled' ? 'refunded' : 'paid'),
+        notes: Math.random() > 0.8 ? 'Customer requested special packaging' : '',
         createdAt: orderDate.toISOString(),
         updatedAt: orderDate.toISOString(),
-        submittedBy,
-        total,
+        submittedBy: adminUser.id,
+        total: total,
         timeline: generateTimeline(orderDate, status, customer.name),
         customerId: customer.id,
-        shippingAddress,
+        shippingAddress: {
+          name: customer.name,
+          phone: customer.phone,
+          address: customer.address,
+          city: cityInfo.city,
+          postalCode: '00000',
+        },
         items: [{
           productName: product.name,
           quantity: quantity,
@@ -1188,95 +479,34 @@ const generateMultiStoreData = () => {
           total: total,
         }],
       }
-      
-      storeOrders.push(order)
-      customer.orderIds.push(order.id)
       allOrders.push(order)
-    }
-    
-    // Generate orders for October-November 2025 (most recent - 30% of orders)
-    for (let i = 0; i < recentOrders; i++) {
-      const orderDate = randomDate(octNovStart, storeEndDate)
-      createOrder(orderDate)
-    }
-    
-    // Generate orders for August-September 2025 (mid-recent - 20% of orders)
-    for (let i = 0; i < midRecentOrders; i++) {
-      const orderDate = randomDate(augStart, octNovStart)
-      createOrder(orderDate)
-    }
-    
-    // Generate orders for January-July 2025 (older - 50% of orders)
-    for (let i = 0; i < olderOrders; i++) {
-      const orderDate = randomDate(oneYearAgo, augStart)
-      createOrder(orderDate)
-    }
-    
-    // Generate returns for this store (about 8% of orders)
-    const returnReasons = [
-      'Product defect or damage',
-      'Wrong size or color',
-      'Not as described',
-      'Changed mind',
-      'Received duplicate order',
-      'Quality issue',
-      'Shipping damage',
-      'Missing parts',
-      'Late delivery',
-      'Wrong product received',
-    ]
-    
-    const ordersForReturns = storeOrders.filter(() => Math.random() < 0.08)
-    
-    ordersForReturns.forEach((order) => {
-      const orderDate = new Date(order.createdAt)
-      const maxReturnDate = addDays(orderDate, 30)
-      const returnDate = randomDate(orderDate, maxReturnDate > storeEndDate ? storeEndDate : maxReturnDate)
-      const daysSinceReturn = Math.floor((storeEndDate - returnDate) / (1000 * 60 * 60 * 24))
-      
-      let status
-      if (daysSinceReturn < 2) {
-        status = 'Submitted'
-      } else if (daysSinceReturn < 5) {
-        status = Math.random() > 0.3 ? 'Approved' : 'Submitted'
-      } else if (daysSinceReturn < 10) {
-        status = Math.random() > 0.2 ? 'Refunded' : 'Approved'
-      } else {
-        status = Math.random() > 0.1 ? 'Refunded' : (Math.random() > 0.5 ? 'Approved' : 'Rejected')
+      customer.orderIds.push(order.id)
+
+      // Generate Returns (randomly ~10% return rate)
+      if (Math.random() > 0.9 && status === 'Completed') {
+        const returnDate = addDays(orderDate, Math.floor(Math.random() * 10) + 1)
+        if (returnDate < storeEndDate) {
+          const returnReq = {
+            id: crypto.randomUUID(),
+            storeId: storeId,
+            orderId: order.id,
+            customerId: customer.id,
+            reason: ['Defective', 'Wrong Item', 'Changed Mind', 'Damaged'][Math.floor(Math.random() * 4)],
+            returnedQuantity: Math.min(quantity, Math.floor(Math.random() * quantity) + 1),
+            dateRequested: returnDate.toISOString(),
+            status: returnStatuses[Math.floor(Math.random() * returnStatuses.length)],
+            history: generateReturnHistory(returnDate, 'Submitted'),
+            createdAt: returnDate.toISOString(),
+            updatedAt: returnDate.toISOString(),
+          }
+          allReturns.push(returnReq)
+        }
       }
-      
-      // Ensure customer is found - orders should always have a customer
-      let customer = customerMap.get(order.email) || storeCustomers.find(c => c.email === order.email)
-      
-      // If customer still not found, try to find by customerId from order
-      if (!customer && order.customerId) {
-        customer = storeCustomers.find(c => c.id === order.customerId)
-      }
-      
-      // If still not found, use the first customer as fallback (shouldn't happen, but ensures data integrity)
-      if (!customer && storeCustomers.length > 0) {
-        customer = storeCustomers[0]
-      }
-      
-      const returnRequest = {
-        id: crypto.randomUUID(),
-        storeId: storeId,
-        orderId: order.id,
-        customerId: customer?.id || order.customerId || null,
-        reason: returnReasons[Math.floor(Math.random() * returnReasons.length)],
-        returnedQuantity: Math.min(Math.floor(Math.random() * order.quantity) + 1, order.quantity),
-        dateRequested: returnDate.toISOString(),
-        status,
-        history: generateReturnHistory(returnDate, status),
-        createdAt: returnDate.toISOString(),
-        updatedAt: returnDate.toISOString(),
-      }
-      
-      allReturns.push(returnRequest)
-    })
+    }
   })
-  
+
   return {
+    organizations,
     stores,
     users: allUsers,
     products: allProducts,

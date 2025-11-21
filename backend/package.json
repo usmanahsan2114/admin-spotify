@@ -25,6 +25,7 @@
     "mysql2": "^3.15.3",
     "pg": "^8.16.3",
     "sequelize": "^6.37.7",
+    "shopify-admin": "file:..",
     "winston": "^3.18.3"
   },
   "devDependencies": {

@@ -29,11 +29,11 @@ const dbConfig = {
   dialect,
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: process.env.NODE_ENV === 'production' 
-      ? parseInt(process.env.DB_POOL_MAX || '20', 10) 
+    max: process.env.NODE_ENV === 'production'
+      ? parseInt(process.env.DB_POOL_MAX || '20', 10)
       : parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for large datasets
-    min: process.env.NODE_ENV === 'production' 
-      ? parseInt(process.env.DB_POOL_MIN || '5', 10) 
+    min: process.env.NODE_ENV === 'production'
+      ? parseInt(process.env.DB_POOL_MIN || '5', 10)
       : parseInt(process.env.DB_POOL_MIN || '2', 10),
     acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10), // Increased timeout for large datasets
     idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
@@ -52,9 +52,23 @@ if (dialect === 'mysql') {
     connectTimeout: 60000,
     // SSL is typically required for Supabase
     ssl: process.env.DB_SSL === 'true' ? {
+      require: true,
       rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
     } : false,
   }
+}
+
+// Debug: Log the actual configuration being used
+console.log('[DEBUG] Database Configuration:')
+console.log(`  Dialect: ${dialect}`)
+console.log(`  Host: ${dbConfig.host}`)
+console.log(`  Port: ${dbConfig.port}`)
+console.log(`  Database: ${dbConfig.database}`)
+console.log(`  User: ${dbConfig.username}`)
+console.log(`  SSL: ${process.env.DB_SSL}`)
+console.log(`  SSL Reject Unauthorized: ${process.env.DB_SSL_REJECT_UNAUTHORIZED}`)
+if (dbConfig.dialectOptions && dbConfig.dialectOptions.ssl) {
+  console.log('  SSL Config:', JSON.stringify(dbConfig.dialectOptions.ssl, null, 2))
 }
 
 const sequelize = new Sequelize(dbConfig)
@@ -62,6 +76,8 @@ const sequelize = new Sequelize(dbConfig)
 const db = {}
 
 // Import models
+// Import models
+db.Organization = require('./Organization')(sequelize, Sequelize.DataTypes)
 db.Store = require('./Store')(sequelize, Sequelize.DataTypes)
 db.User = require('./User')(sequelize, Sequelize.DataTypes)
 db.Product = require('./Product')(sequelize, Sequelize.DataTypes)
@@ -71,6 +87,9 @@ db.Return = require('./Return')(sequelize, Sequelize.DataTypes)
 db.Setting = require('./Setting')(sequelize, Sequelize.DataTypes)
 
 // Define associations
+db.Organization.hasMany(db.Store, { foreignKey: 'organizationId', as: 'stores' })
+db.Store.belongsTo(db.Organization, { foreignKey: 'organizationId', as: 'organization' })
+
 db.Store.hasMany(db.User, { foreignKey: 'storeId', as: 'users' })
 db.Store.hasMany(db.Product, { foreignKey: 'storeId', as: 'products' })
 db.Store.hasMany(db.Customer, { foreignKey: 'storeId', as: 'customers' })
