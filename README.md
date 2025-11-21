@@ -1,11 +1,3 @@
-# Shopify-Like Admin Dashboard
-
-This repository delivers a full-stack ecommerce admin workspace modeled after Shopify. It allows a store team to ingest orders from a marketing site, manage inventory, administer users, and view daily operational analytics in a modern, responsive UI.
-
-## 📖 User Guide
-
-**New to the app?** Check out **[USER_GUIDE.md](./USER_GUIDE.md)** for a simple, easy-to-understand explanation of all features, modules, and how to use the app. Perfect for non-technical users!
-
 ## 🔧 Code Review & Improvements
 
 **Planning to deploy?** Check out **[IMPROVEMENTS_AND_RECOMMENDATIONS.md](./IMPROVEMENTS_AND_RECOMMENDATIONS.md)** for a comprehensive code review covering security, performance, and production readiness recommendations.
