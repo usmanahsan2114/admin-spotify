@@ -4,14 +4,12 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
   Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   IconButton,
   Stack,
   TextField,
@@ -35,9 +33,6 @@ import { useCurrency } from '../hooks/useCurrency'
 import StoreIcon from '@mui/icons-material/Store'
 import PeopleIcon from '@mui/icons-material/People'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
-import Inventory2Icon from '@mui/icons-material/Inventory2'
-import GroupsIcon from '@mui/icons-material/Groups'
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import EditIcon from '@mui/icons-material/Edit'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import AddIcon from '@mui/icons-material/Add'
@@ -51,7 +46,6 @@ import {
   createOrUpdateStoreAdminCredentials,
   type StoreWithStats,
   type CreateStorePayload,
-  type UpdateStorePayload,
   type StoreAdminCredentialsPayload,
 } from '../services/storesService'
 import { apiFetch } from '../services/apiClient'
