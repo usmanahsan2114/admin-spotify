@@ -47,6 +47,7 @@ import type { Order, OrderStatus } from '../types/order'
 import type { Product } from '../types/product'
 import type { Customer } from '../types/customer'
 import { useAuth } from '../context/AuthContext'
+import { useCurrency } from '../hooks/useCurrency'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
 
 type StatusFilter = 'All' | OrderStatus
@@ -89,7 +90,7 @@ const orderSchema = yup.object({
 
 import { useNotification } from '../context/NotificationContext'
 
-// ... imports
+
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
@@ -124,12 +125,44 @@ const OrdersPage = () => {
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const { showNotification } = useNotification()
+  const { formatCurrency } = useCurrency()
 
-  // ... useForm hook
+  const { control, handleSubmit, formState: { isSubmitting }, reset, watch } = useForm<FormValues>({
+    resolver: yupResolver(orderSchema),
+    defaultValues: {
+      productId: '',
+      customerId: '',
+      customerName: '',
+      email: '',
+      phone: '',
+      quantity: 1,
+      notes: '',
+    },
+  })
 
-  // ... watched fields
+  const watchedProductId = watch('productId')
+  const watchedCustomerId = watch('customerId')
 
-  // ... useEffects
+  useEffect(() => {
+    if (watchedProductId) {
+      const product = products.find((p) => p.id === watchedProductId)
+      setSelectedProduct(product || null)
+    }
+  }, [watchedProductId, products])
+
+  useEffect(() => {
+    if (watchedCustomerId && watchedCustomerId !== 'new') {
+      const customer = customers.find((c) => c.id === watchedCustomerId)
+      if (customer) {
+        reset((prev) => ({
+          ...prev,
+          customerName: customer.name,
+          email: customer.email,
+          phone: customer.phone || '',
+        }))
+      }
+    }
+  }, [watchedCustomerId, customers, reset])
 
   const handleApiError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -164,9 +197,21 @@ const OrdersPage = () => {
     }
   }, [dateRange.startDate, dateRange.endDate, handleApiError, showNotification])
 
-  // ... useEffect for loadOrders
+  useEffect(() => {
+    loadOrders()
+  }, [loadOrders])
 
-  // ... useEffect for fetchProducts
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await fetchProducts()
+        setProducts(data)
+      } catch (err) {
+        showNotification(handleApiError(err, 'Failed to load products.'), 'error')
+      }
+    }
+    loadProducts()
+  }, [handleApiError, showNotification])
 
   const handleExport = async () => {
     try {
@@ -182,11 +227,44 @@ const OrdersPage = () => {
     }
   }
 
-  // ... ordersByDay memo
 
-  // ... ordersByDayDomain memo
+  const ordersByDay = useMemo(() => {
+    const grouped = orders.reduce((acc, order) => {
+      const dateKey = dayjs(order.createdAt).format('YYYY-MM-DD')
+      if (!acc[dateKey]) acc[dateKey] = { date: dateKey, orders: 0 }
+      acc[dateKey].orders += 1
+      return acc
+    }, {} as Record<string, { date: string; orders: number }>)
 
-  // ... filteredOrders memo
+    return Object.values(grouped)
+      .map((item) => ({
+        ...item,
+        dateLabel: dayjs(item.date).format('MMM D'),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+  }, [orders])
+
+  const ordersByDayDomain = useMemo(() => {
+    if (ordersByDay.length === 0) return [0, 10]
+    const values = ordersByDay.map((d) => d.orders)
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const padding = (max - min) * 0.1 || max * 0.1 || 1
+    return [Math.max(0, min - padding), max + padding]
+  }, [ordersByDay])
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const matchesSearch = !searchQuery ||
+        order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+
+      const matchesStatus = statusFilter === 'All' || order.status === statusFilter
+
+      return matchesSearch && matchesStatus
+    })
+  }, [orders, searchQuery, statusFilter])
 
   const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
     setUpdatingOrderId(orderId)
@@ -305,13 +383,118 @@ const OrdersPage = () => {
     })
   }
 
-  // ... handleOpenImportDialog
 
-  // ... columns definition
+  const handleOpenImportDialog = () => {
+    setImportSummary(null)
+    setImportErrors([])
+    setIsImportDialogOpen(true)
+  }
+
+
+
+  const columns = useMemo<GridColDef<Order>[]>(() => [
+    {
+      field: 'id',
+      headerName: 'Order ID',
+      flex: 1,
+      minWidth: 150,
+      renderCell: (params) => (
+        <Tooltip title={params.value}>
+          <span>{params.value.slice(0, 8)}</span>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'customerName',
+      headerName: 'Customer',
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: 'email',
+      headerName: 'Email',
+      flex: 1,
+      minWidth: 180,
+    },
+    {
+      field: 'productName',
+      headerName: 'Product',
+      flex: 1,
+      minWidth: 150,
+    },
+    {
+      field: 'quantity',
+      headerName: 'Qty',
+      type: 'number',
+      width: 80,
+    },
+    {
+      field: 'total',
+      headerName: 'Total',
+      type: 'number',
+      width: 120,
+      valueFormatter: (value: number | undefined) => formatCurrency(value || 0),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 130,
+      renderCell: (params) => {
+        const currentStatus = params.value as OrderStatus
+        const allowedStatuses: OrderStatus[] = ['Pending', 'Accepted', 'Shipped', 'Completed', 'Refunded', 'Paid']
+
+        return (
+          <Select
+            value={currentStatus}
+            onChange={(e) => handleStatusChange(params.row.id, e.target.value as OrderStatus)}
+            disabled={updatingOrderId === params.row.id}
+            size="small"
+            sx={{ minWidth: 120 }}
+            aria-label={`Change order status for ${params.row.id.slice(0, 8)}`}
+          >
+            {allowedStatuses.map((status) => (
+              <MenuItem key={status} value={status}>
+                {status}
+              </MenuItem>
+            ))}
+          </Select>
+        )
+      },
+    },
+    {
+      field: 'isPaid',
+      headerName: 'Paid',
+      width: 100,
+      renderCell: (params) => (
+        <Chip
+          label={params.value ? 'Yes' : 'No'}
+          color={params.value ? 'success' : 'default'}
+          size="small"
+        />
+      ),
+    },
+    {
+      field: 'createdAt',
+      headerName: 'Created',
+      type: 'dateTime',
+      width: 160,
+      valueFormatter: (value: string) => {
+        if (!value) return '—'
+        const date = new Date(value)
+        return date.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      },
+    },
+  ], [updatingOrderId])
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>
-      {/* ... Card content ... */}
+
       <Card>
         <CardContent>
           <Stack
