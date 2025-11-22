@@ -9,7 +9,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Stack,
   Typography,
   useMediaQuery,
   useTheme,

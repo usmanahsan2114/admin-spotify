@@ -1,9 +1,8 @@
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   AppBar,
   Avatar,
   Box,
-  Button,
   IconButton,
   Toolbar,
   Typography,
@@ -16,7 +15,6 @@ import { useBusinessSettings } from '../../context/BusinessSettingsContext'
 const CustomerPortalHeader = () => {
   const theme = useTheme()
   const navigate = useNavigate()
-  const location = useLocation()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const { settings } = useBusinessSettings()
 

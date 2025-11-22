@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import {
-  Alert,
   Autocomplete,
   Box,
   Button,
@@ -16,7 +15,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -43,6 +41,7 @@ import { fetchOrders } from '../services/ordersService'
 import type { Order } from '../types/order'
 import { Pie, PieChart, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
+import { useNotification } from '../context/NotificationContext'
 
 const RETURN_STATUSES: ReturnStatus[] = ['Submitted', 'Approved', 'Rejected', 'Refunded']
 
@@ -77,22 +76,20 @@ type EditFormValues = {
   note: string
 }
 
-
-
 const ReturnsPage = () => {
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const [returns, setReturns] = useState<ReturnRequest[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local error/success state
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | 'All'>('All')
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [selectedReturn, setSelectedReturn] = useState<ReturnRequest | null>(null)
+  const { showNotification } = useNotification()
 
   const {
     control: createControl,
@@ -113,10 +110,9 @@ const ReturnsPage = () => {
     defaultValues: { status: 'Submitted', note: '' },
   })
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      setError(null)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
       const [returnsResponse, ordersResponse] = await Promise.all([
@@ -126,15 +122,15 @@ const ReturnsPage = () => {
       setReturns(returnsResponse)
       setOrders(ordersResponse)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load returns.')
+      showNotification(err instanceof Error ? err.message : 'Failed to load returns.', 'error')
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange.startDate, dateRange.endDate, showNotification])
 
   useEffect(() => {
     loadData()
-  }, [dateRange.startDate, dateRange.endDate])
+  }, [loadData])
 
   const filteredReturns = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -171,7 +167,7 @@ const ReturnsPage = () => {
         (returnRequest.customer?.name ?? '').toLowerCase().includes(query)
       return matchesStatus && matchesQuery
     })
-  }, [returns, searchQuery, statusFilter])
+  }, [returns, searchQuery, statusFilter, dateRange.startDate, dateRange.endDate])
 
   const orderOptions = useMemo(() => orders.filter(Boolean).map((order) => ({
     id: order.id ?? '',
@@ -201,10 +197,10 @@ const ReturnsPage = () => {
         returnedQuantity: Number(values.returnedQuantity),
       })
       setReturns((prev) => [created, ...prev])
-      setSuccess('Return request submitted.')
+      showNotification('Return request submitted.', 'success')
       setCreateOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to create return request.')
+      showNotification(err instanceof Error ? err.message : 'Unable to create return request.', 'error')
     }
   }
 
@@ -221,14 +217,15 @@ const ReturnsPage = () => {
       const showStockBadge =
         (values.status === 'Approved' || values.status === 'Refunded') &&
         selectedReturn.status !== values.status
-      setSuccess(
-        showStockBadge
-          ? `Return status updated to ${values.status}. Stock updated +${updated.returnedQuantity}.`
-          : `Return status updated to ${values.status}.`,
-      )
+
+      const message = showStockBadge
+        ? `Return status updated to ${values.status}. Stock updated +${updated.returnedQuantity}.`
+        : `Return status updated to ${values.status}.`
+
+      showNotification(message, 'success')
       setEditOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update return request.')
+      showNotification(err instanceof Error ? err.message : 'Unable to update return request.', 'error')
     }
   }
 
@@ -431,12 +428,6 @@ const ReturnsPage = () => {
           </Stack>
         </CardContent>
       </Card>
-
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
 
       {filteredReturns.length > 0 && (() => {
         const statusCounts = filteredReturns.reduce((acc, r) => {
@@ -720,17 +711,8 @@ const ReturnsPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
     </Stack>
   )
 }
 
 export default ReturnsPage
-
-

@@ -9,7 +9,6 @@ import {
   Grid,
   Stack,
   Typography,
-  useMediaQuery,
   useTheme,
 } from '@mui/material'
 import StoreIcon from '@mui/icons-material/Store'
@@ -25,6 +24,7 @@ import { useApiErrorHandler } from '../hooks/useApiErrorHandler'
 import { useCurrency } from '../hooks/useCurrency'
 import { Link as RouterLink } from 'react-router-dom'
 import { alpha } from '@mui/material/styles'
+import { useNotification } from '../context/NotificationContext'
 
 type StoreWithStats = {
   id: string
@@ -32,6 +32,7 @@ type StoreWithStats = {
   dashboardName: string
   domain: string
   category: string
+  brandColor?: string
   isDemo?: boolean
   createdAt: string
   userCount: number
@@ -52,25 +53,22 @@ type StoreWithStats = {
 const SuperAdminDashboard = () => {
   const { user } = useAuth()
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'))
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
+
   const { formatCurrency } = useCurrency()
   const [stores, setStores] = useState<StoreWithStats[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const handleError = useApiErrorHandler()
+  const { showNotification } = useNotification()
 
   useEffect(() => {
     const loadStores = async () => {
       try {
         setLoading(true)
-        setError(null)
         const storesList = await apiFetch<StoreWithStats[]>('/api/stores/admin')
         setStores(storesList)
       } catch (err) {
         const errorMessage = handleError(err, 'Failed to load stores')
-        setError(errorMessage)
+        showNotification(errorMessage, 'error')
       } finally {
         setLoading(false)
       }
@@ -79,7 +77,7 @@ const SuperAdminDashboard = () => {
     if (user?.role === 'superadmin') {
       loadStores()
     }
-  }, [user, handleError])
+  }, [user, handleError, showNotification])
 
   // Calculate aggregated stats across all stores
   const aggregatedStats = useMemo(() => {
@@ -132,14 +130,6 @@ const SuperAdminDashboard = () => {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
-      </Box>
-    )
-  }
-
-  if (error) {
-    return (
-      <Box p={3}>
-        <Alert severity="error">{error}</Alert>
       </Box>
     )
   }
@@ -201,19 +191,19 @@ const SuperAdminDashboard = () => {
   return (
     <Box>
       <Box mb={{ xs: 2, sm: 3 }}>
-        <Typography 
-          variant="h4" 
-          component="h1" 
+        <Typography
+          variant="h4"
+          component="h1"
           gutterBottom
-          sx={{ 
+          sx={{
             fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' },
             fontWeight: 600,
           }}
         >
           Super Admin Dashboard
         </Typography>
-        <Typography 
-          variant="body2" 
+        <Typography
+          variant="body2"
           color="text.secondary"
           sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
         >
@@ -222,33 +212,33 @@ const SuperAdminDashboard = () => {
       </Box>
 
       {/* Aggregated Stats Cards */}
-      <Grid 
-        container 
-        spacing={{ xs: 1.5, sm: 2 }} 
-        sx={{ 
+      <Grid
+        container
+        spacing={{ xs: 1.5, sm: 2 }}
+        sx={{
           mb: { xs: 3, sm: 4 },
         }}
       >
         {statCards.map((stat, index) => (
-          <Grid 
-            item 
-            xs={12} 
-            sm={6} 
-            md={4} 
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={4}
             lg={3}
             key={index}
             sx={{
-              flexBasis: { 
-                xs: '100%', 
-                sm: 'calc(50% - 8px)', 
-                md: 'calc(33.333% - 11px)', 
-                lg: 'calc(25% - 18px)' 
+              flexBasis: {
+                xs: '100%',
+                sm: 'calc(50% - 8px)',
+                md: 'calc(33.333% - 11px)',
+                lg: 'calc(25% - 18px)'
               },
-              maxWidth: { 
-                xs: '100%', 
-                sm: 'calc(50% - 8px)', 
-                md: 'calc(33.333% - 11px)', 
-                lg: 'calc(25% - 18px)' 
+              maxWidth: {
+                xs: '100%',
+                sm: 'calc(50% - 8px)',
+                md: 'calc(33.333% - 11px)',
+                lg: 'calc(25% - 18px)'
               },
               flexGrow: 0,
               flexShrink: 0,
@@ -266,9 +256,9 @@ const SuperAdminDashboard = () => {
                 cursor: stat.to ? 'pointer' : 'default',
                 '&:hover': stat.to
                   ? {
-                      transform: { xs: 'none', sm: 'translateY(-4px)' },
-                      boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
-                    }
+                    transform: { xs: 'none', sm: 'translateY(-4px)' },
+                    boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
+                  }
                   : {},
                 borderLeft: `4px solid ${stat.color}`,
               }}
@@ -300,18 +290,18 @@ const SuperAdminDashboard = () => {
                       />
                     )}
                   </Box>
-                  <Typography 
-                    variant="h5" 
+                  <Typography
+                    variant="h5"
                     fontWeight={600}
-                    sx={{ 
+                    sx={{
                       fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
                       wordBreak: 'break-word',
                     }}
                   >
                     {stat.value}
                   </Typography>
-                  <Typography 
-                    variant="body2" 
+                  <Typography
+                    variant="body2"
                     color="text.secondary"
                     sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
@@ -327,16 +317,16 @@ const SuperAdminDashboard = () => {
       {/* Stores Overview */}
       <Card>
         <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-          <Box 
-            mb={{ xs: 1.5, sm: 2 }} 
-            display="flex" 
+          <Box
+            mb={{ xs: 1.5, sm: 2 }}
+            display="flex"
             flexDirection={{ xs: 'column', sm: 'row' }}
-            justifyContent="space-between" 
+            justifyContent="space-between"
             alignItems={{ xs: 'flex-start', sm: 'center' }}
             gap={1}
           >
-            <Typography 
-              variant="h6" 
+            <Typography
+              variant="h6"
               fontWeight={600}
               sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
             >
@@ -368,17 +358,17 @@ const SuperAdminDashboard = () => {
                 >
                   <CardContent>
                     <Stack spacing={1.5}>
-                      <Box 
-                        display="flex" 
-                        alignItems="center" 
+                      <Box
+                        display="flex"
+                        alignItems="center"
                         gap={1}
                         sx={{
                           minWidth: 0,
                           width: '100%',
                         }}
                       >
-                        <Typography 
-                          variant="subtitle1" 
+                        <Typography
+                          variant="subtitle1"
                           fontWeight={600}
                           sx={{
                             flex: 1,
@@ -391,11 +381,11 @@ const SuperAdminDashboard = () => {
                           {store.name}
                         </Typography>
                         {store.isDemo && (
-                          <Chip 
-                            label="Demo" 
-                            size="small" 
+                          <Chip
+                            label="Demo"
+                            size="small"
                             color="info"
-                            sx={{ 
+                            sx={{
                               flexShrink: 0,
                               height: 20,
                               fontSize: '0.7rem',
@@ -485,4 +475,3 @@ const SuperAdminDashboard = () => {
 }
 
 export default SuperAdminDashboard
-

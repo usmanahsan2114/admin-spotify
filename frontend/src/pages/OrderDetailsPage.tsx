@@ -16,7 +16,6 @@ import {
   IconButton,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -39,6 +38,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { useNotification } from '../context/NotificationContext'
 
 
 const returnStatusColor: Record<ReturnStatus, 'info' | 'success' | 'default' | 'warning'> = {
@@ -80,12 +80,13 @@ const OrderDetailsPage = () => {
   const { formatCurrency } = useCurrency()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+  const { showNotification } = useNotification()
 
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  // Removed local successMessage state
   const [calculationError, setCalculationError] = useState<string | null>(null)
 
   const [status, setStatus] = useState<OrderStatus | ''>('')
@@ -213,13 +214,15 @@ const OrderDetailsPage = () => {
       setIsPaid(Boolean(updated.isPaid))
       setQuantity(updated.quantity)
       setPhone(updated.phone ?? '')
-      setSuccessMessage('Order updated successfully.')
+      showNotification('Order updated successfully.', 'success')
     } catch (err) {
       const errorMsg = handleError(err, 'Unable to update order.')
-      setError(errorMsg)
+
       // Check if it's a calculation error
       if (errorMsg.toLowerCase().includes('calculation') || errorMsg.toLowerCase().includes('invalid')) {
         setCalculationError(errorMsg)
+      } else {
+        showNotification(errorMsg, 'error')
       }
     } finally {
       setSaving(false)
@@ -641,7 +644,7 @@ const OrderDetailsPage = () => {
                   {order.timeline
                     .slice()
                     .reverse()
-                    .map((entry, index) => (
+                    .map((entry) => (
                       <Box key={entry.id}>
                         <Typography fontWeight={600}>
                           {entry.description}
@@ -658,15 +661,9 @@ const OrderDetailsPage = () => {
         </Stack>
       </Stack>
 
-      <Snackbar
-        open={Boolean(successMessage)}
-        autoHideDuration={3000}
-        onClose={() => setSuccessMessage(null)}
-        message={successMessage}
-      />
+      {/* Removed local Snackbar */}
     </Stack>
   )
 }
 
 export default OrderDetailsPage
-

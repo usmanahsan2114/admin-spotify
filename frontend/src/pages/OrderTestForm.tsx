@@ -29,6 +29,7 @@ import type { Customer } from '../types/customer'
 import CustomerPortalHeader from '../components/customer/CustomerPortalHeader'
 import SiteAttribution from '../components/common/SiteAttribution'
 import { ThemeModeContext } from '../providers/ThemeModeProvider'
+import { useNotification } from '../context/NotificationContext'
 
 type OrderFormData = {
   product: Product | null
@@ -59,12 +60,13 @@ const OrderTestForm = () => {
   const { user, token } = useAuth()
   const { formatCurrency } = useCurrency()
   const { mode, toggleMode } = useContext(ThemeModeContext)
+  const { showNotification } = useNotification()
+
   const [formData, setFormData] = useState<OrderFormData>(initialFormState)
   const [products, setProducts] = useState<Product[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loadingProducts, setLoadingProducts] = useState(true)
-  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
-  const [message, setMessage] = useState<string>('')
+  // Removed local status and message state
   const [submittedOrder, setSubmittedOrder] = useState<{ id: string; submittedBy: string | null } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -74,7 +76,7 @@ const OrderTestForm = () => {
         setLoadingProducts(true)
         // Always fetch products without auth (public endpoint)
         // Only fetch customers if authenticated
-        const productsUrl = storeId 
+        const productsUrl = storeId
           ? `/api/products/public?storeId=${storeId}`
           : '/api/products/public'
         const [productsData, customersData] = await Promise.all([
@@ -83,28 +85,25 @@ const OrderTestForm = () => {
         ])
         setProducts(productsData)
         setCustomers(customersData)
-      } catch (err) {
-        setStatus('error')
-        setMessage('Failed to load products. Please refresh the page.')
+      } catch {
+        showNotification('Failed to load products. Please refresh the page.', 'error')
       } finally {
         setLoadingProducts(false)
       }
     }
     loadData()
-  }, [token, storeId])
+  }, [token, storeId, showNotification])
 
   const handleChange =
     (field: keyof OrderFormData) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: event.target.value,
-      }))
-    }
+      (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setFormData((prev) => ({
+          ...prev,
+          [field]: event.target.value,
+        }))
+      }
 
   const resetFeedback = () => {
-    setStatus('idle')
-    setMessage('')
     setSubmittedOrder(null)
   }
 
@@ -123,11 +122,13 @@ const OrderTestForm = () => {
       !formData.product ||
       !trimmedCustomer ||
       !trimmedEmail ||
+      !trimmedPhone ||
+      !trimmedAddress ||
       Number.isNaN(parsedQuantity) ||
-      parsedQuantity < MIN_QUANTITY
+      parsedQuantity < MIN_QUANTITY ||
+      parsedQuantity > formData.product.stockQuantity
     ) {
-      setStatus('error')
-      setMessage('Please complete all required fields (Product, Customer Name, Email, and Quantity) before submitting.')
+      showNotification('Please complete all required fields and ensure quantity is within stock limits.', 'error')
       return
     }
 
@@ -162,7 +163,7 @@ const OrderTestForm = () => {
               existingCustomer = updatedCustomers.find(
                 (c) => normalizeEmail(c.email) === trimmedEmail
               )
-            } catch (fetchErr) {
+            } catch {
               // Failed to fetch customers - continue with order creation
             }
           }
@@ -172,31 +173,31 @@ const OrderTestForm = () => {
         // Update existing customer with alternative info if needed
         const updates: Partial<Customer> = {}
         let needsUpdate = false
-        
+
         // Update name if different
         if (existingCustomer.name !== trimmedCustomer) {
           updates.name = trimmedCustomer
           needsUpdate = true
         }
-        
+
         // Add phone as alternative if different from primary
         if (trimmedPhone && existingCustomer.phone !== trimmedPhone && !existingCustomer.alternativePhone) {
           updates.alternativePhone = trimmedPhone
           needsUpdate = true
         }
-        
+
         // Add address if missing
         if (trimmedAddress && !existingCustomer.address) {
           updates.address = trimmedAddress
           needsUpdate = true
         }
-        
+
         // Add alternative phone if provided and missing
         if (trimmedAlternativePhone && !existingCustomer.alternativePhone) {
           updates.alternativePhone = trimmedAlternativePhone
           needsUpdate = true
         }
-        
+
         // Update customer if there are changes
         if (needsUpdate && token && existingCustomer) {
           const customerToUpdate = existingCustomer
@@ -215,7 +216,7 @@ const OrderTestForm = () => {
               prev.map((c) => (c.id === customerToUpdate.id ? updated : c))
             )
             existingCustomer = updated
-          } catch (err) {
+          } catch {
             // Failed to update customer - continue with order creation
           }
         }
@@ -235,7 +236,7 @@ const OrderTestForm = () => {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       }
-      
+
       if (token) {
         headers.Authorization = `Bearer ${token}`
       }
@@ -254,20 +255,18 @@ const OrderTestForm = () => {
         skipAuth: !token, // Allow order creation without auth for test form
       })
 
-      setStatus('success')
       setSubmittedOrder({
         id: createdOrder.id,
         submittedBy: createdOrder.submittedBy || (user ? `${user.name} (${user.email})` : 'Guest'),
       })
-      setMessage(
-        `Order submitted successfully! Confirmation ID: ${createdOrder.id.slice(0, 8)}...`,
-      )
+      showNotification(`Order submitted successfully! Confirmation ID: ${createdOrder.id.slice(0, 8)}...`, 'success')
+
       // Reload customers to get updated list
       if (token) {
         try {
           const updatedCustomers = await fetchCustomers()
           setCustomers(updatedCustomers)
-        } catch (err) {
+        } catch {
           // Failed to reload customers - non-critical
         }
       }
@@ -277,11 +276,9 @@ const OrderTestForm = () => {
       })
     } catch (error) {
       if (error instanceof Error) {
-        setStatus('error')
-        setMessage(error.message)
+        showNotification(error.message, 'error')
       } else {
-        setStatus('error')
-        setMessage('An unexpected error occurred while submitting the order.')
+        showNotification('An unexpected error occurred while submitting the order.', 'error')
       }
     } finally {
       setIsSubmitting(false)
@@ -300,8 +297,8 @@ const OrderTestForm = () => {
       sx={{
         width: '100%',
         background: (theme) =>
-          theme.palette.mode === 'light' 
-            ? 'linear-gradient(135deg, #f5f7fb 0%, #e8ecf1 100%)' 
+          theme.palette.mode === 'light'
+            ? 'linear-gradient(135deg, #f5f7fb 0%, #e8ecf1 100%)'
             : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         transition: 'background 0.3s ease',
       }}
@@ -344,7 +341,7 @@ const OrderTestForm = () => {
             Order Submission Form
           </Typography>
           <Typography variant="body1" color="text.secondary" gutterBottom>
-            Submit a new order. Products can be searched and selected from the catalog. 
+            Submit a new order. Products can be searched and selected from the catalog.
             New customers will be created automatically, or existing customer information will be updated.
             Required fields are marked with an asterisk.
           </Typography>
@@ -359,24 +356,7 @@ const OrderTestForm = () => {
           <Paper elevation={3} sx={{ p: { xs: 3, md: 4 } }}>
             <Box component="form" noValidate onSubmit={handleSubmit}>
               <Stack spacing={3}>
-                {status !== 'idle' && message && (
-                  <Alert
-                    severity={status === 'success' ? 'success' : 'error'}
-                    onClose={resetFeedback}
-                  >
-                    {message}
-                    {submittedOrder && (
-                      <Box mt={1}>
-                        <Typography variant="body2">
-                          <strong>Order ID:</strong> {submittedOrder.id.slice(0, 8)}...
-                        </Typography>
-                        <Typography variant="body2">
-                          <strong>Submitted by:</strong> {submittedOrder.submittedBy || 'Guest'}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Alert>
-                )}
+                {/* Removed local Alert for status/message */}
 
                 <Autocomplete
                   id="order-product"
@@ -433,10 +413,11 @@ const OrderTestForm = () => {
                 <TextField
                   id="order-phone"
                   name="phone"
-                  label="Phone Number"
+                  label="Phone Number *"
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange('phone')}
+                  required
                   fullWidth
                   autoComplete="tel"
                   helperText="Primary contact number"
@@ -457,9 +438,10 @@ const OrderTestForm = () => {
                 <TextField
                   id="order-address"
                   name="address"
-                  label="Address (Optional)"
+                  label="Address *"
                   value={formData.address}
                   onChange={handleChange('address')}
+                  required
                   multiline
                   minRows={2}
                   fullWidth
@@ -478,15 +460,20 @@ const OrderTestForm = () => {
                   fullWidth
                   autoComplete="off"
                   helperText={formData.product ? `Total: ${formatCurrency(formData.product.price * Number(formData.quantity))}` : undefined}
+                  disabled={!formData.product || formData.product.stockQuantity === 0}
                 >
-                  {[...Array(20)].map((_, index) => {
-                    const optionValue = (index + 1).toString()
-                    return (
-                      <MenuItem key={optionValue} value={optionValue}>
-                        {optionValue}
-                      </MenuItem>
-                    )
-                  })}
+                  {formData.product ? (
+                    [...Array(Math.min(20, formData.product.stockQuantity))].map((_, index) => {
+                      const optionValue = (index + 1).toString()
+                      return (
+                        <MenuItem key={optionValue} value={optionValue}>
+                          {optionValue}
+                        </MenuItem>
+                      )
+                    })
+                  ) : (
+                    <MenuItem value="1">1</MenuItem>
+                  )}
                 </TextField>
 
                 <TextField
@@ -540,7 +527,7 @@ const OrderTestForm = () => {
             </Box>
           </Paper>
 
-          {submittedOrder && status === 'success' && (
+          {submittedOrder && (
             <Card sx={{ mt: 3, bgcolor: 'success.light', color: 'success.contrastText' }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
@@ -591,4 +578,3 @@ const ContainerLayout = ({ children }: { children: ReactNode }) => (
 )
 
 export default OrderTestForm
-

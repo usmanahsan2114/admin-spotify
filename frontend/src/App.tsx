@@ -58,212 +58,216 @@ const PrivateRoute = ({ children }: { children: ReactElement }) => {
   return children
 }
 
+import { NotificationProvider } from './providers/NotificationProvider'
+
 const App = () => (
   <ErrorBoundary>
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-        {/* Store selection page */}
-        <Route
-          path="/"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <StoreSelectionPage />
-            </Suspense>
-          }
-        />
-        {/* Store-specific routes */}
-        <Route
-          path="/store/:storeId/track-order"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <OrderTrackingPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/store/:storeId/test-order"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <OrderTestForm />
-            </Suspense>
-          }
-        />
-        {/* Public routes - Track Order (for customers to track their orders without login) */}
-        <Route
-          path="/track-order"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <StoreSelectionPage />
-            </Suspense>
-          }
-        />
-        {/* Public routes - Test Order (for placing orders for any store) */}
-        <Route
-          path="/test-order"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <StoreSelectionPage />
-            </Suspense>
-          }
-        />
-        {/* Public routes - Login */}
-        <Route
-          path="/login"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <LoginPage />
-            </Suspense>
-          }
-        />
-        {/* Signup page is hidden - redirect to 404 */}
-        <Route
-          path="/signup"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <NotFoundPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="/change-password"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <ChangePasswordPage />
-            </Suspense>
-          }
-        />
-        <Route element={<DashboardLayout />}>
+    <NotificationProvider>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          {/* Store selection page */}
           <Route
-            index
+            path="/"
             element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <DashboardHome />
-                </Suspense>
-              </PrivateRoute>
+              <Suspense fallback={<LoadingFallback />}>
+                <StoreSelectionPage />
+              </Suspense>
+            }
+          />
+          {/* Store-specific routes */}
+          <Route
+            path="/store/:storeId/track-order"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <OrderTrackingPage />
+              </Suspense>
             }
           />
           <Route
-            path="orders"
+            path="/store/:storeId/test-order"
             element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <OrdersPage />
-                </Suspense>
-              </PrivateRoute>
+              <Suspense fallback={<LoadingFallback />}>
+                <OrderTestForm />
+              </Suspense>
+            }
+          />
+          {/* Public routes - Track Order (for customers to track their orders without login) */}
+          <Route
+            path="/track-order"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <StoreSelectionPage />
+              </Suspense>
+            }
+          />
+          {/* Public routes - Test Order (for placing orders for any store) */}
+          <Route
+            path="/test-order"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <StoreSelectionPage />
+              </Suspense>
+            }
+          />
+          {/* Public routes - Login */}
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <LoginPage />
+              </Suspense>
+            }
+          />
+          {/* Signup page is hidden - redirect to 404 */}
+          <Route
+            path="/signup"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <NotFoundPage />
+              </Suspense>
             }
           />
           <Route
-            path="orders/:orderId"
+            path="/change-password"
             element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <OrderDetailsPage />
-                </Suspense>
-              </PrivateRoute>
+              <Suspense fallback={<LoadingFallback />}>
+                <ChangePasswordPage />
+              </Suspense>
             }
           />
+          <Route element={<DashboardLayout />}>
+            <Route
+              index
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <DashboardHome />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="orders"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <OrdersPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="orders/:orderId"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <OrderDetailsPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="products"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ProductsPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="customers"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <CustomersPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="customers/:customerId"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <CustomerDetailPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="inventory-alerts"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <InventoryAlertsPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="returns"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ReturnsPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="returns/:returnId"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ReturnDetailPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <UsersPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="stores"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <StoresPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <PrivateRoute>
+                  <Suspense fallback={<LoadingFallback />}>
+                    <SettingsPage />
+                  </Suspense>
+                </PrivateRoute>
+              }
+            />
+          </Route>
           <Route
-            path="products"
+            path="*"
             element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <ProductsPage />
-                </Suspense>
-              </PrivateRoute>
+              <Suspense fallback={<LoadingFallback />}>
+                <NotFoundPage />
+              </Suspense>
             }
           />
-          <Route
-            path="customers"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <CustomersPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="customers/:customerId"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <CustomerDetailPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="inventory-alerts"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <InventoryAlertsPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="returns"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <ReturnsPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="returns/:returnId"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <ReturnDetailPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="users"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <UsersPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="stores"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <StoresPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <PrivateRoute>
-                <Suspense fallback={<LoadingFallback />}>
-                  <SettingsPage />
-                </Suspense>
-              </PrivateRoute>
-            }
-          />
-        </Route>
-        <Route
-          path="*"
-          element={
-            <Suspense fallback={<LoadingFallback />}>
-              <NotFoundPage />
-            </Suspense>
-          }
-        />
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </NotificationProvider>
   </ErrorBoundary>
 )
 

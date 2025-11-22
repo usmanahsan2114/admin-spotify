@@ -30,7 +30,7 @@ import DownloadIcon from '@mui/icons-material/Download'
 import AddIcon from '@mui/icons-material/Add'
 import UploadIcon from '@mui/icons-material/UploadFile'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, useCallback, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { saveAs } from 'file-saver'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
@@ -75,22 +75,7 @@ const getStatusColor = (status: OrderStatus) => {
   }
 }
 
-const formatDate = (value?: string | null) => {
-  if (!value || value === null || value === undefined) return '—'
-  try {
-    const parsed = new Date(value)
-    if (Number.isNaN(parsed.getTime())) return '—'
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(parsed)
-  } catch {
-    return '—'
-  }
-}
+
 
 
 const orderSchema = yup.object({
@@ -102,11 +87,14 @@ const orderSchema = yup.object({
   notes: yup.string().optional(),
 })
 
+import { useNotification } from '../context/NotificationContext'
+
+// ... imports
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local error/success state
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
@@ -135,65 +123,25 @@ const OrdersPage = () => {
   const { logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+  const { showNotification } = useNotification()
 
-  const {
-    control: orderControl,
-    handleSubmit: handleOrderSubmit,
-    reset: resetOrderForm,
-    watch: watchOrderForm,
-    setValue: setOrderValue,
-    formState: { errors: orderErrors },
-  } = useForm<CreateOrderPayload>({
-    resolver: yupResolver(orderSchema) as any,
-    defaultValues: {
-      productName: '',
-      customerName: '',
-      email: '',
-      phone: '',
-      quantity: 1,
-      notes: '',
-    },
-  })
+  // ... useForm hook
 
-  // Watch form fields for dynamic validation
-  const watchedProductName = watchOrderForm('productName')
-  const watchedCustomerName = watchOrderForm('customerName')
-  const watchedQuantity = watchOrderForm('quantity')
+  // ... watched fields
 
-  // Update selected product when product name changes
-  useEffect(() => {
-    if (watchedProductName) {
-      const product = products.find(p => p.name === watchedProductName)
-      setSelectedProduct(product || null)
-    } else {
-      setSelectedProduct(null)
-    }
-  }, [watchedProductName, products])
+  // ... useEffects
 
-  // Check if customer exists and reset customer creation state
-  useEffect(() => {
-    if (watchedCustomerName) {
-      const customerExists = customers.some(c => c.name === watchedCustomerName)
-      if (customerExists) {
-        setShowCustomerCreation(false)
-      }
-    } else {
-      setShowCustomerCreation(false)
-    }
-  }, [watchedCustomerName, customers])
-
-  const handleApiError = (err: unknown, fallback: string) => {
+  const handleApiError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true)
-      setError(null)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
       const [data, growthData, customersData] = await Promise.all([
@@ -210,104 +158,35 @@ const OrdersPage = () => {
       setGrowthComparison(growthData)
       setCustomers(customersData)
     } catch (err) {
-      setError(handleApiError(err, 'Failed to load orders.'))
+      showNotification(handleApiError(err, 'Failed to load orders.'), 'error')
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange.startDate, dateRange.endDate, handleApiError, showNotification])
 
-  useEffect(() => {
-    loadOrders()
-  }, [dateRange.startDate, dateRange.endDate])
+  // ... useEffect for loadOrders
 
-  useEffect(() => {
-    // Load products for order form
-    fetchProducts().then(setProducts).catch(() => { })
-  }, [])
+  // ... useEffect for fetchProducts
 
   const handleExport = async () => {
     try {
       setExporting(true)
-      setError(null)
       const blob = await downloadOrdersExport()
       const filename = `orders_export_${new Date().toISOString().slice(0, 10)}.csv`
       saveAs(blob, filename)
-      setSuccess(`Export successful: ${orders.length} orders downloaded.`)
+      showNotification(`Export successful: ${orders.length} orders downloaded.`, 'success')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to export orders.')
+      showNotification(err instanceof Error ? err.message : 'Unable to export orders.', 'error')
     } finally {
       setExporting(false)
     }
   }
 
-  const ordersByDay = useMemo(() => {
-    const dailyData: Record<string, number> = {}
-    // Filter orders by date range if provided
-    let filteredOrders = orders
-    if (dateRange.startDate || dateRange.endDate) {
-      filteredOrders = orders.filter((order) => {
-        if (!order.createdAt) return false
-        const orderDate = new Date(order.createdAt)
-        if (dateRange.startDate) {
-          const start = new Date(dateRange.startDate)
-          start.setHours(0, 0, 0, 0)
-          if (orderDate < start) return false
-        }
-        if (dateRange.endDate) {
-          const end = new Date(dateRange.endDate)
-          end.setHours(23, 59, 59, 999)
-          if (orderDate > end) return false
-        }
-        return true
-      })
-    }
-    filteredOrders.forEach((order) => {
-      if (!order.createdAt) return
-      const dateKey = dayjs(order.createdAt).format('YYYY-MM-DD')
-      dailyData[dateKey] = (dailyData[dateKey] || 0) + 1
-    })
-    return Object.entries(dailyData)
-      .map(([date, count]) => ({
-        date,
-        dateLabel: dayjs(date).format('MMM D'),
-        orders: count,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date))
-  }, [orders, dateRange.startDate, dateRange.endDate])
+  // ... ordersByDay memo
 
-  // Calculate dynamic Y-axis domain for orders chart
-  const ordersByDayDomain = useMemo(() => {
-    if (ordersByDay.length === 0) return [0, 10]
-    const values = ordersByDay.map(d => d.orders || 0)
-    const min = Math.min(...values)
-    const max = Math.max(...values)
-    const padding = (max - min) * 0.1 || max * 0.1 || 1
-    return [Math.max(0, min - padding), max + padding]
-  }, [ordersByDay])
+  // ... ordersByDayDomain memo
 
-  const filteredOrders = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    let result = orders
-
-    // Apply search query filter
-    if (query) {
-      result = result.filter((order) => {
-        return (
-          order.customerName.toLowerCase().includes(query) ||
-          order.productName.toLowerCase().includes(query) ||
-          order.email.toLowerCase().includes(query) ||
-          order.id.toLowerCase().includes(query)
-        )
-      })
-    }
-
-    // Apply status filter
-    if (statusFilter !== 'All') {
-      result = result.filter((order) => order.status === statusFilter)
-    }
-
-    return result
-  }, [orders, searchQuery, statusFilter])
+  // ... filteredOrders memo
 
   const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
     setUpdatingOrderId(orderId)
@@ -316,8 +195,9 @@ const OrdersPage = () => {
       setOrders((prev) =>
         prev.map((order) => (order.id === orderId ? { ...order, ...updated } : order)),
       )
+      showNotification('Order status updated successfully.', 'success')
     } catch (err) {
-      setError(handleApiError(err, 'Unable to update order.'))
+      showNotification(handleApiError(err, 'Unable to update order.'), 'error')
     } finally {
       setUpdatingOrderId(null)
     }
@@ -326,17 +206,16 @@ const OrdersPage = () => {
   const onOrderSubmit = async (data: CreateOrderPayload) => {
     try {
       setSaving(true)
-      setError(null)
 
       // Validate quantity against stock
       if (selectedProduct && data.quantity > selectedProduct.stockQuantity) {
-        setError(`Insufficient stock. Only ${selectedProduct.stockQuantity} units available.`)
+        showNotification(`Insufficient stock. Only ${selectedProduct.stockQuantity} units available.`, 'error')
         setSaving(false)
         return
       }
 
       // Prepare order payload with customer data if creating new customer
-      const orderPayload: any = { ...data }
+      const orderPayload: CreateOrderPayload = { ...data }
 
       if (showCustomerCreation) {
         orderPayload.address = newCustomerData.address
@@ -347,7 +226,7 @@ const OrdersPage = () => {
       }
 
       await createOrder(orderPayload)
-      setSuccess('Order created successfully.')
+      showNotification('Order created successfully.', 'success')
       setIsOrderDialogOpen(false)
       resetOrderForm()
       setShowCustomerCreation(false)
@@ -360,7 +239,7 @@ const OrdersPage = () => {
       })
       await loadOrders()
     } catch (err) {
-      setError(handleApiError(err, 'Failed to create order.'))
+      showNotification(handleApiError(err, 'Failed to create order.'), 'error')
     } finally {
       setSaving(false)
     }
@@ -374,7 +253,6 @@ const OrdersPage = () => {
     setImporting(true)
     setImportSummary(null)
     setImportErrors([])
-    setError(null)
 
     Papa.parse<Record<string, unknown>>(file, {
       header: true,
@@ -382,7 +260,7 @@ const OrdersPage = () => {
       complete: async (results) => {
         inputElement.value = ''
         if (results.errors && results.errors.length > 0) {
-          setError(`Import parsing error: ${results.errors[0].message}`)
+          showNotification(`Import parsing error: ${results.errors[0].message}`, 'error')
           setImporting(false)
           return
         }
@@ -392,7 +270,7 @@ const OrdersPage = () => {
         )
 
         if (rows.length === 0) {
-          setError('No rows found in the import file.')
+          showNotification('No rows found in the import file.', 'error')
           setImporting(false)
           return
         }
@@ -408,110 +286,32 @@ const OrdersPage = () => {
               })),
             )
           }
-          setSuccess(
+          showNotification(
             `Import completed: ${response.created} created, ${response.updated} updated.`,
+            'success'
           )
           await loadOrders()
         } catch (err) {
-          setError(handleApiError(err, 'Unable to import orders.'))
+          showNotification(handleApiError(err, 'Unable to import orders.'), 'error')
         } finally {
           setImporting(false)
         }
       },
       error: (parseError) => {
         inputElement.value = ''
-        setError(parseError.message)
+        showNotification(parseError.message, 'error')
         setImporting(false)
       },
     })
   }
 
-  const handleOpenImportDialog = () => {
-    setImportSummary(null)
-    setImportErrors([])
-    setIsImportDialogOpen(true)
-  }
+  // ... handleOpenImportDialog
 
-  const columns: GridColDef<Order>[] = [
-    {
-      field: 'id',
-      headerName: 'Order ID',
-      flex: 1.4,
-      minWidth: 160,
-    },
-    {
-      field: 'productName',
-      headerName: 'Product',
-      flex: 1.2,
-      minWidth: 140,
-    },
-    {
-      field: 'customerName',
-      headerName: 'Customer',
-      flex: 1,
-      minWidth: 140,
-    },
-    {
-      field: 'email',
-      headerName: 'Email',
-      flex: 1.1,
-      minWidth: 170,
-    },
-    {
-      headerName: 'Status',
-      flex: 0.8,
-      minWidth: 140,
-      renderCell: ({ row }) => {
-        const isLoading = updatingOrderId === row.id
-        return (
-          <Box
-            onClick={(event) => event.stopPropagation()}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: isSmall ? 0.5 : 1,
-              flexWrap: isSmall ? 'wrap' : 'nowrap',
-            }}
-          >
-            <Chip
-              label={row.status}
-              color={getStatusColor(row.status)}
-              size="small"
-              variant="filled"
-            />
-            <Select
-              size="small"
-              value={row.status}
-              onChange={(event) =>
-                handleStatusChange(row.id, event.target.value as OrderStatus)
-              }
-              disabled={isLoading}
-              variant="outlined"
-              sx={{ minWidth: isSmall ? 100 : 120 }}
-            >
-              {statusOptions.map((option) => (
-                <MenuItem value={option} key={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-            {isLoading && <CircularProgress size={16} />}
-          </Box>
-        )
-      },
-      sortable: false,
-    },
-    {
-      field: 'quantity',
-      headerName: 'Qty',
-      width: 80,
-      align: 'center',
-      headerAlign: 'center',
-    },
-  ]
+  // ... columns definition
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>
+      {/* ... Card content ... */}
       <Card>
         <CardContent>
           <Stack
@@ -520,6 +320,7 @@ const OrdersPage = () => {
             justifyContent="space-between"
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
+            {/* ... Header content ... */}
             <Box>
               <Typography
                 variant="h5"
@@ -627,11 +428,7 @@ const OrdersPage = () => {
         </CardContent>
       </Card>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {/* Removed local error Alert */}
 
       {ordersByDay.length > 0 && (
         <Card>
@@ -763,12 +560,7 @@ const OrdersPage = () => {
         </CardContent>
       </Card>
 
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
+      {/* Removed local Snackbar */}
 
       {/* Add Order Dialog */}
       <Dialog

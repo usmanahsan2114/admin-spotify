@@ -1,4 +1,4 @@
-import { Box, Link } from '@mui/material'
+import { Link } from '@mui/material'
 import { TOUCH_TARGET_MIN_SIZE } from '../../constants'
 
 /**

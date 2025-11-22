@@ -100,8 +100,6 @@ const SystemStatusCard = () => {
   }
 
   const dbStatusColor = health.database.status === 'connected' ? 'success' : 'error'
-  const dbLatencyColor =
-    health.database.latency < 50 ? 'success' : health.database.latency < 200 ? 'warning' : 'error'
 
   return (
     <Card>
@@ -246,8 +244,8 @@ const SystemStatusCard = () => {
                         health.performance.memory.heapUsed / health.performance.memory.heapTotal > 0.9
                           ? 'error.main'
                           : health.performance.memory.heapUsed / health.performance.memory.heapTotal > 0.7
-                          ? 'warning.main'
-                          : 'success.main',
+                            ? 'warning.main'
+                            : 'success.main',
                       transition: 'width 0.3s ease',
                     }}
                   />

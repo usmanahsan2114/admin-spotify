@@ -10,7 +10,6 @@ import {
   Divider,
   IconButton,
   MenuItem,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -22,6 +21,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom'
 import type { ReturnRequest, ReturnStatus } from '../types/return'
 import { fetchReturnById, updateReturnRequest } from '../services/returnsService'
+import { useNotification } from '../context/NotificationContext'
 
 type FormValues = {
   status: ReturnStatus
@@ -56,7 +56,8 @@ const ReturnDetailPage = () => {
   const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local success state
+  const { showNotification } = useNotification()
 
   const {
     control,
@@ -108,13 +109,15 @@ const ReturnDetailPage = () => {
       const showStockBadge =
         (values.status === 'Approved' || values.status === 'Refunded') &&
         returnRequest?.status !== values.status
-      setSuccess(
+
+      showNotification(
         showStockBadge
           ? `Return status updated to ${values.status}. Stock updated +${updated.returnedQuantity}.`
           : `Return status updated to ${values.status}.`,
+        'success'
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to update return request.')
+      showNotification(err instanceof Error ? err.message : 'Unable to update return request.', 'error')
     }
   }
 
@@ -362,16 +365,9 @@ const ReturnDetailPage = () => {
         </Stack>
       </Stack>
 
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
+      {/* Removed local Snackbar */}
     </Stack>
   )
 }
 
 export default ReturnDetailPage
-
-

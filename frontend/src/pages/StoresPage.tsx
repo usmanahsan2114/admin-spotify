@@ -16,15 +16,7 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
-  Snackbar,
   Tooltip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
 } from '@mui/material'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { useAuth } from '../context/AuthContext'
@@ -37,7 +29,6 @@ import EditIcon from '@mui/icons-material/Edit'
 import VpnKeyIcon from '@mui/icons-material/VpnKey'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
-import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import {
   fetchStoresWithStats,
   createStore,
@@ -53,6 +44,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import type { User } from '../types/user'
+import { useNotification } from '../context/NotificationContext'
 
 const storeSchema = yup.object({
   name: yup.string().required('Store name is required'),
@@ -89,8 +81,7 @@ const StoresPage = () => {
   const [selectedStoreUsers, setSelectedStoreUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingUsers, setLoadingUsers] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local error/success state
   const [isStoreDialogOpen, setIsStoreDialogOpen] = useState(false)
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false)
   const [isUserCredentialsDialogOpen, setIsUserCredentialsDialogOpen] = useState(false)
@@ -102,6 +93,7 @@ const StoresPage = () => {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const handleError = useApiErrorHandler()
+  const { showNotification } = useNotification()
 
   const {
     control: storeControl,
@@ -151,18 +143,18 @@ const StoresPage = () => {
       password: '',
       name: '',
       role: 'staff',
+      storeId: '',
     },
   })
 
   const loadStores = async () => {
     try {
       setLoading(true)
-      setError(null)
       const storesList = await fetchStoresWithStats()
       setStores(storesList)
     } catch (err) {
       const errorMessage = handleError(err, 'Failed to load stores')
-      setError(errorMessage)
+      showNotification(errorMessage, 'error')
     } finally {
       setLoading(false)
     }
@@ -178,7 +170,7 @@ const StoresPage = () => {
       setSelectedStoreUsers(storeUsers)
     } catch (err) {
       const errorMessage = handleError(err, 'Failed to load users')
-      setError(errorMessage)
+      showNotification(errorMessage, 'error')
     } finally {
       setLoadingUsers(false)
     }
@@ -256,6 +248,7 @@ const StoresPage = () => {
         password: '',
         name: '',
         role: 'staff',
+        storeId: store.id,
       })
     }
     setIsUserCredentialsDialogOpen(true)
@@ -272,7 +265,6 @@ const StoresPage = () => {
   const onStoreSubmit = async (data: CreateStorePayload) => {
     try {
       setSaving(true)
-      setError(null)
       const payload = {
         ...data,
         logoUrl: data.logoUrl || null,
@@ -280,16 +272,16 @@ const StoresPage = () => {
 
       if (selectedStore) {
         await updateStore(selectedStore.id, payload)
-        setSuccess('Store updated successfully.')
+        showNotification('Store updated successfully.', 'success')
       } else {
         await createStore(payload)
-        setSuccess('Store created successfully.')
+        showNotification('Store created successfully.', 'success')
       }
       handleCloseStoreDialog()
       await loadStores()
     } catch (err) {
       const errorMessage = handleError(err, selectedStore ? 'Failed to update store' : 'Failed to create store')
-      setError(errorMessage)
+      showNotification(errorMessage, 'error')
     } finally {
       setSaving(false)
     }
@@ -300,13 +292,12 @@ const StoresPage = () => {
 
     // Validate password for new admin accounts
     if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 8)) {
-      setError('Password is required and must be at least 8 characters for new accounts.')
+      showNotification('Password is required and must be at least 8 characters for new accounts.', 'error')
       return
     }
 
     try {
       setSaving(true)
-      setError(null)
       // Remove password if empty (for updates)
       const payload: StoreAdminCredentialsPayload = {
         email: data.email,
@@ -314,12 +305,12 @@ const StoresPage = () => {
         ...(data.password && data.password.trim() ? { password: data.password } : {}),
       }
       await createOrUpdateStoreAdminCredentials(selectedStore.id, payload)
-      setSuccess(isUpdatingCredentials ? 'Admin credentials updated successfully.' : 'Admin credentials created successfully.')
+      showNotification(isUpdatingCredentials ? 'Admin credentials updated successfully.' : 'Admin credentials created successfully.', 'success')
       handleCloseCredentialsDialog()
       await loadStores()
     } catch (err) {
       const errorMessage = handleError(err, 'Failed to update admin credentials')
-      setError(errorMessage)
+      showNotification(errorMessage, 'error')
     } finally {
       setSaving(false)
     }
@@ -330,13 +321,12 @@ const StoresPage = () => {
 
     // Validate password for new users
     if (!isUpdatingCredentials && (!data.password || data.password.trim().length < 8)) {
-      setError('Password is required and must be at least 8 characters for new users.')
+      showNotification('Password is required and must be at least 8 characters for new users.', 'error')
       return
     }
 
     try {
       setSaving(true)
-      setError(null)
 
       if (selectedUser) {
         // Update existing user
@@ -350,7 +340,7 @@ const StoresPage = () => {
           method: 'PUT',
           body: JSON.stringify(updatePayload),
         })
-        setSuccess('User credentials updated successfully.')
+        showNotification('User credentials updated successfully.', 'success')
       } else {
         // Create new user
         const createPayload = {
@@ -364,7 +354,7 @@ const StoresPage = () => {
           method: 'POST',
           body: JSON.stringify(createPayload),
         })
-        setSuccess('User credentials created successfully.')
+        showNotification('User credentials created successfully.', 'success')
       }
 
       handleCloseUserCredentialsDialog()
@@ -372,7 +362,7 @@ const StoresPage = () => {
       await loadStores()
     } catch (err) {
       const errorMessage = handleError(err, selectedUser ? 'Failed to update user credentials' : 'Failed to create user credentials')
-      setError(errorMessage)
+      showNotification(errorMessage, 'error')
     } finally {
       setSaving(false)
     }
@@ -395,20 +385,19 @@ const StoresPage = () => {
 
     // Secure confirmation: user must type store name exactly
     if (deleteConfirmText !== storeToDelete.name) {
-      setError(`Please type "${storeToDelete.name}" exactly to confirm deletion.`)
+      showNotification(`Please type "${storeToDelete.name}" exactly to confirm deletion.`, 'error')
       return
     }
 
     try {
       setDeleting(true)
-      setError(null)
       await deleteStore(storeToDelete.id)
-      setSuccess(`Store "${storeToDelete.name}" has been deleted successfully along with all associated data.`)
+      showNotification(`Store "${storeToDelete.name}" has been deleted successfully along with all associated data.`, 'success')
       handleCloseDeleteDialog()
       await loadStores()
     } catch (err) {
       const errorMessage = handleError(err, 'Failed to delete store')
-      setError(errorMessage)
+      showNotification(errorMessage, 'error')
     } finally {
       setDeleting(false)
     }
@@ -601,24 +590,7 @@ const StoresPage = () => {
         </Typography>
       </Box>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Snackbar
-          open={!!success}
-          autoHideDuration={6000}
-          onClose={() => setSuccess(null)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          <Alert severity="success" onClose={() => setSuccess(null)}>
-            {success}
-          </Alert>
-        </Snackbar>
-      )}
+      {/* Removed local error/success Alerts/Snackbars */}
 
       <Box mb={2} display="flex" justifyContent="flex-end">
         <Button
@@ -801,25 +773,26 @@ const StoresPage = () => {
                 name="isDemo"
                 control={storeControl}
                 render={({ field }) => (
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <input
-                      type="checkbox"
-                      checked={field.value || false}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      style={{ width: 20, height: 20 }}
-                    />
-                    <Typography variant="body2">Demo Store</Typography>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Demo Store (Read-only for guests)
+                    </Typography>
+                    <Box>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                    </Box>
                   </Box>
                 )}
               />
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseStoreDialog} disabled={saving}>
-              Cancel
-            </Button>
+            <Button onClick={handleCloseStoreDialog}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={saving}>
-              {saving ? <CircularProgress size={24} /> : selectedStore ? 'Update' : 'Create'}
+              {saving ? 'Saving...' : selectedStore ? 'Update Store' : 'Create Store'}
             </Button>
           </DialogActions>
         </form>
@@ -831,24 +804,13 @@ const StoresPage = () => {
         onClose={handleCloseCredentialsDialog}
         maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
       >
         <form onSubmit={handleCredentialsSubmit(onCredentialsSubmit)}>
           <DialogTitle>
-            Manage Admin Credentials
-            {selectedStore && (
-              <Typography variant="body2" color="text.secondary" fontWeight={400}>
-                {selectedStore.name}
-              </Typography>
-            )}
+            Manage Admin Credentials for {selectedStore?.name}
           </DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ mt: 1 }}>
-              <Alert severity="info">
-                {selectedStore?.adminUser
-                  ? 'Update the admin email and/or password for this store. Leave password empty to keep current password.'
-                  : 'Create admin credentials for this store. The admin will be able to manage this store.'}
-              </Alert>
               <Controller
                 name="name"
                 control={credentialsControl}
@@ -884,11 +846,11 @@ const StoresPage = () => {
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={isUpdatingCredentials ? 'New Password (leave empty to keep current)' : 'Password'}
+                    label={isUpdatingCredentials ? "New Password (leave blank to keep current)" : "Password"}
                     type="password"
                     required={!isUpdatingCredentials}
                     error={!!credentialsErrors.password}
-                    helperText={credentialsErrors.password?.message || (isUpdatingCredentials ? 'Leave empty to keep current password' : '')}
+                    helperText={credentialsErrors.password?.message}
                     fullWidth
                   />
                 )}
@@ -896,130 +858,72 @@ const StoresPage = () => {
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseCredentialsDialog} disabled={saving}>
-              Cancel
-            </Button>
+            <Button onClick={handleCloseCredentialsDialog}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={saving}>
-              {saving ? <CircularProgress size={24} /> : selectedStore?.adminUser ? 'Update' : 'Create'}
+              {saving ? 'Saving...' : 'Save Credentials'}
             </Button>
           </DialogActions>
         </form>
       </Dialog>
 
-      {/* Manage All Users Credentials Dialog */}
+      {/* Manage User Credentials Dialog */}
       <Dialog
         open={isUserCredentialsDialogOpen}
         onClose={handleCloseUserCredentialsDialog}
         maxWidth="md"
         fullWidth
-        fullScreen={isMobile}
       >
         <DialogTitle>
-          Manage Store Users
-          {selectedStore && (
-            <Typography variant="body2" color="text.secondary" fontWeight={400}>
-              {selectedStore.name}
-            </Typography>
-          )}
+          Manage Users for {selectedStore?.name}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
+            {/* User List */}
             <Box>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenUserCredentialsDialog(selectedStore!)}
-                size="small"
-                sx={{ mb: 2 }}
-              >
-                Add New User
-              </Button>
-
+              <Typography variant="h6" gutterBottom>Existing Users</Typography>
               {loadingUsers ? (
-                <Box display="flex" justifyContent="center" p={3}>
-                  <CircularProgress />
-                </Box>
+                <CircularProgress size={24} />
+              ) : selectedStoreUsers.length > 0 ? (
+                <Stack spacing={1}>
+                  {selectedStoreUsers.map((user) => (
+                    <Card key={user.id} variant="outlined" sx={{ p: 1 }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Box>
+                          <Typography variant="subtitle2">{user.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">{user.email} ({user.role})</Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          startIcon={<EditIcon />}
+                          onClick={() => {
+                            setSelectedUser(user)
+                            setIsUpdatingCredentials(true)
+                            resetUserCredentialsForm({
+                              email: user.email,
+                              password: '',
+                              name: user.name,
+                              role: user.role === 'superadmin' ? 'admin' : user.role || 'staff',
+                              storeId: selectedStore?.id,
+                            })
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </Stack>
+                    </Card>
+                  ))}
+                </Stack>
               ) : (
-                <Box sx={{ width: '100%', overflowX: 'auto' }}>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ minWidth: { xs: 100, sm: 120 } }}>Name</TableCell>
-                          <TableCell sx={{ minWidth: { xs: 150, sm: 200 }, display: { xs: 'none', sm: 'table-cell' } }}>Email</TableCell>
-                          <TableCell sx={{ minWidth: { xs: 80, sm: 100 } }}>Role</TableCell>
-                          <TableCell sx={{ minWidth: { xs: 80, sm: 100 }, display: { xs: 'none', md: 'table-cell' } }}>Status</TableCell>
-                          <TableCell align="right" sx={{ minWidth: { xs: 80, sm: 100 } }}>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedStoreUsers.length === 0 ? (
-                          <TableRow>
-                            <TableCell
-                              colSpan={isMobile ? 3 : 5}
-                              align="center"
-                              sx={{ py: 2 }}
-                            >
-                              <Typography variant="body2" color="text.secondary">
-                                No users found
-                              </Typography>
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          selectedStoreUsers.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell sx={{ minWidth: { xs: 100, sm: 120 } }}>{user.name || user.fullName || '—'}</TableCell>
-                              <TableCell sx={{ minWidth: { xs: 150, sm: 200 }, display: { xs: 'none', sm: 'table-cell' } }}>
-                                <Typography variant="body2" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: 150, sm: 200 } }}>
-                                  {user.email}
-                                </Typography>
-                              </TableCell>
-                              <TableCell sx={{ minWidth: { xs: 80, sm: 100 } }}>
-                                <Chip
-                                  label={user.role === 'admin' ? 'Admin' : 'Staff'}
-                                  size="small"
-                                  color={user.role === 'admin' ? 'primary' : 'default'}
-                                />
-                              </TableCell>
-                              <TableCell sx={{ minWidth: { xs: 80, sm: 100 }, display: { xs: 'none', md: 'table-cell' } }}>
-                                <Chip
-                                  label={user.active === false ? 'Inactive' : 'Active'}
-                                  size="small"
-                                  color={user.active === false ? 'default' : 'success'}
-                                />
-                              </TableCell>
-                              <TableCell align="right" sx={{ minWidth: { xs: 80, sm: 100 } }}>
-                                <Tooltip title="Edit Credentials">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleOpenUserCredentialsDialog(selectedStore!, user)}
-                                    color="primary"
-                                  >
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
+                <Typography variant="body2" color="text.secondary">No users found for this store.</Typography>
               )}
             </Box>
 
             {/* Add/Edit User Form */}
-            <Box sx={{ mt: 2 }}>
+            <Box component="form" onSubmit={handleUserCredentialsSubmit(onUserCredentialsSubmit)}>
               <Typography variant="h6" gutterBottom>
-                {selectedUser ? 'Edit User Credentials' : 'Add New User'}
+                {selectedUser ? 'Edit User' : 'Add New User'}
               </Typography>
-              <Stack spacing={2} component="form" onSubmit={handleUserCredentialsSubmit(onUserCredentialsSubmit)}>
-                <Alert severity="info">
-                  {selectedUser
-                    ? 'Update the user email and/or password. Leave password empty to keep current password.'
-                    : 'Create new user credentials for this store.'}
-                </Alert>
+              <Stack spacing={2}>
                 <Controller
                   name="name"
                   control={userCredentialsControl}
@@ -1031,6 +935,7 @@ const StoresPage = () => {
                       error={!!userCredentialsErrors.name}
                       helperText={userCredentialsErrors.name?.message}
                       fullWidth
+                      size="small"
                     />
                   )}
                 />
@@ -1046,6 +951,23 @@ const StoresPage = () => {
                       error={!!userCredentialsErrors.email}
                       helperText={userCredentialsErrors.email?.message}
                       fullWidth
+                      size="small"
+                    />
+                  )}
+                />
+                <Controller
+                  name="password"
+                  control={userCredentialsControl}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label={selectedUser ? "New Password (leave blank to keep)" : "Password"}
+                      type="password"
+                      required={!selectedUser}
+                      error={!!userCredentialsErrors.password}
+                      helperText={userCredentialsErrors.password?.message}
+                      fullWidth
+                      size="small"
                     />
                   )}
                 />
@@ -1055,43 +977,40 @@ const StoresPage = () => {
                   render={({ field }) => (
                     <TextField
                       {...field}
-                      label="Role"
                       select
+                      label="Role"
                       required
-                      SelectProps={{
-                        native: true,
-                      }}
+                      error={!!userCredentialsErrors.role}
+                      helperText={userCredentialsErrors.role?.message}
                       fullWidth
+                      size="small"
+                      SelectProps={{ native: true }}
                     >
-                      <option value="admin">Admin</option>
                       <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
                     </TextField>
                   )}
                 />
-                <Controller
-                  name="password"
-                  control={userCredentialsControl}
-                  render={({ field }) => (
-                    <TextField
-                      {...field}
-                      label={isUpdatingCredentials ? 'New Password (leave empty to keep current)' : 'Password'}
-                      type="password"
-                      required={!isUpdatingCredentials}
-                      error={!!userCredentialsErrors.password}
-                      helperText={userCredentialsErrors.password?.message || (isUpdatingCredentials ? 'Leave empty to keep current password' : 'Minimum 6 characters')}
-                      fullWidth
-                    />
+                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                  {selectedUser && (
+                    <Button
+                      onClick={() => {
+                        setSelectedUser(null)
+                        setIsUpdatingCredentials(false)
+                        resetUserCredentialsForm({
+                          email: '',
+                          password: '',
+                          name: '',
+                          role: 'staff',
+                          storeId: selectedStore?.id,
+                        })
+                      }}
+                    >
+                      Cancel Edit
+                    </Button>
                   )}
-                />
-                <Stack direction="row" spacing={2} sx={{ pt: 1 }}>
-                  <Button onClick={() => {
-                    setSelectedUser(null)
-                    resetUserCredentialsForm({ email: '', password: '', name: '', role: 'staff' })
-                  }} disabled={saving} fullWidth>
-                    {selectedUser ? 'Cancel Edit' : 'Clear'}
-                  </Button>
-                  <Button type="submit" variant="contained" disabled={saving} fullWidth>
-                    {saving ? <CircularProgress size={24} /> : selectedUser ? 'Update' : 'Create'}
+                  <Button type="submit" variant="contained" disabled={saving}>
+                    {saving ? 'Saving...' : selectedUser ? 'Update User' : 'Create User'}
                   </Button>
                 </Stack>
               </Stack>
@@ -1099,80 +1018,43 @@ const StoresPage = () => {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseUserCredentialsDialog} disabled={saving}>
-            Close
-          </Button>
+          <Button onClick={handleCloseUserCredentialsDialog}>Close</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Store Confirmation Dialog */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={isDeleteDialogOpen}
         onClose={handleCloseDeleteDialog}
         maxWidth="sm"
         fullWidth
-        fullScreen={isMobile}
       >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <WarningAmberIcon color="error" />
-            <Typography variant="h6">Delete Store</Typography>
-          </Box>
-        </DialogTitle>
+        <DialogTitle>Delete Store</DialogTitle>
         <DialogContent>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="body2" fontWeight={600} gutterBottom>
-              This action cannot be undone!
-            </Typography>
-            <Typography variant="body2">
-              Deleting this store will permanently remove all associated data including:
-            </Typography>
-            <Box component="ul" sx={{ mt: 1, mb: 0, pl: 2 }}>
-              <li>All orders and order history</li>
-              <li>All products and inventory</li>
-              <li>All customers and customer data</li>
-              <li>All returns and return history</li>
-              <li>All users (admin and staff)</li>
-              <li>All store settings</li>
-            </Box>
-          </Alert>
-          <Typography variant="body1" gutterBottom>
-            To confirm deletion, please type the store name exactly:
+          <Typography gutterBottom>
+            Are you sure you want to delete <strong>{storeToDelete?.name}</strong>?
           </Typography>
-          <Typography variant="h6" color="error" fontWeight={600} sx={{ mb: 2 }}>
-            {storeToDelete?.name}
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action is irreversible. All data associated with this store (orders, products, customers, users) will be permanently deleted.
+          </Alert>
+          <Typography variant="body2" gutterBottom>
+            Please type <strong>{storeToDelete?.name}</strong> to confirm.
           </Typography>
           <TextField
             fullWidth
-            label="Type store name to confirm"
             value={deleteConfirmText}
-            onChange={(e) => {
-              setDeleteConfirmText(e.target.value)
-              setError(null) // Clear error when typing
-            }}
-            error={!!error && deleteConfirmText !== storeToDelete?.name}
-            helperText={
-              error && deleteConfirmText !== storeToDelete?.name
-                ? error
-                : deleteConfirmText === storeToDelete?.name
-                  ? '✓ Store name matches'
-                  : 'Type the store name exactly as shown above'
-            }
-            disabled={deleting}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="Store Name"
             autoFocus
-            sx={{ mt: 1 }}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} disabled={deleting}>
-            Cancel
-          </Button>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
           <Button
             onClick={handleDeleteStore}
             color="error"
             variant="contained"
             disabled={deleting || deleteConfirmText !== storeToDelete?.name}
-            startIcon={deleting ? <CircularProgress size={16} /> : <DeleteIcon />}
           >
             {deleting ? 'Deleting...' : 'Delete Store'}
           </Button>
@@ -1183,4 +1065,3 @@ const StoresPage = () => {
 }
 
 export default StoresPage
-

@@ -28,6 +28,11 @@ export type CreateOrderPayload = {
   phone?: string
   quantity: number
   notes?: string
+  address?: string
+  alternativeNames?: string
+  alternativeEmails?: string
+  alternativePhones?: string
+  alternativeAddresses?: string
 }
 
 export const createOrder = async (payload: CreateOrderPayload) => {

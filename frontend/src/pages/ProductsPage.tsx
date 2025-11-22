@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -13,7 +12,6 @@ import {
   FormControlLabel,
   IconButton,
   MenuItem,
-  Snackbar,
   Stack,
   Switch,
   TextField,
@@ -52,6 +50,7 @@ import {
 import { useCurrency } from '../hooks/useCurrency'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
+import { useNotification } from '../context/NotificationContext'
 
 import { Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
 import dayjs from 'dayjs'
@@ -126,9 +125,7 @@ const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [calculationError, setCalculationError] = useState<string | null>(null)
+  // Removed local error/success/calculationError state
   const [exporting, setExporting] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -152,6 +149,7 @@ const ProductsPage = () => {
   const canDelete = canDeleteProduct(user)
   const lowStockRowBg = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.18 : 0.12)
   const lowStockRowHover = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.26 : 0.18)
+  const { showNotification } = useNotification()
 
   const {
     control,
@@ -183,14 +181,13 @@ const ProductsPage = () => {
   const loadProducts = async () => {
     try {
       setLoading(true)
-      setError(null)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
       const data = await fetchProducts(false, startDate, endDate)
       setProducts(data)
       setFilteredProducts(data)
     } catch (err) {
-      setError(resolveError(err, 'Failed to load products.'))
+      showNotification(resolveError(err, 'Failed to load products.'), 'error')
     } finally {
       setLoading(false)
     }
@@ -203,13 +200,12 @@ const ProductsPage = () => {
   const handleExport = async () => {
     try {
       setExporting(true)
-      setError(null)
       const blob = await downloadProductsExport()
       const filename = `products_export_${new Date().toISOString().slice(0, 10)}.csv`
       saveAs(blob, filename)
-      setSuccess(`Export successful: ${products.length} products downloaded.`)
+      showNotification(`Export successful: ${products.length} products downloaded.`, 'success')
     } catch (err) {
-      setError(resolveError(err, 'Unable to export products.'))
+      showNotification(resolveError(err, 'Unable to export products.'), 'error')
     } finally {
       setExporting(false)
     }
@@ -223,7 +219,6 @@ const ProductsPage = () => {
     setImporting(true)
     setImportSummary(null)
     setImportErrors([])
-    setError(null)
 
     Papa.parse<Record<string, unknown>>(file, {
       header: true,
@@ -231,7 +226,7 @@ const ProductsPage = () => {
       complete: async (results) => {
         inputElement.value = ''
         if (results.errors && results.errors.length > 0) {
-          setError(`Import parsing error: ${results.errors[0].message}`)
+          showNotification(`Import parsing error: ${results.errors[0].message}`, 'error')
           setImporting(false)
           return
         }
@@ -241,7 +236,7 @@ const ProductsPage = () => {
         )
 
         if (rows.length === 0) {
-          setError('No rows found in the import file.')
+          showNotification('No rows found in the import file.', 'error')
           setImporting(false)
           return
         }
@@ -257,19 +252,20 @@ const ProductsPage = () => {
               })),
             )
           }
-          setSuccess(
+          showNotification(
             `Import completed: ${response.created} created, ${response.updated} updated.`,
+            'success'
           )
           await loadProducts()
         } catch (err) {
-          setError(resolveError(err, 'Unable to import products.'))
+          showNotification(resolveError(err, 'Unable to import products.'), 'error')
         } finally {
           setImporting(false)
         }
       },
       error: (parseError) => {
         inputElement.value = ''
-        setError(parseError.message)
+        showNotification(parseError.message, 'error')
         setImporting(false)
       },
     })
@@ -338,40 +334,38 @@ const ProductsPage = () => {
   }
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    setCalculationError(null)
-
     // Validate calculations
     const price = Number(values.price)
     const stockQuantity = Number(values.stockQuantity)
     const reorderThreshold = Number(values.reorderThreshold)
 
     if (isNaN(price) || price < 0) {
-      setCalculationError('Price must be a valid number greater than or equal to 0.')
+      showNotification('Price must be a valid number greater than or equal to 0.', 'error')
       return
     }
 
     if (price > 1000000) {
-      setCalculationError('Price cannot exceed $1,000,000. Please verify the product price.')
+      showNotification('Price cannot exceed $1,000,000. Please verify the product price.', 'error')
       return
     }
 
     if (isNaN(stockQuantity) || stockQuantity < 0 || !Number.isInteger(stockQuantity)) {
-      setCalculationError('Stock quantity must be a valid whole number greater than or equal to 0.')
+      showNotification('Stock quantity must be a valid whole number greater than or equal to 0.', 'error')
       return
     }
 
     if (stockQuantity > 1000000) {
-      setCalculationError('Stock quantity cannot exceed 1,000,000. Please verify the stock quantity.')
+      showNotification('Stock quantity cannot exceed 1,000,000. Please verify the stock quantity.', 'error')
       return
     }
 
     if (isNaN(reorderThreshold) || reorderThreshold < 0 || !Number.isInteger(reorderThreshold)) {
-      setCalculationError('Reorder threshold must be a valid whole number greater than or equal to 0.')
+      showNotification('Reorder threshold must be a valid whole number greater than or equal to 0.', 'error')
       return
     }
 
     if (reorderThreshold > stockQuantity) {
-      setCalculationError('Reorder threshold cannot exceed stock quantity. Please adjust the reorder threshold.')
+      showNotification('Reorder threshold cannot exceed stock quantity. Please adjust the reorder threshold.', 'error')
       return
     }
 
@@ -390,21 +384,17 @@ const ProductsPage = () => {
         setProducts((prev) =>
           prev.map((product) => (product.id === selectedProduct.id ? updated : product)),
         )
-        setSuccess('Product updated successfully.')
+        showNotification('Product updated successfully.', 'success')
       } else {
         const created = await createProduct(payload)
         setProducts((prev) => [created, ...prev])
-        setSuccess('Product added successfully.')
+        showNotification('Product added successfully.', 'success')
       }
       setIsDialogOpen(false)
       setSelectedProduct(null)
-      setCalculationError(null)
     } catch (err) {
       const errorMsg = resolveError(err, 'Unable to save product.')
-      setError(errorMsg)
-      if (errorMsg.toLowerCase().includes('calculation') || errorMsg.toLowerCase().includes('invalid')) {
-        setCalculationError(errorMsg)
-      }
+      showNotification(errorMsg, 'error')
     }
   }
 
@@ -413,11 +403,11 @@ const ProductsPage = () => {
     try {
       await deleteProduct(productToDelete.id)
       setProducts((prev) => prev.filter((product) => product.id !== productToDelete.id))
-      setSuccess('Product deleted.')
+      showNotification('Product deleted.', 'success')
       setProductToDelete(null)
       setDeleteConfirmOpen(false)
     } catch (err) {
-      setError(resolveError(err, 'Unable to delete product.'))
+      showNotification(resolveError(err, 'Unable to delete product.'), 'error')
     }
   }
 
@@ -616,24 +606,7 @@ const ProductsPage = () => {
         </CardContent>
       </Card>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      {calculationError && (
-        <Alert
-          severity="error"
-          onClose={() => setCalculationError(null)}
-          sx={{ mb: 2 }}
-        >
-          <Typography variant="body2" fontWeight={600}>
-            Calculation Error
-          </Typography>
-          {calculationError}
-        </Alert>
-      )}
+      {/* Removed local error/calculationError Alerts */}
 
       {products.length > 0 && (() => {
         // Filter products by date range if provided
@@ -798,270 +771,247 @@ const ProductsPage = () => {
             />
           </Box>
         </CardContent>
-      </Card>
 
-      <Dialog
-        open={isDialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-        fullScreen={isSmall}
-        aria-labelledby="product-form-dialog"
-      >
-        <DialogTitle id="product-form-dialog">
-          {selectedProduct ? 'Edit product' : 'Add product'}
-        </DialogTitle>
-        <DialogContent>
-          {calculationError && (
-            <Alert
-              severity="error"
-              onClose={() => setCalculationError(null)}
-              sx={{ mb: 2 }}
+        <Dialog
+          open={isDialogOpen}
+          onClose={handleCloseDialog}
+          maxWidth="sm"
+          fullWidth
+          fullScreen={isSmall}
+        >
+          <DialogTitle>{selectedProduct ? 'Edit product' : 'Add product'}</DialogTitle>
+          <DialogContent>
+            <Stack
+              component="form"
+              gap={2.5}
+              mt={1}
+              onSubmit={handleSubmit(onSubmit)}
             >
-              <Typography variant="body2" fontWeight={600}>
-                Calculation Error
-              </Typography>
-              {calculationError}
-            </Alert>
-          )}
-          <Stack
-            component="form"
-            gap={2.5}
-            mt={1}
-            onSubmit={handleSubmit(onSubmit)}
-          >
-            <Controller
-              name="name"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  id="product-name"
-                  label="Product name"
-                  error={Boolean(errors.name)}
-                  helperText={errors.name?.message}
-                  required
-                  autoComplete="off"
-                />
-              )}
-            />
-            <Controller
-              name="description"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  id="product-description"
-                  label="Description"
-                  multiline
-                  minRows={3}
-                  placeholder="Tell your customers what makes this product special."
-                  autoComplete="off"
-                />
-              )}
-            />
-            <Controller
-              name="price"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  id="product-price"
-                  label="Price"
-                  type="number"
-                  error={Boolean(errors.price)}
-                  helperText={errors.price?.message}
-                  inputProps={{ min: 0, step: 0.01 }}
-                  required
-                  autoComplete="off"
-                />
-              )}
-            />
-            <Controller
-              name="stockQuantity"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  id="product-stock-quantity"
-                  label="Stock quantity"
-                  type="number"
-                  error={Boolean(errors.stockQuantity)}
-                  helperText={errors.stockQuantity?.message}
-                  inputProps={{ min: 0, step: 1 }}
-                  required
-                  autoComplete="off"
-                />
-              )}
-            />
-            <Controller
-              name="reorderThreshold"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  id="product-reorder-threshold"
-                  label="Reorder threshold"
-                  type="number"
-                  error={Boolean(errors.reorderThreshold)}
-                  helperText={errors.reorderThreshold?.message}
-                  inputProps={{ min: 0, step: 1 }}
-                  required
-                  autoComplete="off"
-                />
-              )}
-            />
-            <Controller
-              name="category"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} id="product-category" label="Category" placeholder="Accessories, Apparel, etc." autoComplete="off" />
-              )}
-            />
-            <Controller
-              name="imageUrl"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  id="product-image-url"
-                  label="Image URL"
-                  type="url"
-                  error={Boolean(errors.imageUrl)}
-                  helperText={errors.imageUrl?.message}
-                  placeholder="https://example.com/product.jpg"
-                  autoComplete="off"
-                />
-              )}
-            />
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <TextField {...field} id="product-status" label="Status" select autoComplete="off">
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="inactive">Inactive</MenuItem>
-                </TextField>
-              )}
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={handleCloseDialog} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit(onSubmit)}
-            variant="contained"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Saving…' : selectedProduct ? 'Save changes' : 'Create product'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={importDialogOpen}
-        onClose={() => {
-          if (!importing) setImportDialogOpen(false)
-        }}
-        maxWidth="sm"
-        fullWidth
-        fullScreen={isSmall}
-      >
-        <DialogTitle>Import products</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2.5} mt={1}>
-            <Typography variant="body2" color="text.secondary">
-              Upload a CSV file with headers such as <strong>name, price, stockQuantity, reorderThreshold, status</strong>.
-              Missing optional columns will be ignored. Prices must be non-negative numbers; stock values must be whole numbers.
-            </Typography>
-            <Button
-              component="label"
-              variant="contained"
-              startIcon={
-                importing ? <CircularProgress size={16} color="inherit" /> : <UploadIcon />
-              }
-              disabled={importing}
-            >
-              {importing ? 'Uploading…' : 'Select CSV file'}
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                hidden
-                onChange={handleImportFile}
+              <Controller
+                name="name"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="product-name"
+                    label="Product name"
+                    required
+                    error={Boolean(errors.name)}
+                    helperText={errors.name?.message}
+                    autoComplete="off"
+                  />
+                )}
               />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Controller
+                  name="price"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      id="product-price"
+                      label="Price"
+                      type="number"
+                      required
+                      fullWidth
+                      error={Boolean(errors.price)}
+                      helperText={errors.price?.message}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      autoComplete="off"
+                    />
+                  )}
+                />
+                <Controller
+                  name="stockQuantity"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      id="product-stock"
+                      label="Stock quantity"
+                      type="number"
+                      required
+                      fullWidth
+                      error={Boolean(errors.stockQuantity)}
+                      helperText={errors.stockQuantity?.message}
+                      inputProps={{ min: 0, step: 1 }}
+                      autoComplete="off"
+                    />
+                  )}
+                />
+              </Stack>
+              <Controller
+                name="reorderThreshold"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="product-threshold"
+                    label="Reorder threshold"
+                    type="number"
+                    required
+                    error={Boolean(errors.reorderThreshold)}
+                    helperText={errors.reorderThreshold?.message}
+                    inputProps={{ min: 0, step: 1 }}
+                    autoComplete="off"
+                  />
+                )}
+              />
+              <Controller
+                name="category"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="product-category"
+                    label="Category"
+                    autoComplete="off"
+                  />
+                )}
+              />
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="product-status"
+                    select
+                    label="Status"
+                    required
+                    autoComplete="off"
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="imageUrl"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="product-image"
+                    label="Image URL"
+                    error={Boolean(errors.imageUrl)}
+                    helperText={errors.imageUrl?.message}
+                    autoComplete="off"
+                  />
+                )}
+              />
+              <Controller
+                name="description"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    id="product-description"
+                    label="Description"
+                    multiline
+                    minRows={3}
+                    autoComplete="off"
+                  />
+                )}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2 }}>
+            <Button onClick={handleCloseDialog} color="inherit">
+              Cancel
             </Button>
-            {importSummary && (
-              <Alert severity={importSummary.failed ? 'warning' : 'success'}>
-                {`Created: ${importSummary.created}, Updated: ${importSummary.updated}, Failed: ${importSummary.failed}`}
-              </Alert>
-            )}
-            {importErrors.length > 0 && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  Rows with validation issues
-                </Typography>
-                <Stack spacing={1}>
-                  {importErrors.slice(0, 5).map((entry) => (
-                    <Typography key={entry.index} variant="body2" color="error">
-                      Row {entry.index + 1}: {entry.message}
-                    </Typography>
-                  ))}
-                  {importErrors.length > 5 && (
-                    <Typography variant="caption" color="text.secondary">
-                      {importErrors.length - 5} additional issues not shown.
+            <Button
+              onClick={handleSubmit(onSubmit)}
+              variant="contained"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving…' : 'Save product'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={isDeleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle>Delete Product</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete <strong>{productToDelete?.name}</strong>? This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2 }}>
+            <Button onClick={() => setDeleteConfirmOpen(false)} color="inherit">
+              Cancel
+            </Button>
+            <Button onClick={handleDelete} color="error" variant="contained">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={importDialogOpen}
+          onClose={() => setImportDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Import Products</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} mt={1}>
+              <Typography variant="body2" color="text.secondary">
+                Upload a CSV file to import products. The CSV should have headers matching the product fields (name, price, stockQuantity, etc.).
+              </Typography>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<UploadIcon />}
+                disabled={importing}
+              >
+                Select CSV File
+                <input
+                  type="file"
+                  hidden
+                  accept=".csv"
+                  onChange={handleImportFile}
+                />
+              </Button>
+              {importing && <CircularProgress size={24} sx={{ alignSelf: 'center' }} />}
+              {importSummary && (
+                <Box>
+                  <Typography variant="subtitle2" color="success.main">
+                    Success: {importSummary.created} created, {importSummary.updated} updated.
+                  </Typography>
+                  {importSummary.failed > 0 && (
+                    <Typography variant="subtitle2" color="error.main">
+                      Failed: {importSummary.failed} rows.
                     </Typography>
                   )}
-                </Stack>
-              </Box>
-            )}
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button
-            onClick={() => setImportDialogOpen(false)}
-            color="inherit"
-            disabled={importing}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={isDeleteConfirmOpen}
-        onClose={() => setDeleteConfirmOpen(false)}
-        fullScreen={isSmall}
-        maxWidth="sm"
-        fullWidth
-        aria-labelledby="delete-product-confirm"
-      >
-        <DialogTitle id="delete-product-confirm">Delete product</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete{' '}
-            <strong>{productToDelete?.name ?? 'this product'}</strong>? This action cannot be
-            undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" variant="contained" disabled={!canDelete}>
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
+                </Box>
+              )}
+              {importErrors.length > 0 && (
+                <Box sx={{ maxHeight: 200, overflowY: 'auto', bgcolor: 'background.default', p: 1, borderRadius: 1 }}>
+                  <Typography variant="caption" color="error" component="div">
+                    Errors:
+                    <ul style={{ margin: '4px 0', paddingLeft: 20 }}>
+                      {importErrors.map((err, i) => (
+                        <li key={i}>Row {err.index + 1}: {err.message}</li>
+                      ))}
+                    </ul>
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2 }}>
+            <Button onClick={() => setImportDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      </Card>
     </Stack>
   )
 }
 
 export default ProductsPage
-

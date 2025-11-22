@@ -11,7 +11,6 @@ import {
   DialogTitle,
   IconButton,
   Skeleton,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -38,11 +37,13 @@ import {
 } from '../services/customersService'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../hooks/useCurrency'
+import { useNotification } from '../context/NotificationContext'
 
 type FormValues = {
   name: string
   email: string
   phone: string
+  address: string
 }
 
 const editSchema = yup
@@ -54,8 +55,16 @@ const editSchema = yup
       .optional()
       .transform((value) => value ?? '')
       .default(''),
+    address: yup
+      .string()
+      .optional()
+      .transform((value) => value ?? '')
+      .default(''),
   })
   .required()
+
+
+
 
 const formatDateTime = (value?: string | null) => {
   if (!value) return '—'
@@ -88,11 +97,12 @@ const CustomerDetailPage = () => {
   const navigate = useNavigate()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
+  const { showNotification } = useNotification()
 
   const [customer, setCustomer] = useState<CustomerDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local success state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const {
@@ -106,6 +116,7 @@ const CustomerDetailPage = () => {
       name: '',
       email: '',
       phone: '',
+      address: '',
     },
   })
 
@@ -141,7 +152,8 @@ const CustomerDetailPage = () => {
     reset({
       name: customer.name,
       email: customer.email,
-      phone: customer.phone,
+      phone: customer.phone || '',
+      address: customer.address || '',
     })
     setIsEditDialogOpen(true)
   }
@@ -157,6 +169,7 @@ const CustomerDetailPage = () => {
         name: values.name.trim(),
         email: values.email.trim(),
         phone: values.phone.trim() ? values.phone.trim() : undefined,
+        address: values.address.trim() ? values.address.trim() : undefined,
       }
       const updated = await updateCustomer(customerId, payload)
       setCustomer((prev) =>
@@ -169,9 +182,9 @@ const CustomerDetailPage = () => {
           : prev,
       )
       setIsEditDialogOpen(false)
-      setSuccess('Customer information updated.')
+      showNotification('Customer information updated.', 'success')
     } catch (err) {
-      setError(handleApiError(err, 'Unable to update customer.'))
+      showNotification(handleApiError(err, 'Unable to update customer.'), 'error')
     }
   }
 
@@ -447,6 +460,21 @@ const CustomerDetailPage = () => {
                 />
               )}
             />
+            <Controller
+              name="address"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  label="Address"
+                  placeholder="Shipping address"
+                  multiline
+                  minRows={2}
+                  error={Boolean(errors.address)}
+                  helperText={errors.address?.message}
+                />
+              )}
+            />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
@@ -463,16 +491,9 @@ const CustomerDetailPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
+      {/* Removed local Snackbar */}
     </Stack>
   )
 }
 
 export default CustomerDetailPage
-
-

@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Alert,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
   IconButton,
-  Snackbar,
   Stack,
   Tooltip,
   Typography,
@@ -29,12 +27,12 @@ import {
 } from '../services/productsService'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
+import { useNotification } from '../context/NotificationContext'
 
 const InventoryAlertsPage = () => {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local error/success state
   const { logout } = useAuth()
   const [reorderingId, setReorderingId] = useState<string | null>(null)
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
@@ -42,6 +40,7 @@ const InventoryAlertsPage = () => {
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const lowStockRowBg = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.18 : 0.12)
   const lowStockRowHover = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.26 : 0.18)
+  const { showNotification } = useNotification()
 
   const resolveError = (err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
@@ -54,7 +53,6 @@ const InventoryAlertsPage = () => {
   const loadAlerts = async () => {
     try {
       setLoading(true)
-      setError(null)
       // Fetch low stock products and filter by date if provided
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
@@ -62,24 +60,24 @@ const InventoryAlertsPage = () => {
       // Filter low stock products by date range if dates are provided
       const filteredLowStock = startDate || endDate
         ? lowStockData.filter((p) => {
-            if (!p.createdAt) return false
-            const created = new Date(p.createdAt)
-            if (startDate) {
-              const start = new Date(startDate)
-              start.setHours(0, 0, 0, 0)
-              if (created < start) return false
-            }
-            if (endDate) {
-              const end = new Date(endDate)
-              end.setHours(23, 59, 59, 999)
-              if (created > end) return false
-            }
-            return true
-          })
+          if (!p.createdAt) return false
+          const created = new Date(p.createdAt)
+          if (startDate) {
+            const start = new Date(startDate)
+            start.setHours(0, 0, 0, 0)
+            if (created < start) return false
+          }
+          if (endDate) {
+            const end = new Date(endDate)
+            end.setHours(23, 59, 59, 999)
+            if (created > end) return false
+          }
+          return true
+        })
         : lowStockData
       setProducts(filteredLowStock)
     } catch (err) {
-      setError(resolveError(err, 'Unable to load inventory alerts.'))
+      showNotification(resolveError(err, 'Unable to load inventory alerts.'), 'error')
     } finally {
       setLoading(false)
     }
@@ -94,9 +92,9 @@ const InventoryAlertsPage = () => {
       setReorderingId(productId)
       await markProductReordered(productId)
       setProducts((prev) => prev.filter((product) => product.id !== productId))
-      setSuccess('Marked as reordered.')
+      showNotification('Marked as reordered.', 'success')
     } catch (err) {
-      setError(resolveError(err, 'Unable to mark product as reordered.'))
+      showNotification(resolveError(err, 'Unable to mark product as reordered.'), 'error')
     } finally {
       setReorderingId(null)
     }
@@ -169,14 +167,14 @@ const InventoryAlertsPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
                 Inventory alerts
               </Typography>
-              <Typography 
+              <Typography
                 color="text.secondary"
                 sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
               >
@@ -199,11 +197,7 @@ const InventoryAlertsPage = () => {
         </CardContent>
       </Card>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {/* Removed local error Alert */}
 
       <Card>
         <CardContent sx={{ p: 0 }}>
@@ -220,9 +214,9 @@ const InventoryAlertsPage = () => {
               columnVisibilityModel={
                 isSmall
                   ? {
-                      id: false,
-                      reorderThreshold: false,
-                    }
+                    id: false,
+                    reorderThreshold: false,
+                  }
                   : undefined
               }
               getRowClassName={() => 'low-stock'}
@@ -254,16 +248,9 @@ const InventoryAlertsPage = () => {
         </CardContent>
       </Card>
 
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
+      {/* Removed local Snackbar */}
     </Stack>
   )
 }
 
 export default InventoryAlertsPage
-
-

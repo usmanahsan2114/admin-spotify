@@ -16,7 +16,6 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   Switch,
   Tab,
@@ -52,6 +51,7 @@ import type {
 import { useForm, Controller } from 'react-hook-form'
 import { CURRENCIES } from '../constants/currencies'
 import { COUNTRIES } from '../constants/countries'
+import { useNotification } from '../context/NotificationContext'
 
 type TabPanelProps = {
   children?: React.ReactNode
@@ -207,7 +207,7 @@ const SettingsPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const { user: authUser, logout } = useAuth()
   const { mode, color, toggleMode, setColor } = useContext(ThemeModeContext)
-  
+
   // Theme colors for preview buttons
   const themeColors = {
     blue: {
@@ -228,9 +228,10 @@ const SettingsPage = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  // Removed local success state
   const [tabValue, setTabValue] = useState(0)
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(false)
+  const { showNotification } = useNotification()
 
   const {
     control: profileControl,
@@ -273,7 +274,7 @@ const SettingsPage = () => {
       setLoading(false)
       return
     }
-    
+
     // Check if we have a valid token before making the request
     const token = localStorage.getItem('dashboard.authToken')
     if (!token) {
@@ -281,7 +282,7 @@ const SettingsPage = () => {
       setLoading(false)
       return
     }
-    
+
     try {
       setLoading(true)
       setError(null)
@@ -309,17 +310,17 @@ const SettingsPage = () => {
       const errorStatus = (err as Error & { status?: number; originalMessage?: string }).status
       const errorMessage = err instanceof Error ? err.message : 'Failed to load settings.'
       const originalMessage = (err as Error & { originalMessage?: string }).originalMessage || errorMessage
-      
+
       // Handle 401 errors - only logout if it's a "User not found" error
       // This happens when backend data is regenerated and user IDs change
       if (errorStatus === 401) {
         // Check if it's specifically a "User not found" error from backend
         // Also check if the error message contains "User not found" (case-insensitive)
-        const isUserNotFound = originalMessage === 'User not found.' || 
-                               originalMessage === 'Invalid or missing token.' ||
-                               errorMessage.toLowerCase().includes('user not found') ||
-                               errorMessage.toLowerCase().includes('invalid or missing token')
-        
+        const isUserNotFound = originalMessage === 'User not found.' ||
+          originalMessage === 'Invalid or missing token.' ||
+          errorMessage.toLowerCase().includes('user not found') ||
+          errorMessage.toLowerCase().includes('invalid or missing token')
+
         if (isUserNotFound) {
           // Only logout if user is truly not found (data regenerated)
           logout()
@@ -332,7 +333,7 @@ const SettingsPage = () => {
           return
         }
       }
-      
+
       // Don't show error for 404 if user is not authenticated - redirect will happen
       if (errorStatus === 404) {
         setError('User profile not found. Please try signing out and back in.')
@@ -353,10 +354,9 @@ const SettingsPage = () => {
   const handleProfileSave = async (data: UpdateCurrentUserPayload) => {
     try {
       setSaving(true)
-      setError(null)
       const updated = await updateCurrentUser(data)
       setCurrentUser(updated)
-      setSuccess('Profile updated successfully.')
+      showNotification('Profile updated successfully.', 'success')
       resetProfile(data, { keepDirty: false })
       // Update user in localStorage so it reflects immediately
       if (typeof window !== 'undefined') {
@@ -373,7 +373,7 @@ const SettingsPage = () => {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile.')
+      showNotification(err instanceof Error ? err.message : 'Failed to update profile.', 'error')
     } finally {
       setSaving(false)
     }
@@ -382,15 +382,14 @@ const SettingsPage = () => {
   const handleBusinessSave = async (data: UpdateBusinessSettingsPayload) => {
     try {
       setSaving(true)
-      setError(null)
       const updated = await updateBusinessSettings(data)
       setBusinessSettings(updated)
-      setSuccess('Business settings saved successfully.')
+      showNotification('Business settings saved successfully.', 'success')
       resetBusiness(updated, { keepDirty: false })
       // Refresh business settings context to update all pages
       await refreshSettings()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save business settings.')
+      showNotification(err instanceof Error ? err.message : 'Failed to save business settings.', 'error')
     } finally {
       setSaving(false)
     }
@@ -648,8 +647,8 @@ const SettingsPage = () => {
                     {...field}
                     id="business-currency"
                     options={CURRENCIES}
-                    getOptionLabel={(option) => 
-                      typeof option === 'string' 
+                    getOptionLabel={(option) =>
+                      typeof option === 'string'
                         ? CURRENCIES.find(c => c.code === option)?.name || option
                         : `${option.code} - ${option.name} (${option.symbol})`
                     }
@@ -684,8 +683,8 @@ const SettingsPage = () => {
                     {...field}
                     id="business-country"
                     options={COUNTRIES}
-                    getOptionLabel={(option) => 
-                      typeof option === 'string' 
+                    getOptionLabel={(option) =>
+                      typeof option === 'string'
                         ? COUNTRIES.find(c => c.code === option)?.name || option
                         : option.name
                     }
@@ -757,8 +756,8 @@ const SettingsPage = () => {
     <Stack spacing={3} sx={{ minWidth: 0 }}>
       <Card>
         <CardContent>
-          <Typography 
-            variant="h5" 
+          <Typography
+            variant="h5"
             fontWeight={600}
             sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
           >
@@ -770,11 +769,7 @@ const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+      {/* Removed local error Alert (except blocking one) */}
 
       {isMobile ? (
         <Stack spacing={2}>
@@ -810,14 +805,16 @@ const SettingsPage = () => {
         </Stack>
       ) : (
         <Card>
-          <CardContent>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-              <Tab icon={<PersonIcon />} iconPosition="start" label="My Profile" />
+              <Tab icon={<PersonIcon />} iconPosition="start" label="Profile" />
               <Tab icon={<SettingsIcon />} iconPosition="start" label="Preferences" />
               {authUser?.role === 'admin' && (
-                <Tab icon={<BusinessIcon />} iconPosition="start" label="Business Settings" />
+                <Tab icon={<BusinessIcon />} iconPosition="start" label="Business" />
               )}
             </Tabs>
+          </Box>
+          <Box p={3}>
             <TabPanel value={tabValue} index={0}>
               {profileContent}
             </TabPanel>
@@ -829,16 +826,11 @@ const SettingsPage = () => {
                 {businessContent}
               </TabPanel>
             )}
-          </CardContent>
+          </Box>
         </Card>
       )}
 
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
+      {/* Removed local Snackbar */}
     </Stack>
   )
 }

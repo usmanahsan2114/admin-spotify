@@ -1,17 +1,14 @@
 import {
-  Alert,
   Box,
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -26,11 +23,10 @@ import SearchIcon from '@mui/icons-material/Search'
 import {
   DataGrid,
   type GridColDef,
-  type GridRenderCellParams,
 } from '@mui/x-data-grid'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import type { Customer, CustomerPayload } from '../types/customer'
@@ -38,14 +34,7 @@ import { saveAs } from 'file-saver'
 import { createCustomer, fetchCustomers, downloadCustomersExport } from '../services/customersService'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
-
-type FormValues = {
-  name: string
-  email: string
-  phone: string
-  address?: string
-  alternativePhone?: string
-}
+import { useNotification } from '../context/NotificationContext'
 
 const customerSchema = yup
   .object({
@@ -69,23 +58,12 @@ const customerSchema = yup
   })
   .required()
 
-const formatDate = (value?: string | null) => {
-  if (!value) return '—'
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return '—'
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(parsed)
-}
+type FormValues = yup.InferType<typeof customerSchema>
 
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [filtered, setFiltered] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -94,6 +72,7 @@ const CustomersPage = () => {
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const navigate = useNavigate()
+  const { showNotification } = useNotification()
 
   const {
     control,
@@ -111,44 +90,42 @@ const CustomersPage = () => {
     },
   })
 
-  const handleApiError = (err: unknown, fallback: string) => {
+  const handleApiError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     try {
       setLoading(true)
-      setError(null)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
       const data = await fetchCustomers(startDate, endDate)
       setCustomers(data)
       setFiltered(data)
     } catch (err) {
-      setError(handleApiError(err, 'Failed to load customers.'))
+      showNotification(handleApiError(err, 'Failed to load customers.'), 'error')
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange.startDate, dateRange.endDate, handleApiError, showNotification])
 
   useEffect(() => {
     loadCustomers()
-  }, [dateRange.startDate, dateRange.endDate])
+  }, [loadCustomers])
 
   const handleExport = async () => {
     try {
       setExporting(true)
-      setError(null)
       const blob = await downloadCustomersExport()
       const filename = `customers_export_${new Date().toISOString().slice(0, 10)}.csv`
       saveAs(blob, filename)
-      setSuccess(`Export successful: ${customers.length} customers downloaded.`)
+      showNotification(`Export successful: ${customers.length} customers downloaded.`, 'success')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to export customers.')
+      showNotification(err instanceof Error ? err.message : 'Unable to export customers.', 'error')
     } finally {
       setExporting(false)
     }
@@ -180,7 +157,7 @@ const CustomersPage = () => {
     setIsDialogOpen(false)
   }
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit: SubmitHandler<FormValues> = async (values) => {
     try {
       const payload: CustomerPayload = {
         name: values.name.trim(),
@@ -193,10 +170,21 @@ const CustomersPage = () => {
       setCustomers((prev) => [created, ...prev])
       setFiltered((prev) => [created, ...prev])
       setIsDialogOpen(false)
-      setSuccess('Customer added successfully.')
+      showNotification('Customer added successfully.', 'success')
     } catch (err) {
-      setError(handleApiError(err, 'Unable to add customer.'))
+      showNotification(handleApiError(err, 'Unable to add customer.'), 'error')
     }
+  }
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return '—'
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) return '—'
+    return new Intl.DateTimeFormat(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(parsed)
   }
 
   const columns = useMemo<GridColDef<Customer>[]>(
@@ -327,12 +315,6 @@ const CustomersPage = () => {
           </Stack>
         </CardContent>
       </Card>
-
-      {error && (
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
 
       <Card>
         <CardContent sx={{ p: 0, minWidth: 0 }}>
@@ -498,17 +480,8 @@ const CustomersPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={Boolean(success)}
-        autoHideDuration={3000}
-        onClose={() => setSuccess(null)}
-        message={success}
-      />
     </Stack >
   )
 }
 
 export default CustomersPage
-
-

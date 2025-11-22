@@ -1759,7 +1759,7 @@ app.get('/api/orders/:id', async (req, res) => {
 
 app.post('/api/orders', validateOrder, async (req, res) => {
   try {
-    const { productName, customerName, email, phone, quantity, notes, storeId } = req.body
+    const { productName, customerName, email, phone, quantity, notes, storeId, address, alternativeNames, alternativeEmails, alternativePhones, alternativeAddresses } = req.body
 
     let submittedBy = null
     let orderStoreId = storeId || null
@@ -1831,11 +1831,12 @@ app.post('/api/orders', validateOrder, async (req, res) => {
         name: customerName,
         email,
         phone: phone || null,
-        address: null,
+        address: address || null,
         alternativePhone: null,
-        alternativeEmails: [],
-        alternativeNames: [],
-        alternativeAddresses: [],
+        alternativeEmails: alternativeEmails ? alternativeEmails.split(',').map(s => s.trim()).filter(Boolean) : [],
+        alternativeNames: alternativeNames ? alternativeNames.split(',').map(s => s.trim()).filter(Boolean) : [],
+        alternativeAddresses: alternativeAddresses ? alternativeAddresses.split(',').map(s => s.trim()).filter(Boolean) : [],
+        alternativePhones: alternativePhones ? alternativePhones.split(',').map(s => s.trim()).filter(Boolean) : [],
       })
     }
 

@@ -1,0 +1,6 @@
+
+C:\Apex IT Solutions\apex dashboard\admin-spotify\frontend\src\pages\OrderDetailsPage.tsx
+  647:34  error  'index' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+
