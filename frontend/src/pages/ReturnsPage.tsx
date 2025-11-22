@@ -77,22 +77,7 @@ type EditFormValues = {
   note: string
 }
 
-const formatDateTime = (value?: string | null) => {
-  if (!value || value === null || value === undefined) return '—'
-  try {
-    const parsed = new Date(value)
-    if (Number.isNaN(parsed.getTime())) return '—'
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(parsed)
-  } catch {
-    return '—'
-  }
-}
+
 
 const ReturnsPage = () => {
   const theme = useTheme()
@@ -287,19 +272,6 @@ const ReturnsPage = () => {
       },
     },
     {
-      field: 'dateRequested',
-      headerName: 'Requested',
-      minWidth: 180,
-      flex: 1,
-      valueGetter: (_value, row: ReturnRequest) => row.dateRequested || null,
-      valueFormatter: ({ value }: { value: string | null }) => {
-        if (!value) return '—'
-        return formatDateTime(value)
-      },
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
       minWidth: 130,
       flex: 0.8,
       renderCell: (params: GridRenderCellParams) => {
@@ -365,14 +337,14 @@ const ReturnsPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
                 Returns & Refunds
               </Typography>
-              <Typography 
+              <Typography
                 color="text.secondary"
                 sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
               >
@@ -518,7 +490,7 @@ const ReturnsPage = () => {
               )}
               <Typography variant="body2" color="text.secondary">
                 You received <strong>{totalCount}</strong> return request{totalCount !== 1 ? 's' : ''}
-                
+
                 , of which <strong>{pendingCount}</strong> ({pendingPercent}%) {pendingCount === 1 ? 'is' : 'are'} still pending.
               </Typography>
             </CardContent>
@@ -547,8 +519,8 @@ const ReturnsPage = () => {
               columnVisibilityModel={
                 isSmall
                   ? {
-                      reason: false,
-                    }
+                    reason: false,
+                  }
                   : undefined
               }
               sx={{

@@ -30,6 +30,7 @@ import {
 import { useSearchParams, useParams } from 'react-router-dom'
 import { apiFetch } from '../../services/apiClient'
 import type { Order } from '../../types/order'
+import type { ReturnRequest } from '../../types/return'
 import { useCurrency } from '../../hooks/useCurrency'
 import CustomerPortalHeader from '../../components/customer/CustomerPortalHeader'
 import SiteAttribution from '../../components/common/SiteAttribution'
@@ -46,7 +47,7 @@ import PendingIcon from '@mui/icons-material/Pending'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart'
 
-const statusSteps = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
+const statusSteps = ['Pending', 'Accepted', 'Shipped', 'Completed']
 
 type SearchType = 'orderId' | 'email' | 'phone'
 
@@ -67,6 +68,10 @@ const OrderTrackingPage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
+  const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false)
+  const [returnReason, setReturnReason] = useState('')
+  const [returnQuantity, setReturnQuantity] = useState(1)
+  const [submittingReturn, setSubmittingReturn] = useState(false)
 
   useEffect(() => {
     // Auto-load order if orderId and email are in URL
@@ -165,9 +170,9 @@ const OrderTrackingPage = () => {
 
   const getStatusSteps = () => {
     if (order?.status === 'Refunded') {
-      return ['Pending', 'Accepted', 'Paid', 'Shipped', 'Refunded']
+      return ['Pending', 'Accepted', 'Shipped', 'Refunded']
     }
-    return ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
+    return ['Pending', 'Accepted', 'Shipped', 'Completed']
   }
 
   const steps = getStatusSteps()
@@ -187,8 +192,7 @@ const OrderTrackingPage = () => {
         return <RemoveShoppingCartIcon sx={{ color: 'error.main' }} />
       case 'Shipped':
         return <LocalShippingIcon sx={{ color: 'info.main' }} />
-      case 'Paid':
-        return <PaymentIcon sx={{ color: 'success.main' }} />
+
       case 'Accepted':
         return <InventoryIcon sx={{ color: 'primary.main' }} />
       default:
@@ -201,7 +205,6 @@ const OrderTrackingPage = () => {
       case 'Completed':
       case 'Shipped':
         return 'success'
-      case 'Paid':
       case 'Accepted':
         return 'info'
       case 'Refunded':
@@ -687,6 +690,154 @@ const OrderTrackingPage = () => {
                       </Card>
                     </Box>
                   </Fade>
+                )}
+
+                {/* Returns Section */}
+                {order && (
+                  <Fade in timeout={700}>
+                    <Box mt={4}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="h6" fontWeight={600}>
+                          Returns
+                        </Typography>
+                        {['Shipped', 'Completed'].includes(order.status) && (
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => {
+                              setReturnQuantity(1)
+                              setReturnReason('')
+                              setIsReturnDialogOpen(true)
+                            }}
+                          >
+                            Request Return
+                          </Button>
+                        )}
+                      </Stack>
+
+                      {order.returns && order.returns.length > 0 ? (
+                        <Stack spacing={2}>
+                          {order.returns.map((ret) => (
+                            <Card key={ret.id} variant="outlined">
+                              <CardContent>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                  <Box>
+                                    <Typography variant="subtitle2" fontWeight={600}>
+                                      Return #{ret.id.slice(0, 8)}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {new Date(ret.dateRequested).toLocaleDateString()}
+                                    </Typography>
+                                  </Box>
+                                  <Chip
+                                    label={ret.status}
+                                    color={
+                                      ret.status === 'Approved'
+                                        ? 'success'
+                                        : ret.status === 'Rejected'
+                                          ? 'error'
+                                          : 'warning'
+                                    }
+                                    size="small"
+                                  />
+                                </Stack>
+                                <Typography variant="body2" mt={1}>
+                                  Qty: {ret.returnedQuantity}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  Reason: {ret.reason}
+                                </Typography>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          No returns found for this order.
+                        </Typography>
+                      )}
+                    </Box>
+                  </Fade>
+                )}
+
+                {/* Return Request Dialog */}
+                {isReturnDialogOpen && (
+                  <Box
+                    sx={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      bgcolor: 'rgba(0,0,0,0.5)',
+                      zIndex: 1200,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      p: 2,
+                    }}
+                    onClick={() => setIsReturnDialogOpen(false)}
+                  >
+                    <Card
+                      sx={{ width: '100%', maxWidth: 400, p: 2 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Typography variant="h6" mb={2}>
+                        Request Return
+                      </Typography>
+                      <Stack spacing={2}>
+                        <TextField
+                          label="Quantity"
+                          type="number"
+                          value={returnQuantity}
+                          onChange={(e) => setReturnQuantity(parseInt(e.target.value) || 0)}
+                          inputProps={{ min: 1, max: order?.quantity || 1 }}
+                          fullWidth
+                        />
+                        <TextField
+                          label="Reason"
+                          multiline
+                          rows={3}
+                          value={returnReason}
+                          onChange={(e) => setReturnReason(e.target.value)}
+                          fullWidth
+                        />
+                        <Stack direction="row" spacing={2} justifyContent="flex-end">
+                          <Button onClick={() => setIsReturnDialogOpen(false)}>Cancel</Button>
+                          <Button
+                            variant="contained"
+                            onClick={async () => {
+                              if (!order) return
+                              setSubmittingReturn(true)
+                              try {
+                                await apiFetch('/api/returns/public', {
+                                  method: 'POST',
+                                  body: JSON.stringify({
+                                    orderId: order.id,
+                                    email: order.email,
+                                    reason: returnReason,
+                                    returnedQuantity: returnQuantity,
+                                  }),
+                                  skipAuth: true,
+                                })
+                                setSuccessMessage('Return requested successfully.') // Assuming setSuccessMessage exists or use alert
+                                // Reload order
+                                handleTrackOrder(order.id, order.email)
+                                setIsReturnDialogOpen(false)
+                              } catch (err) {
+                                setError(err instanceof Error ? err.message : 'Failed to submit return request.')
+                              } finally {
+                                setSubmittingReturn(false)
+                              }
+                            }}
+                            disabled={submittingReturn || !returnReason || returnQuantity < 1}
+                          >
+                            {submittingReturn ? 'Submitting...' : 'Submit'}
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Card>
+                  </Box>
                 )}
               </Stack>
             </CardContent>

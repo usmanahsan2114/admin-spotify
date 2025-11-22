@@ -1,10 +1,10 @@
 export type OrderStatus =
   | 'Pending'
   | 'Accepted'
-  | 'Paid'
   | 'Shipped'
   | 'Refunded'
   | 'Completed'
+  | 'Paid'
 
 import type { ReturnRequest } from './return'
 

@@ -571,6 +571,17 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
 
 // Serialize customer with orders (using Sequelize)
 // Helper function to ensure JSON fields are arrays
+const serializeOrder = (order) => {
+  if (!order) return null
+  const oData = order.toJSON ? order.toJSON() : order
+  return {
+    ...oData,
+    total: parseFloat(oData.total || 0),
+    items: oData.items || [],
+    timeline: oData.timeline || [],
+  }
+}
+
 const ensureArray = (value) => {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') {
@@ -1731,12 +1742,10 @@ app.get('/api/orders/:id', async (req, res) => {
       }
     }
 
-    const relatedReturns = isAuthenticated
-      ? await Return.findAll({
-        where: { orderId: orderData.id },
-        order: [['dateRequested', 'DESC']],
-      }).then(returns => Promise.all(returns.map(r => serializeReturn(r))))
-      : []
+    const relatedReturns = await Return.findAll({
+      where: { orderId: orderData.id },
+      order: [['dateRequested', 'DESC']],
+    }).then(returns => Promise.all(returns.map(r => serializeReturn(r))))
 
     return res.json({
       ...orderData,
@@ -2337,23 +2346,101 @@ app.get('/api/customers/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Customer does not belong to your store.' })
     }
 
-    const ordersForCustomer = await getOrdersForCustomer(customer)
-    const storeReturns = await Return.findAll({
-      where: buildStoreWhere(req, { customerId: customerData.id }),
-      order: [['dateRequested', 'DESC']],
+    // FAMILY TREE LOGIC: Find all related customers
+    const { Op } = require('sequelize')
+    const relatedCustomers = await Customer.findAll({
+      where: {
+        storeId: customerData.storeId,
+        [Op.or]: [
+          { email: customerData.email },
+          { phone: customerData.phone },
+          { address: customerData.address },
+          // Also check if any alternative contacts match (simplified for now to primary matches)
+        ].filter(condition => Object.values(condition)[0] && Object.values(condition)[0] !== 'Not provided')
+      }
     })
 
-    const serializedReturns = await Promise.all(
-      storeReturns.map(r => serializeReturn(r))
-    )
+    // Aggregate details
+    const allNames = new Set()
+    const allEmails = new Set()
+    const allPhones = new Set()
+    const allAddresses = new Set()
+    const allOrders = []
+    const allReturns = []
 
-    const serializedCustomer = await serializeCustomer(customer)
+    // Helper to add to sets
+    const add = (set, val) => { if (val && val !== 'Not provided' && val !== '—') set.add(val) }
 
-    return res.json({
-      ...serializedCustomer,
-      orders: ordersForCustomer,
+    // Add primary customer data first
+    add(allNames, customerData.name)
+    add(allEmails, customerData.email)
+    add(allPhones, customerData.phone)
+    add(allAddresses, customerData.address)
+    if (customerData.alternativeNames) customerData.alternativeNames.forEach(n => add(allNames, n))
+    if (customerData.alternativeEmails) customerData.alternativeEmails.forEach(e => add(allEmails, e))
+    if (customerData.alternativePhones) customerData.alternativePhones.forEach(p => add(allPhones, p))
+    if (customerData.alternativeAddresses) customerData.alternativeAddresses.forEach(a => add(allAddresses, a))
+
+    // Process related customers
+    for (const related of relatedCustomers) {
+      const rData = related.toJSON ? related.toJSON() : related
+
+      // Skip if it's the same as primary (already added)
+      if (rData.id === customerData.id) continue
+
+      add(allNames, rData.name)
+      add(allEmails, rData.email)
+      add(allPhones, rData.phone)
+      add(allAddresses, rData.address)
+      if (rData.alternativeNames) rData.alternativeNames.forEach(n => add(allNames, n))
+      if (rData.alternativeEmails) rData.alternativeEmails.forEach(e => add(allEmails, e))
+      if (rData.alternativePhones) rData.alternativePhones.forEach(p => add(allPhones, p))
+      if (rData.alternativeAddresses) rData.alternativeAddresses.forEach(a => add(allAddresses, a))
+    }
+
+    // Fetch orders for ALL related customers
+    const relatedIds = relatedCustomers.map(c => c.id)
+    const orders = await Order.findAll({
+      where: {
+        customerId: { [Op.in]: relatedIds },
+        storeId: customerData.storeId
+      },
+      order: [['createdAt', 'DESC']]
+    })
+
+    // Fetch returns for ALL related customers
+    const returns = await Return.findAll({
+      where: {
+        customerId: { [Op.in]: relatedIds },
+        storeId: customerData.storeId
+      },
+      order: [['dateRequested', 'DESC']]
+    })
+
+    const serializedOrders = await Promise.all(orders.map(o => serializeOrder(o)))
+    const serializedReturns = await Promise.all(returns.map(r => serializeReturn(r)))
+
+    // Construct the merged response
+    // We keep the ID of the requested customer as the "primary" ID for this view
+    const mergedCustomer = {
+      ...customerData,
+      name: customerData.name, // Primary name remains the requested one
+      email: customerData.email,
+      phone: customerData.phone,
+      address: customerData.address,
+      alternativeNames: Array.from(allNames).filter(n => n !== customerData.name),
+      alternativeEmails: Array.from(allEmails).filter(e => e !== customerData.email),
+      alternativePhones: Array.from(allPhones).filter(p => p !== customerData.phone),
+      alternativeAddresses: Array.from(allAddresses).filter(a => a !== customerData.address),
+      orders: serializedOrders,
       returns: serializedReturns,
-    })
+      orderCount: serializedOrders.length,
+      totalSpent: serializedOrders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0),
+      lastOrderDate: serializedOrders.length > 0 ? serializedOrders[0].createdAt : null
+    }
+
+    return res.json(mergedCustomer)
+
   } catch (error) {
     logger.error('Failed to fetch customer:', error)
     return res.status(500).json({ message: 'Failed to fetch customer', error: error.message })
@@ -2597,6 +2684,100 @@ app.post('/api/returns', authenticateToken, validateReturn, async (req, res) => 
   } catch (error) {
     await transaction.rollback()
     logger.error('Failed to create return:', error)
+    return res.status(500).json({ message: 'Failed to create return', error: error.message })
+  }
+})
+
+// Public endpoint to create a return request (requires email verification)
+app.post('/api/returns/public', validateReturn, async (req, res) => {
+  const transaction = await db.sequelize.transaction()
+  try {
+    const { orderId, email, reason, returnedQuantity, status } = req.body || {}
+
+    if (!email) {
+      await transaction.rollback()
+      return res.status(400).json({ message: 'Email is required for verification.' })
+    }
+
+    const order = await findOrderById(orderId)
+    if (!order) {
+      await transaction.rollback()
+      return res.status(404).json({ message: 'Order not found.' })
+    }
+
+    // Verify email matches order
+    if (normalizeEmail(order.email) !== normalizeEmail(email)) {
+      await transaction.rollback()
+      return res.status(403).json({ message: 'Email does not match order records.' })
+    }
+
+    const orderData = order.toJSON ? order.toJSON() : order
+
+    // Check if there are existing returns for this order
+    const existingReturns = await Return.findAll({
+      where: { orderId },
+      transaction,
+    })
+    const totalReturnedQuantity = existingReturns.reduce((sum, r) => {
+      const rData = r.toJSON ? r.toJSON() : r
+      // Exclude rejected returns from the count
+      if (rData.status === 'Rejected') return sum
+      return sum + (rData.returnedQuantity || 0)
+    }, 0)
+    const remainingQuantity = orderData.quantity - totalReturnedQuantity
+
+    const quantityNumber = Number(returnedQuantity)
+    if (Number.isNaN(quantityNumber) || quantityNumber <= 0) {
+      await transaction.rollback()
+      return res.status(400).json({ message: 'returnedQuantity must be a positive number.' })
+    }
+
+    if (quantityNumber > remainingQuantity) {
+      await transaction.rollback()
+      return res
+        .status(400)
+        .json({ message: `returnedQuantity cannot exceed the remaining order quantity (${remainingQuantity} available).` })
+    }
+
+    // Ensure customer is linked
+    let finalCustomerId = orderData.customerId || null
+    if (!finalCustomerId) {
+      const customer = await findCustomerByContact(orderData.email, orderData.phone, null, orderData.storeId)
+      if (customer) {
+        finalCustomerId = customer.id
+      }
+    }
+
+    const history = [{
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      status: 'Submitted',
+      actor: 'Customer',
+      note: reason || 'Return requested via public portal',
+    }]
+
+    const newReturn = await Return.create({
+      storeId: orderData.storeId,
+      orderId,
+      customerId: finalCustomerId,
+      reason: String(reason).trim(),
+      returnedQuantity: quantityNumber,
+      dateRequested: new Date(),
+      status: 'Submitted',
+      history,
+    }, { transaction })
+
+    // Link return to order timeline
+    await linkReturnToOrder(newReturn)
+
+    await transaction.commit()
+    await newReturn.reload()
+
+    const serialized = await serializeReturn(newReturn)
+    return res.status(201).json(serialized)
+  } catch (error) {
+    await transaction.rollback()
+    logger.error('Failed to create public return:', error)
     return res.status(500).json({ message: 'Failed to create return', error: error.message })
   }
 })

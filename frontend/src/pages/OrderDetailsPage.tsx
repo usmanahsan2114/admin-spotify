@@ -36,28 +36,25 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from 'recharts'
 
-const statusOptions: OrderStatus[] = [
-  'Pending',
-  'Accepted',
-  'Paid',
-  'Shipped',
-  'Refunded',
-  'Completed',
-]
 
-const returnStatusColor: Record<
-  ReturnStatus,
-  'primary' | 'success' | 'default' | 'warning' | 'info'
-> = {
+const returnStatusColor: Record<ReturnStatus, 'info' | 'success' | 'default' | 'warning'> = {
   Submitted: 'info',
   Approved: 'success',
   Rejected: 'default',
   Refunded: 'warning',
 }
+
+const statusOptions: OrderStatus[] = [
+  'Pending',
+  'Accepted',
+  'Shipped',
+  'Refunded',
+  'Completed',
+]
 
 const getStatusColor = (status: OrderStatus) => {
   switch (status) {
@@ -73,6 +70,8 @@ const getStatusColor = (status: OrderStatus) => {
       return 'warning'
   }
 }
+
+
 
 const OrderDetailsPage = () => {
   const { orderId } = useParams()
@@ -149,7 +148,7 @@ const OrderDetailsPage = () => {
   // Calculate order progress data for visualization
   const orderProgressData = useMemo(() => {
     if (!order) return []
-    const statusOrder = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Completed']
+    const statusOrder = ['Pending', 'Accepted', 'Shipped', 'Completed']
     const currentIndex = statusOrder.indexOf(order.status)
 
     // Ensure timeline is an array
@@ -382,7 +381,7 @@ const OrderDetailsPage = () => {
                     tick={{ fill: theme.palette.text.primary }}
                     label={{ value: 'Progress %', angle: -90, position: 'insideLeft' }}
                   />
-                  <Tooltip
+                  <RechartsTooltip
                     formatter={(value: number) => [`${value}%`, 'Progress']}
                     contentStyle={{
                       backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.background.paper,

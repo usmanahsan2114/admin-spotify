@@ -217,54 +217,28 @@ const CustomersPage = () => {
         field: 'phone',
         headerName: 'Phone',
         flex: 1,
-        minWidth: 160,
-        valueGetter: (_value, row: Customer) => row.phone || null,
-        valueFormatter: ({ value }: { value: string | null }) => {
-          if (!value || value === 'Not provided' || (typeof value === 'string' && value.trim() === '')) return '—'
-          return String(value)
-        },
+        minWidth: 140,
+        valueFormatter: (value: string) => value || '—',
       },
       {
         field: 'orderCount',
         headerName: 'Orders',
-        flex: 0.6,
-        minWidth: 120,
-        renderCell: (params: GridRenderCellParams<Customer>) => (
-          <Chip
-            label={`${params.row.orderCount ?? 0} ${params.row.orderCount === 1 ? 'order' : 'orders'}`}
-            color={(params.row.orderCount ?? 0) > 0 ? 'primary' : 'default'}
-            size="small"
-          />
-        ),
-      },
-      {
-        field: 'lastOrderDate',
-        headerName: 'Last Order',
-        flex: 0.9,
-        minWidth: 160,
-        valueGetter: (_value, row: Customer) => row.lastOrderDate || null,
-        valueFormatter: (params) => {
-          if (!params || params.value === null || params.value === undefined) return '—'
-          return formatDate(params.value as string)
-        },
+        type: 'number',
+        width: 100,
       },
       {
         field: 'createdAt',
-        headerName: 'Customer Since',
-        flex: 0.9,
+        headerName: 'Joined',
+        flex: 1,
         minWidth: 160,
-        valueGetter: (_value, row: Customer) => row.createdAt || null,
-        valueFormatter: ({ value }) => {
-          if (!value) return '—'
-          return formatDate(value as string)
-        },
+        valueFormatter: (value: string) => formatDate(value),
       },
     ],
-    [],
+    []
   )
 
   return (
-    <Stack spacing={3} sx={{ minWidth: 0 }}>
+    <Stack spacing={3} sx={{ minWidth: 0 }} >
       <Card>
         <CardContent>
           <Stack
@@ -274,14 +248,14 @@ const CustomersPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
                 Customers
               </Typography>
-              <Typography 
+              <Typography
                 color="text.secondary"
                 sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
               >
@@ -379,9 +353,9 @@ const CustomersPage = () => {
               columnVisibilityModel={
                 isSmall
                   ? {
-                      createdAt: false,
-                      lastOrderDate: false,
-                    }
+                    createdAt: false,
+                    lastOrderDate: false,
+                  }
                   : undefined
               }
               onRowClick={(params) => navigate(`/customers/${params.id}`)}
@@ -531,7 +505,7 @@ const CustomersPage = () => {
         onClose={() => setSuccess(null)}
         message={success}
       />
-    </Stack>
+    </Stack >
   )
 }
 

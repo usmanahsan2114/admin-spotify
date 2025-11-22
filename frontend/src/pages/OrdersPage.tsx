@@ -458,20 +458,6 @@ const OrdersPage = () => {
       minWidth: 170,
     },
     {
-      field: 'createdAt',
-      headerName: 'Date',
-      flex: 1,
-      minWidth: 150,
-      valueGetter: (_value, row: Order) => row.createdAt || null,
-      valueFormatter: (value) => {
-        if (!value) return '—'
-        return formatDate(value as string)
-      },
-      sortComparator: (v1, v2) =>
-        new Date(v1 as string).getTime() - new Date(v2 as string).getTime(),
-    },
-    {
-      field: 'status',
       headerName: 'Status',
       flex: 0.8,
       minWidth: 140,

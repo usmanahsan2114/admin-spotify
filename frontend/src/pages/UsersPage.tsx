@@ -432,22 +432,22 @@ const UsersPage = () => {
         headerName: 'Role',
         flex: 0.6,
         minWidth: 120,
-        valueFormatter: ({ value }) => roleLabels[value as UserRole] ?? value,
+        valueFormatter: (value: string | null) => roleLabels[value as UserRole] ?? value,
       },
       ...(isSuperAdmin
         ? [
-            {
-              field: 'storeId',
-              headerName: 'Store',
-              flex: 1,
-              minWidth: 150,
-              valueGetter: (_value, row: User) => {
-                if (row.role === 'superadmin') return 'N/A (Super Admin)'
-                const store = stores.find((s) => s.id === row.storeId)
-                return store ? store.name : row.storeId || '—'
-              },
-            } as GridColDef<User>,
-          ]
+          {
+            field: 'storeId',
+            headerName: 'Store',
+            flex: 1,
+            minWidth: 150,
+            valueGetter: (_value, row: User) => {
+              if (row.role === 'superadmin') return 'N/A (Super Admin)'
+              const store = stores.find((s) => s.id === row.storeId)
+              return store ? store.name : row.storeId || '—'
+            },
+          } as GridColDef<User>,
+        ]
         : []),
       {
         field: 'active',
@@ -461,21 +461,6 @@ const UsersPage = () => {
             size="small"
           />
         ),
-      },
-      {
-        field: 'createdAt',
-        headerName: 'Added',
-        flex: 0.8,
-        minWidth: 150,
-        valueGetter: (_value, row: User) => row.createdAt || null,
-        valueFormatter: ({ value }) => {
-          if (!value) return '—'
-          try {
-            return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value as string))
-          } catch {
-            return '—'
-          }
-        },
       },
       {
         field: 'actions',
@@ -544,14 +529,14 @@ const UsersPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
                 Team Members
               </Typography>
-              <Typography 
+              <Typography
                 color="text.secondary"
                 sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
               >
@@ -637,9 +622,9 @@ const UsersPage = () => {
               columnVisibilityModel={
                 isSmall
                   ? {
-                      email: false,
-                      createdAt: false,
-                    }
+                    email: false,
+                    createdAt: false,
+                  }
                   : undefined
               }
               sx={{
@@ -669,10 +654,10 @@ const UsersPage = () => {
         </CardContent>
       </Card>
 
-      <Dialog 
-        open={isDialogOpen} 
-        onClose={closeDialog} 
-        maxWidth="sm" 
+      <Dialog
+        open={isDialogOpen}
+        onClose={closeDialog}
+        maxWidth="sm"
         fullWidth
         fullScreen={isSmall}
       >
@@ -809,7 +794,7 @@ const UsersPage = () => {
                   <Typography variant="body2" color="text.secondary">
                     Configure what this user can access and modify. Admin users have all permissions by default.
                   </Typography>
-                  
+
                   {watch('role') !== 'admin' && (
                     <Box>
                       <FormLabel component="legend" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
@@ -838,7 +823,7 @@ const UsersPage = () => {
                       </Typography>
                     </Box>
                   )}
-                  
+
                   <Box>
                     <FormLabel component="legend" sx={{ mb: 1, display: 'block', fontWeight: 600 }}>
                       Individual Permissions
@@ -888,8 +873,8 @@ const UsersPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog 
-        open={isDeleteOpen} 
+      <Dialog
+        open={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         fullScreen={isSmall}
         maxWidth="sm"

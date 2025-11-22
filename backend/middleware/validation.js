@@ -74,7 +74,7 @@ const validateOrder = [
 const validateOrderUpdate = [
   body('status')
     .optional()
-    .isIn(['Pending', 'Accepted', 'Paid', 'Shipped', 'Refunded', 'Completed'])
+    .isIn(['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed'])
     .withMessage('Invalid status'),
   body('quantity').optional().isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
   body('isPaid').optional().isBoolean().withMessage('isPaid must be boolean'),

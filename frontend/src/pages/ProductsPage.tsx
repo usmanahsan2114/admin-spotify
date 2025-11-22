@@ -157,9 +157,9 @@ const ProductsPage = () => {
     control,
     reset,
     handleSubmit,
-  formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-  resolver: yupResolver(productSchema),
+    resolver: yupResolver(productSchema),
     defaultValues: {
       name: '',
       price: 0,
@@ -168,7 +168,7 @@ const ProductsPage = () => {
       description: '',
       category: '',
       status: 'active',
-    imageUrl: '',
+      imageUrl: '',
     },
   })
 
@@ -339,42 +339,42 @@ const ProductsPage = () => {
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
     setCalculationError(null)
-    
+
     // Validate calculations
     const price = Number(values.price)
     const stockQuantity = Number(values.stockQuantity)
     const reorderThreshold = Number(values.reorderThreshold)
-    
+
     if (isNaN(price) || price < 0) {
       setCalculationError('Price must be a valid number greater than or equal to 0.')
       return
     }
-    
+
     if (price > 1000000) {
       setCalculationError('Price cannot exceed $1,000,000. Please verify the product price.')
       return
     }
-    
+
     if (isNaN(stockQuantity) || stockQuantity < 0 || !Number.isInteger(stockQuantity)) {
       setCalculationError('Stock quantity must be a valid whole number greater than or equal to 0.')
       return
     }
-    
+
     if (stockQuantity > 1000000) {
       setCalculationError('Stock quantity cannot exceed 1,000,000. Please verify the stock quantity.')
       return
     }
-    
+
     if (isNaN(reorderThreshold) || reorderThreshold < 0 || !Number.isInteger(reorderThreshold)) {
       setCalculationError('Reorder threshold must be a valid whole number greater than or equal to 0.')
       return
     }
-    
+
     if (reorderThreshold > stockQuantity) {
       setCalculationError('Reorder threshold cannot exceed stock quantity. Please adjust the reorder threshold.')
       return
     }
-    
+
     const payload: ProductPayload = {
       ...values,
       price,
@@ -433,80 +433,33 @@ const ProductsPage = () => {
       field: 'category',
       headerName: 'Category',
       flex: 0.8,
-      minWidth: 130,
-      valueGetter: (_value, row: Product) => row.category || null,
-      valueFormatter: ({ value }: { value: string | null }) => {
-        if (!value || (typeof value === 'string' && value.trim() === '')) return '—'
-        return String(value)
-      },
+      minWidth: 120,
+      valueFormatter: (value: string) => value || '—',
     },
     {
       field: 'price',
       headerName: 'Price',
-      flex: 0.6,
-      minWidth: 110,
-      valueGetter: (_value, row: Product) => row.price ?? null,
-      valueFormatter: ({ value }) => {
-        if (value === null || value === undefined || (typeof value === 'number' && Number.isNaN(value))) return '—'
-        return formatCurrency(value as number)
-      },
+      type: 'number',
+      width: 110,
+      valueFormatter: (value: number) => formatCurrency(value),
     },
     {
       field: 'stockQuantity',
-      headerName: 'Stock Qty',
-      flex: 0.5,
-      minWidth: 100,
-    },
-    {
-      field: 'reorderThreshold',
-      headerName: 'Threshold',
-      flex: 0.5,
-      minWidth: 110,
-    },
-    {
-      field: 'lowStock',
-      headerName: 'Alert',
-      flex: 0.6,
-      minWidth: 130,
-      sortable: false,
-      filterable: false,
-      renderCell: (params: GridRenderCellParams<Product>) => {
-        if (params.row.lowStock) {
-          return <Chip label="Low stock" color="error" size="small" />
-        }
-        return <Chip label="OK" color="success" size="small" variant="outlined" />
-      },
+      headerName: 'Stock',
+      type: 'number',
+      width: 110,
     },
     {
       field: 'status',
       headerName: 'Status',
-      flex: 0.6,
-      minWidth: 120,
-      renderCell: (params: GridRenderCellParams<Product>) => {
-        const statusValue = (params.row.status ?? 'inactive') as ProductStatus
-        return (
-          <Chip
-            label={statusValue === 'active' ? 'Active' : 'Inactive'}
-            color={statusChips[statusValue]}
-            size="small"
-          />
-        )
-      },
-    },
-    {
-      field: 'createdAt',
-      headerName: 'Created',
-      flex: 0.8,
-      minWidth: 150,
-      valueGetter: (_value, row: Product) => row.createdAt || null,
-      valueFormatter: ({ value }) => {
-        if (!value) return '—'
-        try {
-          return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value as string))
-        } catch {
-          return '—'
-        }
-      },
+      width: 120,
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={params.value as string}
+          color={statusChips[params.value as ProductStatus]}
+          size="small"
+        />
+      ),
     },
     {
       field: 'actions',
@@ -557,14 +510,14 @@ const ProductsPage = () => {
             alignItems={{ xs: 'flex-start', md: 'center' }}
           >
             <Box>
-              <Typography 
-                variant="h5" 
+              <Typography
+                variant="h5"
                 fontWeight={600}
                 sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}
               >
                 Products
               </Typography>
-              <Typography 
+              <Typography
                 color="text.secondary"
                 sx={{ fontSize: { xs: '0.875rem', sm: '0.9375rem' } }}
               >
@@ -668,10 +621,10 @@ const ProductsPage = () => {
           {error}
         </Alert>
       )}
-      
+
       {calculationError && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           onClose={() => setCalculationError(null)}
           sx={{ mb: 2 }}
         >
@@ -725,12 +678,12 @@ const ProductsPage = () => {
         // Calculate dynamic Y-axis domain
         const stockTrendDomain = trendData.length > 0
           ? (() => {
-              const values = trendData.map(d => d.totalStock || 0)
-              const min = Math.min(...values)
-              const max = Math.max(...values)
-              const padding = (max - min) * 0.1 || max * 0.1 || 1
-              return [Math.max(0, min - padding), max + padding]
-            })()
+            const values = trendData.map(d => d.totalStock || 0)
+            const min = Math.min(...values)
+            const max = Math.max(...values)
+            const padding = (max - min) * 0.1 || max * 0.1 || 1
+            return [Math.max(0, min - padding), max + padding]
+          })()
           : [0, 100]
 
         const currentTotal = filteredProductsForTrend.reduce((sum, p) => sum + (p.stockQuantity || 0), 0)
@@ -748,14 +701,14 @@ const ProductsPage = () => {
                   <ResponsiveContainer width="100%" height={250}>
                     <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                      <XAxis 
+                      <XAxis
                         dataKey="dateLabel"
                         tick={{ fontSize: isSmall ? 10 : 12 }}
                         angle={isSmall ? -45 : 0}
                         textAnchor={isSmall ? 'end' : 'middle'}
                         height={isSmall ? 60 : 40}
                       />
-                      <YAxis 
+                      <YAxis
                         allowDecimals={false}
                         domain={stockTrendDomain}
                       />
@@ -782,7 +735,7 @@ const ProductsPage = () => {
                     increased by {changePercent}%
                   </Typography>
                 )}{' '}
-                
+
                 .
               </Typography>
             </CardContent>
@@ -808,9 +761,9 @@ const ProductsPage = () => {
               columnVisibilityModel={
                 isSmall
                   ? {
-                      id: false,
-                      reorderThreshold: false,
-                    }
+                    id: false,
+                    reorderThreshold: false,
+                  }
                   : undefined
               }
               getRowClassName={(params) => (params.row.lowStock ? 'low-stock' : '')}
@@ -860,8 +813,8 @@ const ProductsPage = () => {
         </DialogTitle>
         <DialogContent>
           {calculationError && (
-            <Alert 
-              severity="error" 
+            <Alert
+              severity="error"
               onClose={() => setCalculationError(null)}
               sx={{ mb: 2 }}
             >
