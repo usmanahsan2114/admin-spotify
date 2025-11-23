@@ -85,6 +85,7 @@ db.Customer = require('./Customer')(sequelize, Sequelize.DataTypes)
 db.Order = require('./Order')(sequelize, Sequelize.DataTypes)
 db.Return = require('./Return')(sequelize, Sequelize.DataTypes)
 db.Setting = require('./Setting')(sequelize, Sequelize.DataTypes)
+db.RefreshToken = require('./refreshToken')(sequelize, Sequelize.DataTypes)
 
 // Define associations
 db.Organization.hasMany(db.Store, { foreignKey: 'organizationId', as: 'stores' })
@@ -114,6 +115,9 @@ db.Return.belongsTo(db.Customer, { foreignKey: 'customerId', as: 'customer' })
 
 db.User.hasMany(db.Order, { foreignKey: 'submittedBy', as: 'submittedOrders' })
 db.Order.belongsTo(db.User, { foreignKey: 'submittedBy', as: 'submittedByUser' })
+
+db.User.hasMany(db.RefreshToken, { foreignKey: 'userId', as: 'refreshTokens' })
+db.RefreshToken.belongsTo(db.User, { foreignKey: 'userId', as: 'user' })
 
 db.sequelize = sequelize
 db.Sequelize = Sequelize

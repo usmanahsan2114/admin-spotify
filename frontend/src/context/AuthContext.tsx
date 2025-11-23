@@ -18,7 +18,7 @@ type AuthState = {
   needsPasswordChange: boolean
   login: (email: string, password: string) => Promise<{ needsPasswordChange?: boolean }>
   signup: (payload: SignupPayload) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   loading: boolean
 }
 
@@ -91,14 +91,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(result.user)
   }, [])
 
-  const logout = useCallback(() => {
-    setStoredToken(null)
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY)
+  const logout = useCallback(async () => {
+    try {
+      await apiFetch('/api/logout', { method: 'POST' })
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      setStoredToken(null)
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(STORAGE_KEY)
+      }
+      setToken(null)
+      setUser(null)
+      setNeedsPasswordChange(false)
     }
-    setToken(null)
-    setUser(null)
-    setNeedsPasswordChange(false)
   }, [])
 
   const value = useMemo<AuthState>(

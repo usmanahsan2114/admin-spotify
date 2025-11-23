@@ -1,11 +1,13 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const { User, Store } = require('../db/init').db
+const crypto = require('crypto')
+const { User, Store, RefreshToken } = require('../db/init').db
 const { recordFailedAttempt, resetLoginAttempts } = require('../middleware/accountLockout')
 const logger = require('../utils/logger')
 const { normalizeEmail, sanitizeUser } = require('../utils/helpers')
 
 const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'refresh-secret-please-change'
 
 // Helper to find store by ID
 const findStoreById = async (storeId) => {
@@ -20,6 +22,38 @@ const findUserByEmail = async (email, storeId = null) => {
     const where = { email: normalizedEmail }
     if (storeId) where.storeId = storeId
     return await User.findOne({ where })
+}
+
+const generateTokens = async (user, ipAddress) => {
+    const accessToken = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role, storeId: user.storeId },
+        JWT_SECRET,
+        { expiresIn: '15m' } // Short-lived access token
+    )
+
+    const refreshToken = crypto.randomBytes(40).toString('hex')
+    const expiresAt = new Date()
+    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days expiry
+
+    await RefreshToken.create({
+        userId: user.id,
+        token: refreshToken,
+        expiresAt,
+        createdByIp: ipAddress
+    })
+
+    return { accessToken, refreshToken, expiresAt }
+}
+
+const setTokenCookie = (res, token, expiresAt) => {
+    const cookieOptions = {
+        httpOnly: true,
+        expires: expiresAt,
+        path: '/api/refresh-token', // Only send cookie to refresh endpoint
+        secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+        sameSite: 'strict'
+    }
+    res.cookie('refreshToken', token, cookieOptions)
 }
 
 const login = async (req, res) => {
@@ -67,14 +101,12 @@ const login = async (req, res) => {
         const userData = user.toJSON ? user.toJSON() : user
         const store = user.storeId ? await findStoreById(user.storeId) : null
 
-        const token = jwt.sign(
-            { userId: user.id, email: user.email, role: user.role, storeId: user.storeId },
-            JWT_SECRET,
-            { expiresIn: '7d' }
-        )
+        const { accessToken, refreshToken, expiresAt } = await generateTokens(user, req.ip)
+
+        setTokenCookie(res, refreshToken, expiresAt)
 
         return res.json({
-            token,
+            token: accessToken,
             user: sanitizeUser(userData),
             needsPasswordChange: !user.passwordChangedAt,
             store: store ? {
@@ -86,6 +118,69 @@ const login = async (req, res) => {
     } catch (error) {
         logger.error('[ERROR] /api/login:', error)
         return res.status(500).json({ message: 'Login failed', error: error.message })
+    }
+}
+
+const refreshToken = async (req, res) => {
+    try {
+        const token = req.cookies.refreshToken
+        if (!token) return res.status(401).json({ message: 'Token required' })
+
+        const refreshTokenRecord = await RefreshToken.findOne({ where: { token } })
+
+        if (!refreshTokenRecord || refreshTokenRecord.revoked || Date.now() >= refreshTokenRecord.expiresAt) {
+            // If token is revoked or expired, or not found
+            if (refreshTokenRecord && !refreshTokenRecord.revoked) {
+                // Revoke it if it was valid but expired
+                refreshTokenRecord.revoked = new Date()
+                await refreshTokenRecord.save()
+            }
+            return res.status(401).json({ message: 'Invalid token' })
+        }
+
+        const user = await User.findByPk(refreshTokenRecord.userId)
+        if (!user) return res.status(401).json({ message: 'User not found' })
+
+        // Rotate tokens
+        refreshTokenRecord.revoked = new Date()
+        refreshTokenRecord.replacedByToken = 'rotated' // Placeholder, or actual new token
+        await refreshTokenRecord.save()
+
+        const { accessToken, refreshToken: newRefreshToken, expiresAt } = await generateTokens(user, req.ip)
+
+        // Update the old record with the new token for tracking (optional, but good for security audit)
+        refreshTokenRecord.replacedByToken = newRefreshToken
+        await refreshTokenRecord.save()
+
+        setTokenCookie(res, newRefreshToken, expiresAt)
+
+        return res.json({
+            token: accessToken,
+            user: sanitizeUser(user)
+        })
+
+    } catch (error) {
+        logger.error('Refresh token failed:', error)
+        return res.status(500).json({ message: 'Refresh failed', error: error.message })
+    }
+}
+
+const logout = async (req, res) => {
+    try {
+        const token = req.cookies.refreshToken
+        if (token) {
+            const refreshTokenRecord = await RefreshToken.findOne({ where: { token } })
+            if (refreshTokenRecord) {
+                refreshTokenRecord.revoked = new Date()
+                await refreshTokenRecord.save()
+            }
+        }
+
+        res.clearCookie('refreshToken', { path: '/api/refresh-token' })
+        return res.json({ message: 'Logged out successfully' })
+    } catch (error) {
+        logger.error('Logout failed:', error)
+        return res.status(500).json({ message: 'Logout failed', error: error.message })
     }
 }
 
@@ -156,14 +251,12 @@ const signup = async (req, res) => {
         const userData = newUser.toJSON ? newUser.toJSON() : newUser
         const store = await findStoreById(targetStoreId)
 
-        const token = jwt.sign(
-            { userId: userData.id, email: userData.email, role: userData.role, storeId: userData.storeId },
-            JWT_SECRET,
-            { expiresIn: '7d' }
-        )
+        const { accessToken, refreshToken, expiresAt } = await generateTokens(newUser, req.ip)
+
+        setTokenCookie(res, refreshToken, expiresAt)
 
         return res.status(201).json({
-            token,
+            token: accessToken,
             user: sanitizeUser(userData),
             store: store ? {
                 id: store.id,
@@ -180,4 +273,6 @@ const signup = async (req, res) => {
 module.exports = {
     login,
     signup,
+    refreshToken,
+    logout
 }

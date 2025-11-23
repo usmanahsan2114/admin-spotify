@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '.env') })
 const express = require('express')
 const cors = require('cors')
+const cookieParser = require('cookie-parser')
 const bodyParser = require('body-parser')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
@@ -184,6 +185,7 @@ app.use(cors({
   },
   credentials: true
 }))
+app.use(cookieParser())
 app.use(bodyParser.json({ limit: '10mb' }))
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }))
 

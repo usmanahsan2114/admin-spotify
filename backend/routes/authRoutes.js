@@ -16,5 +16,7 @@ const authLimiter = rateLimit({
 
 router.post('/login', authLimiter, checkAccountLockout, validateLogin, authController.login)
 router.post('/signup', authLimiter, validateSignup, authController.signup)
+router.post('/refresh-token', authController.refreshToken)
+router.post('/logout', authController.logout)
 
 module.exports = router

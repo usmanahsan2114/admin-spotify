@@ -21,18 +21,18 @@ const retryFetch = async <TResponse>(
 ): Promise<Response> => {
   try {
     const response = await fetchFn()
-    
+
     // If response is ok or not retryable, return immediately
     if (response.ok || !RETRYABLE_STATUS_CODES.includes(response.status)) {
       return response
     }
-    
+
     // If we have retries left and it's a retryable error, retry
     if (retries > 0) {
       await new Promise((resolve) => setTimeout(resolve, delay))
       return retryFetch(fetchFn, retries - 1, delay * 2) // Exponential backoff
     }
-    
+
     return response
   } catch (error) {
     // Network errors are retryable
@@ -60,6 +60,24 @@ export const setStoredToken = (token: string | null) => {
   }
 }
 
+let isRefreshing = false
+let failedQueue: Array<{
+  resolve: (value: unknown) => void
+  reject: (reason?: any) => void
+}> = []
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve(token)
+    }
+  })
+
+  failedQueue = []
+}
+
 export const apiFetch = async <TResponse>(
   path: string,
   options: FetchOptions = {},
@@ -82,7 +100,68 @@ export const apiFetch = async <TResponse>(
       headers: headerInstance,
     })
 
-  const response = await retryFetch(fetchFn, retries)
+  let response = await retryFetch(fetchFn, retries)
+
+  // Handle 401 Unauthorized (Token Expired)
+  if (response.status === 401 && !skipAuth) {
+    if (isRefreshing) {
+      // If already refreshing, queue this request
+      return new Promise<TResponse>((resolve, reject) => {
+        failedQueue.push({
+          resolve: () => {
+            // Retry original request with new token
+            const newToken = getStoredToken()
+            if (newToken) {
+              headerInstance.set('Authorization', `Bearer ${newToken}`)
+            }
+            fetch(`${API_BASE_URL}${path}`, { ...rest, headers: headerInstance })
+              .then(res => res.json())
+              .then(resolve)
+              .catch(reject)
+          },
+          reject,
+        })
+      })
+    }
+
+    isRefreshing = true
+
+    try {
+      // Attempt to refresh token
+      const refreshResponse = await fetch(`${API_BASE_URL}/api/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Credentials included automatically by browser for same-origin or if configured
+        credentials: 'include'
+      })
+
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json()
+        setStoredToken(data.token)
+        processQueue(null, data.token)
+
+        // Retry original request
+        headerInstance.set('Authorization', `Bearer ${data.token}`)
+        response = await fetch(`${API_BASE_URL}${path}`, {
+          ...rest,
+          headers: headerInstance,
+        })
+      } else {
+        // Refresh failed - logout
+        setStoredToken(null)
+        processQueue(new Error('Session expired'), null)
+        window.location.href = '/login' // Force redirect
+        throw new Error('Session expired')
+      }
+    } catch (err) {
+      processQueue(err as Error, null)
+      setStoredToken(null)
+      window.location.href = '/login'
+      throw err
+    } finally {
+      isRefreshing = false
+    }
+  }
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}))
@@ -90,7 +169,7 @@ export const apiFetch = async <TResponse>(
       typeof errorBody.message === 'string'
         ? errorBody.message
         : response.statusText
-    
+
     // Provide more context based on status code
     if (!errorMessage || errorMessage === 'OK') {
       switch (response.status) {
@@ -127,11 +206,11 @@ export const apiFetch = async <TResponse>(
           errorMessage = 'An error occurred. Please try again.'
       }
     }
-    
+
     const error = new Error(errorMessage)
-    // Attach status and original message for consumers (auth can act on 401)
-    ;(error as Error & { status?: number; originalMessage?: string }).status = response.status
-    ;(error as Error & { status?: number; originalMessage?: string }).originalMessage = errorBody.message
+      // Attach status and original message for consumers (auth can act on 401)
+      ; (error as Error & { status?: number; originalMessage?: string }).status = response.status
+      ; (error as Error & { status?: number; originalMessage?: string }).originalMessage = errorBody.message
     throw error
   }
 
@@ -161,7 +240,7 @@ export const apiDownload = async (
   if (!response.ok) {
     const errorText = await response.text().catch(() => '')
     let errorMessage = errorText || response.statusText || 'Download failed'
-    
+
     // Provide more context for download errors
     if (!errorText) {
       switch (response.status) {
@@ -181,9 +260,9 @@ export const apiDownload = async (
           break
       }
     }
-    
+
     const error = new Error(errorMessage)
-    ;(error as Error & { status?: number }).status = response.status
+      ; (error as Error & { status?: number }).status = response.status
     throw error
   }
 
