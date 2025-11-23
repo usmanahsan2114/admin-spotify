@@ -40,19 +40,6 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **Account Lockout**: Prevent brute force attacks.
 - [x] **Token Refresh**: Implement refresh tokens / HttpOnly cookies.
 - [x] **Input Validation**: Standardize using Zod/Joi for all inputs.
-- [ ] **File Upload Security**: Validate MIME types and file sizes (if applicable).
-
-### Stability
-- [x] **Global Error Handler**: Centralized error handling with logging.
-- [x] **Graceful Shutdown**: Handle SIGTERM/SIGINT.
-- [x] **Request ID**: Correlate logs with unique request IDs.
-- [ ] **Unit Tests**: Add unit tests for remaining Controllers (Order, Product, Customer, etc.).
-- [ ] **Integration Tests**: Test critical API flows.
-
----
-
-## Tier 3: Performance & Scalability (📅 Planned)
-**Goal:** Optimize response times and handle increased load.
 
 ### Database
 - [x] **Connection Pooling**: Configured in `config/config.json`.
@@ -93,9 +80,9 @@ This document outlines the roadmap for bringing the application to a production-
 
 ## 📝 Immediate Action Items (Next Steps)
 
-1. **[Tier 2]** Implement Token Refresh Mechanism (Security).
-2. **[Tier 2]** Add Unit Tests for new Controllers (Stability).
-3. **[Tier 3]** Implement Frontend Code Splitting (Performance).
-4. **[Tier 4]** Generate API Documentation (Operations).
+1. **[Tier 2]** Implement Token Refresh Mechanism (Security) ✅ **Done**
+2. **[Tier 2]** Add Unit Tests for remaining Controllers (Stability) 🚧 **In Progress**
+3. **[Tier 3]** Implement Frontend Code Splitting (Performance)
+4. **[Tier 4]** Generate API Documentation (Operations)
 
 
