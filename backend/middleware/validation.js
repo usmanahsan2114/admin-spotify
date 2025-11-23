@@ -1,294 +1,182 @@
-const { body, validationResult } = require('express-validator')
+const { normalizeEmail, normalizePhone } = require('../utils/helpers')
 
-/**
- * Middleware to handle validation errors
- */
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req)
-  if (!errors.isEmpty()) {
-    return res.status(400).json({
-      message: 'Validation failed',
-      errors: errors.array().map((err) => ({
-        field: err.path,
-        message: err.msg,
-      })),
-    })
+const validateLogin = (req, res, next) => {
+  const { email, password } = req.body
+  if (!email || typeof email !== 'string' || email.trim() === '') {
+    return res.status(400).json({ message: 'Email is required.' })
+  }
+  if (!password || typeof password !== 'string' || password.trim() === '') {
+    return res.status(400).json({ message: 'Password is required.' })
   }
   next()
 }
 
-/**
- * Validation rules for login
- */
-const validateLogin = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password').notEmpty().withMessage('Password is required'),
-  handleValidationErrors,
-]
-
-/**
- * Password complexity validation
- */
-const validatePasswordComplexity = (value) => {
-  if (!value) return false
-  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number
-  const hasMinLength = value.length >= 8
-  const hasUpperCase = /[A-Z]/.test(value)
-  const hasLowerCase = /[a-z]/.test(value)
-  const hasNumber = /[0-9]/.test(value)
-
-  return hasMinLength && hasUpperCase && hasLowerCase && hasNumber
+const validateSignup = (req, res, next) => {
+  const { email, password, name } = req.body
+  if (!email || typeof email !== 'string' || email.trim() === '') {
+    return res.status(400).json({ message: 'Email is required.' })
+  }
+  if (!password || typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' })
+  }
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ message: 'Name is required.' })
+  }
+  next()
 }
 
-/**
- * Validation rules for signup
- */
-const validateSignup = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .custom(validatePasswordComplexity)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('role').optional().isIn(['admin', 'staff']).withMessage('Role must be admin or staff'),
-  handleValidationErrors,
-]
+const validateStore = (req, res, next) => {
+  const { name, domain } = req.body
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ message: 'Store name is required.' })
+  }
+  if (!domain || typeof domain !== 'string' || domain.trim() === '') {
+    return res.status(400).json({ message: 'Store domain is required.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for order creation
- */
-const validateOrder = [
-  body('productName').trim().notEmpty().withMessage('Product name is required'),
-  body('customerName').trim().notEmpty().withMessage('Customer name is required'),
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('phone').optional().trim(),
-  body('quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  body('notes').optional().trim(),
-  handleValidationErrors,
-]
+const validateStoreAdminCredentials = (req, res, next) => {
+  const { email } = req.body
+  if (!email || typeof email !== 'string' || email.trim() === '') {
+    return res.status(400).json({ message: 'Email is required.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for order update
- */
-const validateOrderUpdate = [
-  body('status')
-    .optional()
-    .isIn(['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed'])
-    .withMessage('Invalid status'),
-  body('quantity').optional().isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-  body('isPaid').optional().isBoolean().withMessage('isPaid must be boolean'),
-  body('notes').optional().trim(),
-  body('phone').optional().trim(),
-  handleValidationErrors,
-]
+const validateOrder = (req, res, next) => {
+  const { productName, customerName, email, quantity } = req.body
+  if (!productName || typeof productName !== 'string' || productName.trim() === '') {
+    return res.status(400).json({ message: 'Product name is required.' })
+  }
+  if (!customerName || typeof customerName !== 'string' || customerName.trim() === '') {
+    return res.status(400).json({ message: 'Customer name is required.' })
+  }
+  if (!email || typeof email !== 'string' || email.trim() === '') {
+    return res.status(400).json({ message: 'Customer email is required.' })
+  }
+  if (quantity === undefined || quantity === null || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+    return res.status(400).json({ message: 'Valid quantity is required.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for customer creation/update
- */
-const validateCustomer = [
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('phone').optional().trim(),
-  body('address').optional({ nullable: true, checkFalsy: true }).trim(),
-  body('alternativePhone').optional({ nullable: true, checkFalsy: true }).trim(),
-  handleValidationErrors,
-]
+const validateOrderUpdate = (req, res, next) => {
+  const { status, isPaid, quantity } = req.body
+  if (status && !['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed', 'Cancelled'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value.' })
+  }
+  if (quantity !== undefined && (isNaN(Number(quantity)) || Number(quantity) < 0)) {
+    return res.status(400).json({ message: 'Quantity must be a non-negative number.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for return request
- */
-const validateReturn = [
-  body('orderId').notEmpty().withMessage('Order ID is required'),
-  body('customerId').optional(),
-  body('reason').trim().notEmpty().withMessage('Reason is required'),
-  body('returnedQuantity')
-    .isInt({ min: 1 })
-    .withMessage('Returned quantity must be at least 1'),
-  body('status')
-    .optional()
-    .isIn(['Submitted', 'Approved', 'Rejected', 'Refunded'])
-    .withMessage('Invalid status'),
-  handleValidationErrors,
-]
+const validateReturn = (req, res, next) => {
+  const { orderId, returnedQuantity, reason } = req.body
+  if (!orderId) {
+    return res.status(400).json({ message: 'Order ID is required.' })
+  }
+  if (!returnedQuantity || isNaN(Number(returnedQuantity)) || Number(returnedQuantity) <= 0) {
+    return res.status(400).json({ message: 'Valid returned quantity is required.' })
+  }
+  if (!reason || typeof reason !== 'string' || reason.trim() === '') {
+    return res.status(400).json({ message: 'Return reason is required.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for return update
- */
-const validateReturnUpdate = [
-  body('status')
-    .optional()
-    .isIn(['Submitted', 'Approved', 'Rejected', 'Refunded'])
-    .withMessage('Invalid status'),
-  body('reason').optional().trim(),
-  body('returnedQuantity').optional().isInt({ min: 1 }).withMessage('Returned quantity must be at least 1'),
-  handleValidationErrors,
-]
+const validateReturnUpdate = (req, res, next) => {
+  const { status, refundAmount } = req.body
+  if (status && !['Submitted', 'Approved', 'Rejected', 'Refunded'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status value.' })
+  }
+  if (refundAmount !== undefined && (isNaN(Number(refundAmount)) || Number(refundAmount) < 0)) {
+    return res.status(400).json({ message: 'Refund amount must be a non-negative number.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for product creation/update
- */
-const validateProduct = [
-  body('name').trim().notEmpty().withMessage('Product name is required'),
-  body('description').optional().trim(),
-  body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
-  body('category').optional().trim(),
-  body('imageUrl').optional().isURL().withMessage('Image URL must be valid'),
-  body('stockQuantity').isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
-  body('reorderThreshold').isInt({ min: 0 }).withMessage('Reorder threshold must be a non-negative integer'),
-  handleValidationErrors,
-]
+const validateCustomer = (req, res, next) => {
+  const { name, email } = req.body
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ message: 'Customer name is required.' })
+  }
+  // Email is optional for some updates, but if provided must be valid string
+  if (email !== undefined && (typeof email !== 'string' || email.trim() === '')) {
+    return res.status(400).json({ message: 'Valid email is required if provided.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for user creation/update
- */
-const validateUser = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password')
-    .optional()
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .custom(validatePasswordComplexity)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  body('name').trim().notEmpty().withMessage('Name is required'),
-  body('role').isIn(['admin', 'staff', 'superadmin']).withMessage('Role must be admin, staff, or superadmin'),
-  body('storeId').optional().isUUID().withMessage('Store ID must be a valid UUID'),
-  body('active').optional().isBoolean().withMessage('Active must be a boolean'),
-  body('permissions').optional().isObject().withMessage('Permissions must be an object'),
-  handleValidationErrors,
-]
+const validateUserProfile = (req, res, next) => {
+  const { fullName, phone } = req.body
+  if (fullName !== undefined && (typeof fullName !== 'string' || fullName.trim() === '')) {
+    return res.status(400).json({ message: 'Valid full name is required.' })
+  }
+  if (phone !== undefined && (typeof phone !== 'string' || phone.trim() === '')) {
+    return res.status(400).json({ message: 'Valid phone number is required.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for user profile update
- */
-const validateUserProfile = [
-  body('fullName').optional({ nullable: true, checkFalsy: true }).trim(),
-  body('phone').optional({ nullable: true, checkFalsy: true }).trim(),
-  body('profilePictureUrl')
-    .optional({ nullable: true, checkFalsy: true })
-    .custom((value) => {
-      if (value === null || value === undefined || value === '') return true
-      // Basic URL validation
-      try {
-        new URL(value)
-        return true
-      } catch {
-        return false
-      }
-    })
-    .withMessage('Profile picture URL must be valid'),
-  body('defaultDateRangeFilter')
-    .optional({ nullable: true, checkFalsy: true })
-    .isIn(['last7', 'thisMonth', 'lastMonth', 'custom'])
-    .withMessage('Invalid date range filter'),
-  body('notificationPreferences')
-    .optional({ nullable: true, checkFalsy: true })
-    .custom((value) => {
-      if (value === null || value === undefined) return true
-      return typeof value === 'object' && !Array.isArray(value)
-    })
-    .withMessage('Notification preferences must be an object'),
-  body('notificationPreferences.newOrders')
-    .optional({ nullable: true, checkFalsy: true })
-    .isBoolean()
-    .withMessage('newOrders must be boolean'),
-  body('notificationPreferences.lowStock')
-    .optional({ nullable: true, checkFalsy: true })
-    .isBoolean()
-    .withMessage('lowStock must be boolean'),
-  body('notificationPreferences.returnsPending')
-    .optional({ nullable: true, checkFalsy: true })
-    .isBoolean()
-    .withMessage('returnsPending must be boolean'),
-  handleValidationErrors,
-]
+const validateUser = (req, res, next) => {
+  const { email, name, role } = req.body
+  if (email !== undefined && (typeof email !== 'string' || email.trim() === '')) {
+    return res.status(400).json({ message: 'Valid email is required.' })
+  }
+  if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
+    return res.status(400).json({ message: 'Valid name is required.' })
+  }
+  if (role !== undefined && !['admin', 'staff', 'superadmin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for business settings
- */
-const validateBusinessSettings = [
-  body('logoUrl')
-    .optional({ nullable: true, checkFalsy: true })
-    .custom((value) => {
-      if (value === null || value === undefined || value === '') return true
-      // Basic URL validation or data URL for base64 images
-      if (value.startsWith('data:image/')) return true
-      try {
-        new URL(value)
-        return true
-      } catch {
-        return false
-      }
-    })
-    .withMessage('Logo URL must be valid'),
-  body('brandColor')
-    .optional({ nullable: true, checkFalsy: true })
-    .matches(/^#[0-9A-Fa-f]{6}$/)
-    .withMessage('Brand color must be a valid hex color'),
-  body('defaultCurrency')
-    .optional({ nullable: true, checkFalsy: true })
-    .isLength({ min: 3, max: 3 })
-    .withMessage('Currency must be a 3-letter code'),
-  body('country')
-    .optional({ nullable: true, checkFalsy: true })
-    .isLength({ min: 2, max: 2 })
-    .withMessage('Country must be a 2-letter code'),
-  body('dashboardName')
-    .optional({ nullable: true, checkFalsy: true })
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Dashboard name must be between 1 and 100 characters'),
-  body('defaultOrderStatuses')
-    .optional({ nullable: true, checkFalsy: true })
-    .isArray()
-    .withMessage('Default order statuses must be an array'),
-  handleValidationErrors,
-]
+const validateBusinessSettings = (req, res, next) => {
+  const { dashboardName, defaultCurrency, country } = req.body
+  if (dashboardName !== undefined && (typeof dashboardName !== 'string' || dashboardName.trim() === '')) {
+    return res.status(400).json({ message: 'Valid dashboard name is required.' })
+  }
+  if (defaultCurrency !== undefined && (typeof defaultCurrency !== 'string' || defaultCurrency.trim() === '')) {
+    return res.status(400).json({ message: 'Valid currency code is required.' })
+  }
+  if (country !== undefined && (typeof country !== 'string' || country.trim() === '')) {
+    return res.status(400).json({ message: 'Valid country code is required.' })
+  }
+  next()
+}
 
-/**
- * Validation rules for store creation/update
- */
-const validateStore = [
-  body('name').trim().notEmpty().withMessage('Store name is required'),
-  body('dashboardName').trim().notEmpty().withMessage('Dashboard name is required'),
-  body('domain').trim().notEmpty().withMessage('Domain is required'),
-  body('category').trim().notEmpty().withMessage('Category is required'),
-  body('defaultCurrency').optional({ checkFalsy: true }).isString().withMessage('Currency must be a string'),
-  body('country').optional({ checkFalsy: true }).isString().withMessage('Country must be a string'),
-  body('logoUrl').optional({ checkFalsy: true }).isURL().withMessage('Logo URL must be a valid URL'),
-  body('brandColor').optional({ checkFalsy: true }).matches(/^#[0-9A-Fa-f]{6}$/).withMessage('Brand color must be a valid hex color'),
-  body('isDemo').optional().isBoolean().withMessage('isDemo must be a boolean'),
-  handleValidationErrors,
-]
-
-/**
- * Validation rules for store admin credentials
- */
-const validateStoreAdminCredentials = [
-  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  body('password')
-    .optional()
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .custom(validatePasswordComplexity)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
-  body('name').optional().trim().notEmpty().withMessage('Name is required if provided'),
-  handleValidationErrors,
-]
+const validateProduct = (req, res, next) => {
+  const { name, price, stockQuantity, reorderThreshold } = req.body
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ message: 'Product name is required.' })
+  }
+  if (price === undefined || isNaN(Number(price)) || Number(price) < 0) {
+    return res.status(400).json({ message: 'Valid price is required.' })
+  }
+  if (stockQuantity === undefined || isNaN(Number(stockQuantity)) || Number(stockQuantity) < 0) {
+    return res.status(400).json({ message: 'Valid stock quantity is required.' })
+  }
+  if (reorderThreshold !== undefined && (isNaN(Number(reorderThreshold)) || Number(reorderThreshold) < 0)) {
+    return res.status(400).json({ message: 'Reorder threshold must be a non-negative number.' })
+  }
+  next()
+}
 
 module.exports = {
-  validateLogin,
-  validateSignup,
-  validateOrder,
-  validateOrderUpdate,
-  validateCustomer,
-  validateReturn,
-  validateReturnUpdate,
-  validateProduct,
-  validateUser,
-  validateUserProfile,
-  validateBusinessSettings,
   validateStore,
   validateStoreAdminCredentials,
+  validateOrder,
+  validateOrderUpdate,
+  validateReturn,
+  validateReturnUpdate,
+  validateCustomer,
+  validateLogin,
+  validateSignup,
+  validateUserProfile,
+  validateUser,
+  validateBusinessSettings,
+  validateProduct,
 }
-

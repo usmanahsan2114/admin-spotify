@@ -127,7 +127,7 @@ const OrdersPage = () => {
   const { showNotification } = useNotification()
   const { formatCurrency } = useCurrency()
 
-  const { control, handleSubmit, formState: { isSubmitting }, reset, watch } = useForm<FormValues>({
+  const { control: orderControl, handleSubmit: handleOrderSubmit, formState: { isSubmitting, errors: orderErrors }, reset: resetOrderForm, watch } = useForm<FormValues>({
     resolver: yupResolver(orderSchema),
     defaultValues: {
       productId: '',
@@ -142,6 +142,7 @@ const OrdersPage = () => {
 
   const watchedProductId = watch('productId')
   const watchedCustomerId = watch('customerId')
+  const watchedCustomerName = watch('customerName')
 
   useEffect(() => {
     if (watchedProductId) {
@@ -154,7 +155,7 @@ const OrdersPage = () => {
     if (watchedCustomerId && watchedCustomerId !== 'new') {
       const customer = customers.find((c) => c.id === watchedCustomerId)
       if (customer) {
-        reset((prev) => ({
+        resetOrderForm((prev) => ({
           ...prev,
           customerName: customer.name,
           email: customer.email,
@@ -162,7 +163,7 @@ const OrdersPage = () => {
         }))
       }
     }
-  }, [watchedCustomerId, customers, reset])
+  }, [watchedCustomerId, customers, resetOrderForm])
 
   const handleApiError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
