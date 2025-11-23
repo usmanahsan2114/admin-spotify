@@ -11,7 +11,7 @@ router.use(authenticateToken)
 // Current user routes
 router.get('/me', userController.getCurrentUser)
 router.put('/me', validateRequest(userProfileSchema), userController.updateCurrentUser)
-router.post('/me/change-password', userController.changePassword) // Need schema for this? Yes, but maybe later.
+router.post('/me/change-password', userController.changePassword)
 
 // User management routes (Admin/Superadmin only)
 router.get('/', authorizeRole('admin', 'superadmin'), userController.getUsers)
