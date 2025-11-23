@@ -13,7 +13,8 @@ const {
     importProducts
 } = require('../controllers/productController')
 const { authenticateToken, authorizeRole } = require('../middleware/auth')
-const { validateProduct } = require('../middleware/validation')
+const validateRequest = require('../middleware/validateRequest')
+const { createProductSchema, updateProductSchema } = require('../middleware/validationSchemas')
 
 // Public routes
 router.get('/products/public', getProductsPublic)
@@ -22,8 +23,8 @@ router.get('/products/public', getProductsPublic)
 router.get('/products', authenticateToken, getProducts)
 router.get('/products/low-stock', authenticateToken, getLowStockProducts)
 router.get('/products/:id', authenticateToken, getProductById)
-router.post('/products', authenticateToken, authorizeRole('admin', 'superadmin'), validateProduct, createProduct)
-router.put('/products/:id', authenticateToken, authorizeRole('admin', 'superadmin'), validateProduct, updateProduct)
+router.post('/products', authenticateToken, authorizeRole('admin', 'superadmin'), validateRequest(createProductSchema), createProduct)
+router.put('/products/:id', authenticateToken, authorizeRole('admin', 'superadmin'), validateRequest(updateProductSchema), updateProduct)
 router.delete('/products/:id', authenticateToken, authorizeRole('admin', 'superadmin'), deleteProduct)
 router.post('/products/:id/reorder', authenticateToken, authorizeRole('admin', 'superadmin'), reorderProduct)
 

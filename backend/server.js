@@ -13,19 +13,6 @@ const winston = require('winston')
 const Sentry = require('@sentry/node')
 const { Op } = require('sequelize')
 const { generateMultiStoreData } = require('./generateMultiStoreData')
-const {
-  validateOrder,
-  validateOrderUpdate,
-  validateCustomer,
-  validateReturn,
-  validateReturnUpdate,
-  validateProduct,
-  validateUser,
-  validateUserProfile,
-  validateBusinessSettings,
-  validateStore,
-  validateStoreAdminCredentials,
-} = require('./middleware/validation')
 const { initializeDatabase, db } = require('./db/init')
 const { globalErrorHandler } = require('./middleware/errorHandler')
 const { requestIdMiddleware } = require('./middleware/requestId')

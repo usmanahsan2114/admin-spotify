@@ -39,7 +39,7 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **Security Headers**: Configure Helmet for security headers.
 - [x] **Account Lockout**: Prevent brute force attacks.
 - [x] **Token Refresh**: Implement refresh tokens / HttpOnly cookies.
-- [ ] **Input Validation**: Standardize using Zod/Joi for all inputs.
+- [x] **Input Validation**: Standardize using Zod/Joi for all inputs.
 - [ ] **File Upload Security**: Validate MIME types and file sizes (if applicable).
 
 ### Stability

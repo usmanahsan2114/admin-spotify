@@ -27,7 +27,8 @@
     "pg": "^8.16.3",
     "sequelize": "^6.37.7",
     "shopify-admin": "file:..",
-    "winston": "^3.18.3"
+    "winston": "^3.18.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "nodemon": "^3.1.11",
