@@ -1,0 +1,55 @@
+
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: ⚙️  override existing env vars with { override: true }
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    ✅ Environment variables validated successfully (DB_DIALECT: postgres)
+
+      at log (middleware/envValidation.js:85:11)
+
+[33mwarn[39m: [VALIDATION] Validation failed for /api/login: {"0":{"field":"body.password","message":"Invalid input: expected string, received undefined"},"service":"shopify-admin-api","timestamp":"2025-11-23T08:19:33.645Z"}
+[33mwarn[39m: [LOGIN] User not found: wrong@example.com (normalized: wrong@example.com) {"service":"shopify-admin-api","timestamp":"2025-11-23T08:19:33.660Z"}
+[33mwarn[39m: [LOGIN] Password mismatch for: test@example.com {"service":"shopify-admin-api","timestamp":"2025-11-23T08:19:33.667Z"}
+FAIL tests/storeController.test.js
+  ● Test suite failed to run
+
+    TypeError: argument handler must be a function
+
+    [0m [90m  8 |[39m
+     [90m  9 |[39m [90m// Public/Customer Portal[39m
+    [31m[1m>[22m[39m[90m 10 |[39m router[33m.[39m[36mget[39m([32m'/customers/me/orders'[39m[33m,[39m authenticateCustomer[33m,[39m customerController[33m.[39mgetCustomerOrders)
+     [90m    |[39m        [31m[1m^[22m[39m
+     [90m 11 |[39m
+     [90m 12 |[39m [90m// Protected Routes[39m
+     [90m 13 |[39m router[33m.[39m[36mget[39m([32m'/customers'[39m[33m,[39m authenticateToken[33m,[39m customerController[33m.[39mgetCustomers)[0m
+
+      at Route.<computed> [as get] (node_modules/router/lib/route.js:228:15)
+      at Function.Router.<computed> [as get] (node_modules/router/index.js:448:19)
+      at Object.get (routes/customerRoutes.js:10:8)
+      at Object.require (server.js:25:24)
+      at Object.require (tests/storeController.test.js:46:13)
+
+PASS tests/authController.test.js
+  Auth Controller
+    POST /api/login
+      √ should return 400 if email or password missing (59 ms)
+      √ should return 401 if user not found (6 ms)
+      √ should return 401 if password invalid (7 ms)
+      √ should return tokens on successful login (9 ms)
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       4 passed, 4 total
+Snapshots:   0 total
+Time:        1.686 s, estimated 2 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

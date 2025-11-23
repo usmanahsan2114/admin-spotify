@@ -1,4 +1,5 @@
-const { Customer, Order, Return, db } = require('../db/init')
+const { Customer, Order, Return } = require('../db/init').db
+const { db } = require('../db/init')
 const { Op } = require('sequelize')
 const logger = require('../utils/logger')
 const { normalizeEmail, normalizePhone, normalizeAddress } = require('../utils/helpers')

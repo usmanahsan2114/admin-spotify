@@ -1,0 +1,65 @@
+
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: 🔑 add access controls to secrets: https://dotenvx.com/ops
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    ✅ Environment variables validated successfully (DB_DIALECT: postgres)
+
+      at log (middleware/envValidation.js:85:11)
+
+[33mwarn[39m: [VALIDATION] Validation failed for /api/login: {"0":{"field":"body.password","message":"Invalid input: expected string, received undefined"},"service":"shopify-admin-api","timestamp":"2025-11-23T08:22:15.442Z"}
+[33mwarn[39m: [LOGIN] User not found: wrong@example.com (normalized: wrong@example.com) {"service":"shopify-admin-api","timestamp":"2025-11-23T08:22:15.474Z"}
+[33mwarn[39m: [LOGIN] Password mismatch for: test@example.com {"service":"shopify-admin-api","timestamp":"2025-11-23T08:22:15.492Z"}
+PASS tests/authController.test.js
+  Auth Controller
+    POST /api/login
+      √ should return 400 if email or password missing (127 ms)
+      √ should return 401 if user not found (21 ms)
+      √ should return 401 if password invalid (19 ms)
+      √ should return tokens on successful login (27 ms)
+
+  console.log
+    ✅ Environment variables validated successfully (DB_DIALECT: postgres)
+
+      at log (middleware/envValidation.js:85:11)
+
+FAIL tests/storeController.test.js
+  Store Controller
+    GET /api/stores
+      √ should return all stores (56 ms)
+    POST /api/stores
+      × should create a new store (30 ms)
+
+  ● Store Controller › POST /api/stores › should create a new store
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: {"domain": "newstore.com", "id": "new-id", "name": "New Store"}
+    Received: undefined
+
+    [0m [90m 83 |[39m
+     [90m 84 |[39m             expect(res[33m.[39mstatusCode)[33m.[39mtoBe([35m201[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 85 |[39m             expect(res[33m.[39mbody[33m.[39mstore)[33m.[39mtoEqual(createdStore)[33m;[39m
+     [90m    |[39m                                    [31m[1m^[22m[39m
+     [90m 86 |[39m             expect(res[33m.[39mbody[33m.[39madminCredentials)[33m.[39mtoBeDefined()[33m;[39m
+     [90m 87 |[39m         })[33m;[39m
+     [90m 88 |[39m     })[33m;[39m[0m
+
+      at Object.toEqual (tests/storeController.test.js:85:36)
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       1 failed, 5 passed, 6 total
+Snapshots:   0 total
+Time:        4.235 s
+Ran all test suites.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

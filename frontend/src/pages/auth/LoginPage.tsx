@@ -180,22 +180,7 @@ const LoginPage = () => {
                 Try Demo Account
               </Button>
 
-              {import.meta.env.DEV && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2" fontWeight={600} gutterBottom>
-                    Development Mode - Quick Login
-                  </Typography>
-                  <Typography variant="caption" component="div">
-                    <strong>Superadmin:</strong> superadmin@shopifyadmin.pk / superadmin123
-                    <br />
-                    <strong>Store Admins:</strong> admin@[store-domain].pk / admin123
-                    <br />
-                    <strong>Staff:</strong> staff1@[store-domain].pk / staff123
-                    <br />
-                    <strong>Demo:</strong> Click "Try Demo Account" button above
-                  </Typography>
-                </Alert>
-              )}
+
 
             </Stack>
           </CardContent>

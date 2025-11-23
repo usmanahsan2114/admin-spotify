@@ -318,6 +318,7 @@ app.get('/api/health', async (_req, res) => {
 // Auth routes
 app.use('/api', authRoutes)
 app.use('/api', storeRoutes)
+app.use('/api', orderRoutes)
 app.use('/api', returnRoutes)
 app.use('/api', customerRoutes)
 
@@ -716,5 +717,9 @@ async function startServer() {
   }
 }
 
-// Start the server
-startServer()
+// Start the server only if run directly
+if (require.main === module) {
+  startServer()
+}
+
+module.exports = app

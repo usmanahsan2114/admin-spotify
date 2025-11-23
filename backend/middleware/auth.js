@@ -29,6 +29,7 @@ const authenticateToken = async (req, res, next) => {
         req.user = user.toJSON ? user.toJSON() : user
         req.storeId = user.storeId
         req.isSuperAdmin = user.role === 'superadmin'
+
         return next()
     } catch (error) {
         logger.warn('[AUTH] Token verification failed:', error.message)

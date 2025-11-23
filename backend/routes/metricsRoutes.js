@@ -8,6 +8,9 @@ router.use(authenticateToken)
 
 // Metrics Overview
 router.get('/metrics/overview', metricsController.getMetricsOverview)
+router.get('/metrics/low-stock-trend', metricsController.getLowStockTrend)
+router.get('/metrics/sales-over-time', metricsController.getSalesOverTime)
+router.get('/metrics/growth-comparison', metricsController.getGrowthComparison)
 
 // Reports
 router.get('/reports/growth', metricsController.getGrowthReport)

@@ -10,7 +10,7 @@ This document outlines the roadmap for bringing the application to a production-
 | Tier | Focus Area | Status | Completion |
 |------|------------|--------|------------|
 | **1** | **Backend Refactoring** | ✅ **Completed** | **100%** |
-| **2** | **Security & Stability** | 🚧 **In Progress** | **60%** |
+| **2** | **Security & Stability** | 🚧 **In Progress** | **80%** |
 | **3** | **Performance & Scalability** | 📅 **Planned** | **30%** |
 | **4** | **Production Readiness** | 📅 **Planned** | **20%** |
 
@@ -46,7 +46,7 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **Global Error Handler**: Centralized error handling with logging.
 - [x] **Graceful Shutdown**: Handle SIGTERM/SIGINT.
 - [x] **Request ID**: Correlate logs with unique request IDs.
-- [ ] **Unit Tests**: Add unit tests for Controllers.
+- [ ] **Unit Tests**: Add unit tests for remaining Controllers (Order, Product, Customer, etc.).
 - [ ] **Integration Tests**: Test critical API flows.
 
 ---
