@@ -1,0 +1,26 @@
+[
+  {
+    "id": "92118051-5196-400a-a185-c15dff863121",
+    "storeId": "19b56a25-0ce5-46f6-ac14-c2f70bef3408",
+    "logoUrl": null,
+    "brandColor": "#d32f2f",
+    "defaultCurrency": "PKR",
+    "country": "PK",
+    "dashboardName": "Demo Dashboard",
+    "defaultOrderStatuses": "[\"Pending\",\"Paid\",\"Accepted\",\"Shipped\",\"Completed\"]",
+    "createdAt": "2025-11-21T16:48:04.000Z",
+    "updatedAt": "2025-11-21T16:48:04.000Z"
+  },
+  {
+    "id": "d348c7d3-3f41-44d8-9e21-2b5b65f2f22c",
+    "storeId": "f9840161-1aeb-4b24-b943-6c23a6b0cb3d",
+    "logoUrl": null,
+    "brandColor": "#1976d2",
+    "defaultCurrency": "PKR",
+    "country": "PK",
+    "dashboardName": "TechHub Dashboard",
+    "defaultOrderStatuses": "[\"Pending\",\"Paid\",\"Accepted\",\"Shipped\",\"Completed\"]",
+    "createdAt": "2025-11-21T16:48:04.000Z",
+    "updatedAt": "2025-11-21T16:48:04.000Z"
+  }
+]

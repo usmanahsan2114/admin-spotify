@@ -1,0 +1,16 @@
+[
+  {
+    "id": "00f5d2b9-d20b-49c6-b824-0db4324a1c2d",
+    "name": "TechHub Electronics Org",
+    "status": "active",
+    "createdAt": "2025-11-21T09:07:15.471Z",
+    "updatedAt": "2025-11-21T09:07:18.722Z"
+  },
+  {
+    "id": "24a2e2db-f76e-46b7-a026-0aea5b29e4d5",
+    "name": "Demo Store Org",
+    "status": "active",
+    "createdAt": "2025-11-21T09:07:15.789Z",
+    "updatedAt": "2025-11-21T09:07:18.911Z"
+  }
+]

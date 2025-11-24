@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test jest",
+    "migrate": "sequelize-cli db:migrate"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "keywords": [],
   "author": "",

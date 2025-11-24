@@ -1,0 +1,47 @@
+[
+  {
+    "id": "19b56a25-0ce5-46f6-ac14-c2f70bef3408",
+    "organizationId": null,
+    "name": "Demo Store",
+    "dashboardName": "Demo Dashboard",
+    "domain": "demo.shopifyadmin.pk",
+    "category": "General",
+    "defaultCurrency": "PKR",
+    "country": "PK",
+    "logoUrl": null,
+    "brandColor": "#d32f2f",
+    "isDemo": true,
+    "createdAt": "2025-11-21T16:48:03.000Z",
+    "updatedAt": "2025-11-21T16:48:03.000Z"
+  },
+  {
+    "id": "cb04a84f-4495-49ad-afe4-694c80f22b9d",
+    "organizationId": null,
+    "name": "Pak Gusu Store",
+    "dashboardName": "Pak Gusu",
+    "domain": "pakgusu.pk",
+    "category": "General",
+    "defaultCurrency": "PKR",
+    "country": "PK",
+    "logoUrl": null,
+    "brandColor": "#1db954",
+    "isDemo": false,
+    "createdAt": "2025-11-22T16:20:11.000Z",
+    "updatedAt": "2025-11-22T16:20:11.000Z"
+  },
+  {
+    "id": "f9840161-1aeb-4b24-b943-6c23a6b0cb3d",
+    "organizationId": null,
+    "name": "TechHub Electronics",
+    "dashboardName": "TechHub Dashboard",
+    "domain": "techhub.pk",
+    "category": "Electronics",
+    "defaultCurrency": "PKR",
+    "country": "PK",
+    "logoUrl": null,
+    "brandColor": "#1976d2",
+    "isDemo": false,
+    "createdAt": "2025-11-21T16:48:03.000Z",
+    "updatedAt": "2025-11-21T16:48:03.000Z"
+  }
+]

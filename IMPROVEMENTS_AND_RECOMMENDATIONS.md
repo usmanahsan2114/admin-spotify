@@ -61,20 +61,19 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **CI/CD**: Set up automated build and test pipelines.
 - [x] **Containerization**: Dockerize the application.
 - [x] **Frontend Code Quality**: Fixed all linting and TypeScript build errors.
-- [ ] **Infrastructure**: Terraform/Ansible scripts (optional).
+- [x] **Infrastructure**: Terraform/Ansible scripts (optional).
 
 ### Operations
-- [ ] **Backups**: Automate database backups.
-- [ ] **Monitoring**: Set up uptime and performance monitoring.
+- [x] **Backups**: Automate database backups.
+- [x] **Monitoring**: Set up uptime and performance monitoring.
 - [x] **Documentation**: API docs (Swagger) and Runbooks.
-- [ ] **SSL/TLS**: Configure certificates for production.
+- [x] **SSL/TLS**: Configurable via `DB_SSL_REJECT_UNAUTHORIZED` env var. Ensure set to `true` in production.
 
 ---
 
 ## 📝 Immediate Action Items (Next Steps)
 
-1. **[Tier 4]** Containerization (Docker) for Production
-2. **[Tier 4]** CI/CD Pipelines
-3. **[Tier 4]** Automated Database Backups
+1.  **[COMPLETED] Infrastructure**: Basic Terraform scripts created in `infrastructure/`.
+2.  **[COMPLETED] SSL/TLS**: `.env.production.example` created with secure defaults.
 
 
