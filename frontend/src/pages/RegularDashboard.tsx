@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import {
   Alert,
   Box,
@@ -780,7 +780,7 @@ const RegularDashboard = () => {
                         dataKey="value"
                         paddingAngle={2}
                       >
-                        {statusDistribution.map((entry, index) => (
+                        {statusDistribution.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                         ))}
                       </Pie>
@@ -837,7 +837,7 @@ const RegularDashboard = () => {
                         dataKey="value"
                         paddingAngle={2}
                       >
-                        {categoryDistribution.map((entry, index) => (
+                        {categoryDistribution.map((_, index) => (
                           <Cell key={`cat-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                         ))}
                       </Pie>

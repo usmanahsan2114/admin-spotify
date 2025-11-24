@@ -34,7 +34,7 @@ import {
   type GridColDef,
   type GridRenderCellParams,
 } from '@mui/x-data-grid'
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, useCallback, type ChangeEvent } from 'react'
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
@@ -171,13 +171,13 @@ const ProductsPage = () => {
     },
   })
 
-  const resolveError = (err: unknown, fallback: string) => {
+  const resolveError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
   const loadProducts = useCallback(async () => {
     try {
@@ -192,7 +192,7 @@ const ProductsPage = () => {
     } finally {
       setLoading(false)
     }
-  }, [dateRange.startDate, dateRange.endDate, showNotification])
+  }, [dateRange.startDate, dateRange.endDate, showNotification, resolveError])
 
   useEffect(() => {
     loadProducts()
@@ -303,7 +303,7 @@ const ProductsPage = () => {
     setFilteredProducts(result)
   }, [searchQuery, showLowStockOnly, products])
 
-  const handleOpenDialog = (product?: Product) => {
+  const handleOpenDialog = useCallback((product?: Product) => {
     if (product) {
       setSelectedProduct(product)
       reset({
@@ -330,7 +330,7 @@ const ProductsPage = () => {
       })
     }
     setIsDialogOpen(true)
-  }
+  }, [reset])
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false)
@@ -525,7 +525,7 @@ const ProductsPage = () => {
         </Stack>
       ),
     },
-  ], [canEdit, canDelete, formatCurrency, statusChips])
+  ], [canEdit, canDelete, formatCurrency, handleOpenDialog])
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>

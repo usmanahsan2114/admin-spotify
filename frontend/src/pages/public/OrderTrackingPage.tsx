@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useCallback } from 'react'
 import {
   Box,
   Button,
@@ -30,11 +30,11 @@ import {
 import { useSearchParams, useParams } from 'react-router-dom'
 import { apiFetch } from '../../services/apiClient'
 import type { Order } from '../../types/order'
-import type { ReturnRequest } from '../../types/return'
+
 import { useCurrency } from '../../hooks/useCurrency'
 import CustomerPortalHeader from '../../components/customer/CustomerPortalHeader'
 import SiteAttribution from '../../components/common/SiteAttribution'
-import { ThemeModeContext } from '../../providers/ThemeModeProvider'
+import { ThemeModeContext } from '../../providers/ThemeModeContext'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import SearchIcon from '@mui/icons-material/Search'
@@ -42,19 +42,22 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import LocalShippingIcon from '@mui/icons-material/LocalShipping'
-import PaymentIcon from '@mui/icons-material/Payment'
+
 import PendingIcon from '@mui/icons-material/Pending'
 import InventoryIcon from '@mui/icons-material/Inventory'
 import RemoveShoppingCartIcon from '@mui/icons-material/RemoveShoppingCart'
 
-const statusSteps = ['Pending', 'Accepted', 'Shipped', 'Completed']
+
 
 type SearchType = 'orderId' | 'email' | 'phone'
+
+import { useNotification } from '../../context/NotificationContext'
 
 const OrderTrackingPage = () => {
   const { storeId } = useParams<{ storeId: string }>()
   const { formatCurrency } = useCurrency()
   const { mode, toggleMode } = useContext(ThemeModeContext)
+  const { showNotification } = useNotification()
   const [searchParams, setSearchParams] = useSearchParams()
   const orderId = searchParams.get('orderId') || ''
   const email = searchParams.get('email') || ''
@@ -73,14 +76,9 @@ const OrderTrackingPage = () => {
   const [returnQuantity, setReturnQuantity] = useState(1)
   const [submittingReturn, setSubmittingReturn] = useState(false)
 
-  useEffect(() => {
-    // Auto-load order if orderId and email are in URL
-    if (orderId && email) {
-      handleTrackOrder(orderId, email)
-    }
-  }, [])
 
-  const handleTrackOrder = async (id: string, emailToVerify?: string) => {
+
+  const handleTrackOrder = useCallback(async (id: string, emailToVerify?: string) => {
     setLoading(true)
     setError(null)
     setOrder(null)
@@ -105,7 +103,14 @@ const OrderTrackingPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [storeId, setSearchParams])
+
+  useEffect(() => {
+    // Auto-load order if orderId and email are in URL
+    if (orderId && email) {
+      handleTrackOrder(orderId, email)
+    }
+  }, [orderId, email, handleTrackOrder])
 
   const handleSearchByContact = async () => {
     if (searchType === 'email' && !emailInput.trim()) {
@@ -820,7 +825,7 @@ const OrderTrackingPage = () => {
                                   }),
                                   skipAuth: true,
                                 })
-                                setSuccessMessage('Return requested successfully.') // Assuming setSuccessMessage exists or use alert
+                                showNotification('Return requested successfully.', 'success')
                                 // Reload order
                                 handleTrackOrder(order.id, order.email)
                                 setIsReturnDialogOpen(false)

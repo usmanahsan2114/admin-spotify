@@ -112,10 +112,10 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 - `DB_PASSWORD=` - Empty (XAMPP default), or your MySQL root password if you set one
 
 **Database Dialect Support:**
-- **Local Development**: Uses MySQL via XAMPP (`DB_DIALECT=mysql`)
-- **Production**: Can use Supabase Postgres (`DB_DIALECT=postgres`) by setting Supabase credentials
-- The backend automatically supports both MySQL and Postgres without code changes
-- Migrations and models are dialect-agnostic and work with both databases
+- **Local Development**: Uses Supabase Postgres (configured in `backend/.env`)
+- **Production**: Uses Supabase Postgres (configured in production environment variables)
+- The backend is configured to use Supabase for both environments to ensure consistency.
+- Migrations and models are managed via Sequelize.
 
 **Frontend (`frontend/.env`):**
 

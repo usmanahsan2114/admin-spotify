@@ -221,11 +221,7 @@ const SuperAdminDashboard = () => {
       >
         {statCards.map((stat, index) => (
           <Grid
-            item
-            xs={12}
-            sm={6}
-            md={4}
-            lg={3}
+            size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
             key={index}
             sx={{
               flexBasis: {
@@ -348,7 +344,7 @@ const SuperAdminDashboard = () => {
           </Box>
           <Grid container spacing={{ xs: 1.5, sm: 2 }}>
             {stores.slice(0, 6).map((store) => (
-              <Grid item xs={12} sm={6} md={4} key={store.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={store.id}>
                 <Card
                   variant="outlined"
                   sx={{
@@ -400,7 +396,7 @@ const SuperAdminDashboard = () => {
                         {store.category} • {store.domain}
                       </Typography>
                       <Grid container spacing={1}>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Typography variant="caption" color="text.secondary">
                             Orders
                           </Typography>
@@ -408,7 +404,7 @@ const SuperAdminDashboard = () => {
                             {store.orderCount.toLocaleString()}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Typography variant="caption" color="text.secondary">
                             Revenue
                           </Typography>
@@ -416,7 +412,7 @@ const SuperAdminDashboard = () => {
                             {formatCurrency(store.totalRevenue)}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Typography variant="caption" color="text.secondary">
                             Products
                           </Typography>
@@ -424,7 +420,7 @@ const SuperAdminDashboard = () => {
                             {store.productCount.toLocaleString()}
                           </Typography>
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={{ xs: 6 }}>
                           <Typography variant="caption" color="text.secondary">
                             Customers
                           </Typography>

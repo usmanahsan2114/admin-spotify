@@ -1,23 +1,8 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
-
-type ThemeMode = 'light' | 'dark'
-type ThemeColor = 'blue' | 'green' | 'purple'
-
-type ThemeModeContextValue = {
-  mode: ThemeMode
-  color: ThemeColor
-  toggleMode: () => void
-  setColor: (color: ThemeColor) => void
-}
-
-export const ThemeModeContext = createContext<ThemeModeContextValue>({
-  mode: 'light',
-  color: 'blue',
-  toggleMode: () => { },
-  setColor: () => { },
-})
+import { ThemeModeContext } from './ThemeModeContext'
+import type { ThemeMode, ThemeColor } from './ThemeModeContext'
 
 const STORAGE_KEY = 'dashboard.theme'
 const COLOR_KEY = 'dashboard.theme.color'

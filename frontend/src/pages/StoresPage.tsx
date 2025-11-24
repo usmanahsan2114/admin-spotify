@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Alert,
   Box,
@@ -138,7 +138,7 @@ const StoresPage = () => {
     handleSubmit: handleUserCredentialsSubmit,
     reset: resetUserCredentialsForm,
     formState: { errors: userCredentialsErrors },
-  } = useForm<StoreAdminCredentialsPayload & { role?: string }>({
+  } = useForm<StoreAdminCredentialsPayload & { role?: string; storeId?: string }>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: yupResolver(credentialsSchema) as any,
     defaultValues: {

@@ -269,6 +269,7 @@ const ReturnsPage = () => {
       },
     },
     {
+      field: 'status',
       minWidth: 130,
       flex: 0.8,
       renderCell: (params: GridRenderCellParams) => {

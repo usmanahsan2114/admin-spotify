@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import {
   Alert,
   Box,
@@ -236,6 +236,7 @@ const UsersPage = () => {
     reset,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: yupResolver(userSchema) as unknown as Resolver<FormValues>,
@@ -251,13 +252,13 @@ const UsersPage = () => {
     },
   })
 
-  const resolveError = (err: unknown, fallback: string) => {
+  const resolveError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -276,7 +277,7 @@ const UsersPage = () => {
     return result
   }, [users, searchQuery])
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true)
       const startDate = dateRange.startDate || undefined
@@ -288,13 +289,13 @@ const UsersPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange.startDate, dateRange.endDate, showNotification, resolveError])
 
   useEffect(() => {
     if (isAdmin) {
       loadUsers()
     }
-  }, [isAdmin, dateRange.startDate, dateRange.endDate])
+  }, [isAdmin, loadUsers])
 
   useEffect(() => {
     const loadStores = async () => {
@@ -302,7 +303,7 @@ const UsersPage = () => {
         try {
           const storesList = await apiFetch<Array<{ id: string; name: string }>>('/api/stores/admin')
           setStores(storesList)
-        } catch (err) {
+        } catch {
           // Silently fail, stores are optional
         }
       }
@@ -310,7 +311,7 @@ const UsersPage = () => {
     loadStores()
   }, [isSuperAdmin])
 
-  const openDialog = (user?: User) => {
+  const openDialog = useCallback((user?: User) => {
     if (user) {
       setSelectedUser(user)
       reset({
@@ -337,7 +338,7 @@ const UsersPage = () => {
       })
     }
     setIsDialogOpen(true)
-  }
+  }, [reset])
 
   const closeDialog = () => {
     setIsDialogOpen(false)
@@ -345,7 +346,7 @@ const UsersPage = () => {
   }
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    const { requirePassword, permissions, ...data } = values
+    const { permissions, ...data } = values
     try {
       if (selectedUser) {
         const payload: Record<string, unknown> = {}
@@ -504,7 +505,7 @@ const UsersPage = () => {
         },
       },
     ],
-    [],
+    [isSuperAdmin, stores, openDialog],
   )
 
   const requirePassword = watch('requirePassword')
@@ -804,14 +805,7 @@ const UsersPage = () => {
                               const currentPermissions = watch('permissions') || {}
                               // Merge with existing to ensure no keys are lost, but overwrite with preset
                               const newPermissions = { ...currentPermissions, ...preset.permissions }
-                              // We need to use setValue from useForm, but it's not in scope here easily without passing it down or lifting this up.
-                              // Actually we can access it via the form context or just pass it.
-                              // For now, let's just rely on manual toggles or assume the user knows what they are doing.
-                              // Wait, I can't easily set values here without `setValue`.
-                              // I'll skip the preset chips functionality for now or just leave them as visual indicators if they don't work.
-                              // Actually, I should probably remove them if I can't make them work, or fix it.
-                              // The original code probably had `setValue` available.
-                              // Let's check if `setValue` was destructured from `useForm`.
+                              setValue('permissions', newPermissions, { shouldDirty: true })
                             }}
                             variant="outlined"
                             clickable

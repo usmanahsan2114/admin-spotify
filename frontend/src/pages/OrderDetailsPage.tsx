@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom'
 import { useApiErrorHandler } from '../hooks/useApiErrorHandler'
 import { formatDate, formatRelativeTime } from '../utils/dateUtils'

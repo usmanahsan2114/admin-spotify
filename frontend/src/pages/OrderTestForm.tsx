@@ -27,7 +27,7 @@ import type { Product } from '../types/product'
 import type { Customer } from '../types/customer'
 import CustomerPortalHeader from '../components/customer/CustomerPortalHeader'
 import SiteAttribution from '../components/common/SiteAttribution'
-import { ThemeModeContext } from '../providers/ThemeModeProvider'
+import { ThemeModeContext } from '../providers/ThemeModeContext'
 import { useNotification } from '../context/NotificationContext'
 
 type OrderFormData = {

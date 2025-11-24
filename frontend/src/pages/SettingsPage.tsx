@@ -33,7 +33,7 @@ import SettingsIcon from '@mui/icons-material/Settings'
 import BusinessIcon from '@mui/icons-material/Business'
 import { useAuth } from '../context/AuthContext'
 import { useBusinessSettings } from '../context/BusinessSettingsContext'
-import { ThemeModeContext } from '../providers/ThemeModeProvider'
+import { ThemeModeContext } from '../providers/ThemeModeContext'
 import {
   fetchCurrentUser,
   updateCurrentUser,
