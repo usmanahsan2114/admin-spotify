@@ -1,0 +1,140 @@
+﻿
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest tests/orderController.test.js
+
+node.exe : FAIL 
+tests/orderController.test.js
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (FAIL te  
+  sts/orderController.test   
+ .js:String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  Order Controller
+    GET /api/orders
+      ΓêÜ should return a 
+list of orders (68 ms)
+    GET /api/orders/:id
+      ΓêÜ should return 
+order details if found (17 
+ms)
+      ΓêÜ should return 404 
+if order not found (13 ms)
+    POST /api/orders
+      ├ù should create a new 
+order (93 ms)
+      ├ù should return 400 
+if product not found (17 ms)
+    PUT /api/orders/:id
+      ΓêÜ should update an 
+order (17 ms)
+
+  ΓùÅ Order Controller ΓÇ║ 
+POST /api/orders ΓÇ║ should 
+create a new order
+
+    expect(received).toBe(exp
+ected) // Object.is equality
+
+    Expected: 201
+    Received: 500
+
+    [0m [90m 231 |[39m    
+             [33m.[39msend(
+newOrderData)[33m;[39m
+     [90m 232 |[39m
+    
+[31m[1m>[22m[39m[90m 
+233 |[39m             expect
+(res[33m.[39mstatusCode)[3
+3m.[39mtoBe([35m201[39m)[
+33m;[39m
+     [90m     |[39m        
+                            
+[31m[1m^[22m[39m
+     [90m 234 |[39m        
+     expect(res[33m.[39mbod
+y[33m.[39mid)[33m.[39mtoB
+e([32m'new-order-id'[39m)[
+33m;[39m
+     [90m 235 |[39m        
+     expect(db[33m.[39m[33
+mOrder[39m[33m.[39mcreate)
+[33m.[39mtoHaveBeenCalled()
+[33m;[39m
+     [90m 236 |[39m        
+ })[33m;[39m[0m
+
+      at Object.toBe (tests/o
+rderController.test.js:233:36
+)
+
+  ΓùÅ Order Controller ΓÇ║ 
+POST /api/orders ΓÇ║ should 
+return 400 if product not 
+found
+
+    expect(received).toBe(exp
+ected) // Object.is equality
+
+    Expected: 400
+    Received: 500
+
+    [0m [90m 243 |[39m    
+             
+[33m.[39msend({ 
+productName[33m:[39m [32m'
+Unknown'[39m[33m,[39m 
+email[33m:[39m 
+[32m'test@test.com'[39m 
+})[33m;[39m
+     [90m 244 |[39m
+    
+[31m[1m>[22m[39m[90m 
+245 |[39m             expect
+(res[33m.[39mstatusCode)[3
+3m.[39mtoBe([35m400[39m)[
+33m;[39m
+     [90m     |[39m        
+                            
+[31m[1m^[22m[39m
+     [90m 246 |[39m        
+     expect(res[33m.[39mbod
+y[33m.[39mmessage)[33m.[3
+9mtoContain([32m'Product 
+"Unknown" not 
+found'[39m)[33m;[39m
+     [90m 247 |[39m        
+ })[33m;[39m
+     [90m 248 |[39m     
+})[33m;[39m[0m
+
+      at Object.toBe (tests/o
+rderController.test.js:245:36
+)
+
+Test Suites: 1 failed, 1 
+total
+Tests:       2 failed, 4 
+passed, 6 total
+Snapshots:   0 total
+Time:        1.855 s, 
+estimated 2 s
+Ran all test suites matching 
+tests/orderController.test.js
+.
+Force exiting Jest: Have you 
+considered using 
+`--detectOpenHandles` to 
+detect async operations that 
+kept running after all tests 
+finished?

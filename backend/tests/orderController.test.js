@@ -37,6 +37,8 @@ jest.mock('../db/init', () => {
     };
     const mockProduct = {
         findOne: jest.fn(),
+        findByPk: jest.fn(),
+        update: jest.fn().mockResolvedValue([1]),
     };
     const mockCustomer = {
         findOne: jest.fn(),
@@ -57,6 +59,13 @@ jest.mock('../db/init', () => {
             Order: mockOrder,
             Return: mockReturn,
             Setting: mockSetting,
+            sequelize: {
+                transaction: jest.fn().mockResolvedValue({
+                    commit: jest.fn(),
+                    rollback: jest.fn(),
+                }),
+                literal: jest.fn(val => val),
+            },
         },
         initializeDatabase: jest.fn(),
     };
@@ -108,7 +117,7 @@ jest.mock('winston', () => ({
 
 jest.mock('../utils/logger', () => ({
     info: jest.fn(),
-    error: jest.fn(),
+    error: jest.fn((msg, err) => console.log('LOGGER ERROR:', msg, err)),
     warn: jest.fn(),
 }));
 
@@ -186,8 +195,8 @@ describe('Order Controller', () => {
         it('should create a new order', async () => {
             const newOrderData = {
                 productName: 'Test Product',
-                customerName: 'John Doe',
-                email: 'john@example.com',
+                customerName: 'Test Customer',
+                email: 'test@example.com',
                 quantity: 1,
                 storeId: 'store-id'
             };
@@ -200,26 +209,27 @@ describe('Order Controller', () => {
                 storeId: 'store-id'
             };
 
-            const mockCustomer = {
-                id: 'cust-1',
-                toJSON: () => ({ id: 'cust-1' })
-            };
-
-            const createdOrder = {
+            db.Product.findOne.mockResolvedValue(mockProduct);
+            db.Product.update.mockResolvedValue([1]);
+            db.sequelize.transaction.mockResolvedValue({
+                commit: jest.fn(),
+                rollback: jest.fn(),
+            });
+            db.Customer.findOne.mockResolvedValue(null);
+            db.Customer.create.mockResolvedValue({ id: 'cust-1', ...newOrderData });
+            db.Order.create.mockResolvedValue({
                 id: 'new-order-id',
                 ...newOrderData,
-                total: 50,
-                toJSON: () => ({ id: 'new-order-id', ...newOrderData, total: 50 })
-            };
-
-            db.Product.findOne.mockResolvedValue(mockProduct);
-            db.Customer.findOne.mockResolvedValue(null); // Simulate new customer
-            db.Customer.create.mockResolvedValue(mockCustomer);
-            db.Order.create.mockResolvedValue(createdOrder);
+                toJSON: function () { return this; }
+            });
 
             const res = await request(app)
                 .post('/api/orders')
                 .send(newOrderData);
+
+            if (res.statusCode === 500) {
+                console.log('DEBUG ERROR BODY (Create):', res.body);
+            }
 
             expect(res.statusCode).toBe(201);
             expect(res.body.id).toBe('new-order-id');
@@ -227,11 +237,26 @@ describe('Order Controller', () => {
         });
 
         it('should return 400 if product not found', async () => {
+            const newOrderData = {
+                productName: 'Unknown',
+                customerName: 'Test Customer',
+                email: 'test@example.com',
+                quantity: 1
+            };
+
             db.Product.findOne.mockResolvedValue(null);
+            db.sequelize.transaction.mockResolvedValue({
+                commit: jest.fn(),
+                rollback: jest.fn(),
+            });
 
             const res = await request(app)
                 .post('/api/orders')
-                .send({ productName: 'Unknown', email: 'test@test.com' });
+                .send(newOrderData);
+
+            if (res.statusCode === 500) {
+                console.log('DEBUG ERROR BODY (Product Not Found):', res.body);
+            }
 
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toContain('Product "Unknown" not found');
@@ -260,5 +285,3 @@ describe('Order Controller', () => {
         });
     });
 });
-
-

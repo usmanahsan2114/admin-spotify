@@ -1,0 +1,19 @@
+﻿
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest tests/storeController.test.js
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: ΓÜÖ∩╕Å  enable debug logging with { debug: true }
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    Γ£à Environment variables validated successfully (DB_DIALECT: postgres)
+
+      at log (middleware/envValidation.js:85:11)
+
+  console.log
+    DEBUG: Mock transaction executing callback
+
+      at Object.log (tests/storeController.test.js:149:25)
+

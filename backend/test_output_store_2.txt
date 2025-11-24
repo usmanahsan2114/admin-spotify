@@ -1,0 +1,122 @@
+﻿
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest tests/storeController.test.js
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: ≡ƒùé∩╕Å backup and recover secrets: https://dotenvx.com/ops
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    Γ£à Environment variables validated successfully (DB_DIALECT: postgres)
+
+      at log (middleware/envValidation.js:85:11)
+
+node.exe : FAIL 
+tests/storeController.test.js
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (FAIL te  
+  sts/storeController.test   
+ .js:String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  Store Controller
+    GET /api/stores
+      ΓêÜ should return all 
+stores (45 ms)
+    POST /api/stores
+      ΓêÜ should create a 
+new store (17 ms)
+    PUT /api/stores/:id
+      ΓêÜ should update a 
+store (6 ms)
+      ΓêÜ should return 404 
+if store not found (5 ms)
+    DELETE /api/stores/:id
+      ΓêÜ should delete a 
+store (6 ms)
+      ΓêÜ should return 400 
+if trying to delete demo 
+store (5 ms)
+    POST /api/stores/:id/admi
+n-credentials
+      ├ù should generate 
+admin credentials for a 
+store (1 ms)
+      ΓêÜ should return 404 
+if store not found (5 ms)
+
+  ΓùÅ Store Controller ΓÇ║ 
+POST /api/stores/:id/admin-cr
+edentials ΓÇ║ should 
+generate admin credentials 
+for a store
+
+    TypeError: Cannot read 
+properties of undefined 
+(reading 'mockResolvedValue')
+
+    [0m [90m 175 |[39m    
+         [36mconst[39m 
+store [33m=[39m { 
+id[33m:[39m 
+storeId[33m,[39m 
+name[33m:[39m [32m'Test 
+Store'[39m }[33m;[39m
+     [90m 176 |[39m        
+     db[33m.[39m[33mStore
+[39m[33m.[39mfindByPk[33m.
+[39mmockResolvedValue(store)
+[33m;[39m
+    
+[31m[1m>[22m[39m[90m 
+177 |[39m             db[33
+m.[39m[33mUser[39m[33m.[
+39mfindOne[33m.[39mmockReso
+lvedValue([36mnull[39m)[33
+m;[39m
+     [90m     |[39m        
+                     
+[31m[1m^[22m[39m
+     [90m 178 |[39m        
+     db[33m.[39m[33mUser[
+39m[33m.[39mcreate[33m.[3
+9mmockResolvedValue({
+     [90m 179 |[39m        
+         id[33m:[39m [32m'
+admin-id'[39m[33m,[39m
+     [90m 180 |[39m        
+         email[33m:[39m [3
+2m'test@store.com'[39m[33m,
+[39m[0m
+
+      at 
+Object.mockResolvedValue (tes
+ts/storeController.test.js:17
+7:29)
+
+Test Suites: 1 failed, 1 
+total
+Tests:       1 failed, 7 
+passed, 8 total
+Snapshots:   0 total
+Time:        2.025 s, 
+estimated 3 s
+Ran all test suites matching 
+tests/storeController.test.js
+.
+Force exiting Jest: Have you 
+considered using 
+`--detectOpenHandles` to 
+detect async operations that 
+kept running after all tests 
+finished?

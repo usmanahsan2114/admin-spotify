@@ -1,0 +1,72 @@
+﻿
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest tests/storeController.test.js
+
+  console.log
+    [dotenv@17.2.3] injecting env (11) from .env -- tip: ≡ƒöÉ prevent committing .env to code: https://dotenvx.com/precommit
+
+      at _log (node_modules/dotenv/lib/main.js:142:11)
+
+  console.log
+    Γ£à Environment variables validated successfully (DB_DIALECT: postgres)
+
+      at log (middleware/envValidation.js:85:11)
+
+node.exe : PASS 
+tests/storeController.test.js
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (PASS te  
+  sts/storeController.test   
+ .js:String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  Store Controller
+    GET /api/stores
+      ΓêÜ should return all 
+stores (45 ms)
+    POST /api/stores
+      ΓêÜ should create a 
+new store (18 ms)
+    PUT /api/stores/:id
+      ΓêÜ should update a 
+store (7 ms)
+      ΓêÜ should return 404 
+if store not found (6 ms)
+    DELETE /api/stores/:id
+      ΓêÜ should delete a 
+store (6 ms)
+      ΓêÜ should return 400 
+if trying to delete demo 
+store (5 ms)
+    POST /api/stores/:id/admi
+n-credentials
+      ΓêÜ should generate 
+admin credentials for a 
+store (103 ms)
+      ΓêÜ should return 404 
+if store not found (5 ms)
+
+Test Suites: 1 passed, 1 
+total
+Tests:       8 passed, 8 
+total
+Snapshots:   0 total
+Time:        2.222 s
+Ran all test suites matching 
+tests/storeController.test.js
+.
+Force exiting Jest: Have you 
+considered using 
+`--detectOpenHandles` to 
+detect async operations that 
+kept running after all tests 
+finished?

@@ -10,7 +10,7 @@ This document outlines the roadmap for bringing the application to a production-
 | Tier | Focus Area | Status | Completion |
 |------|------------|--------|------------|
 | **1** | **Backend Refactoring** | ✅ **Completed** | **100%** |
-| **2** | **Security & Stability** | 🚧 **In Progress** | **80%** |
+| **2** | **Security & Stability** | ✅ **Completed** | **100%** |
 | **3** | **Performance & Scalability** | 📅 **Planned** | **30%** |
 | **4** | **Production Readiness** | 📅 **Planned** | **20%** |
 
@@ -30,7 +30,7 @@ This document outlines the roadmap for bringing the application to a production-
 
 ---
 
-## Tier 2: Security & Stability (🚧 In Progress)
+## Tier 2: Security & Stability (✅ Completed)
 **Goal:** Secure the application and ensure robust error handling.
 
 ### Security
@@ -40,6 +40,15 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **Account Lockout**: Prevent brute force attacks.
 - [x] **Token Refresh**: Implement refresh tokens / HttpOnly cookies.
 - [x] **Input Validation**: Standardize using Zod/Joi for all inputs.
+- [x] **RBAC**: Role-Based Access Control for frontend actions (Products, Customers, Orders).
+- [x] **Data Consistency**: Default sorting (latest first) and sync fixes.
+- [x] **Business Logic**: Customer auto-creation and inventory management.
+- [x] **Unit Tests**: Comprehensive testing for all Controllers.
+
+---
+
+## Tier 3: Performance & Scalability (📅 Planned)
+**Goal:** Optimize performance and prepare for scale.
 
 ### Database
 - [x] **Connection Pooling**: Configured in `config/config.json`.
@@ -80,9 +89,9 @@ This document outlines the roadmap for bringing the application to a production-
 
 ## 📝 Immediate Action Items (Next Steps)
 
-1. **[Tier 2]** Implement Token Refresh Mechanism (Security) ✅ **Done**
-2. **[Tier 2]** Add Unit Tests for remaining Controllers (Stability) 🚧 **In Progress**
-3. **[Tier 3]** Implement Frontend Code Splitting (Performance)
-4. **[Tier 4]** Generate API Documentation (Operations)
+1. **[Tier 3]** Implement Frontend Code Splitting (Performance)
+2. **[Tier 3]** Implement Redis Caching (Database)
+3. **[Tier 4]** Generate API Documentation (Operations)
+4. **[Tier 4]** Containerization (Docker) for Production
 
 

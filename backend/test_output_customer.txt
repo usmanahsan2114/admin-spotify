@@ -1,0 +1,51 @@
+﻿
+> backend@1.0.0 test
+> cross-env NODE_ENV=test jest tests/customerController.test.js
+
+node.exe : PASS tests/custome
+rController.test.js
+At C:\Program 
+Files\nodejs\npm.ps1:29 
+char:3
++   & $NODE_EXE $NPM_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (PASS te  
+  sts/customerController.t   
+ est.js:String) [], Remot    
+eException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  Customer Controller
+    GET /api/customers
+      ΓêÜ should return a 
+list of customers (48 ms)
+    GET /api/customers/:id
+      ΓêÜ should return 
+customer details if found (9 
+ms)
+      ΓêÜ should return 404 
+if customer not found (7 ms)
+    POST /api/customers
+      ΓêÜ should create a 
+new customer (25 ms)
+
+Test Suites: 1 passed, 1 
+total
+Tests:       4 passed, 4 
+total
+Snapshots:   0 total
+Time:        1.275 s, 
+estimated 3 s
+Ran all test suites matching 
+tests/customerController.test
+.js.
+Force exiting Jest: Have you 
+considered using 
+`--detectOpenHandles` to 
+detect async operations that 
+kept running after all tests 
+finished?

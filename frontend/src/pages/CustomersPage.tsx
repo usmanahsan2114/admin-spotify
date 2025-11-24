@@ -26,7 +26,7 @@ import {
 } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
+import { Controller, useForm, type SubmitHandler, type Resolver } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import type { Customer, CustomerPayload } from '../types/customer'
@@ -58,13 +58,7 @@ const customerSchema = yup
   })
   .required()
 
-type FormValues = {
-  name: string
-  email: string
-  phone: string
-  address: string | null | undefined
-  alternativePhone: string | null | undefined
-}
+type FormValues = yup.InferType<typeof customerSchema>
 
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -89,7 +83,7 @@ const CustomersPage = () => {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: yupResolver(customerSchema) as any,
+    resolver: yupResolver(customerSchema) as Resolver<FormValues>,
     defaultValues: {
       name: '',
       email: '',

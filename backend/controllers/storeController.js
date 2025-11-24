@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const { Op } = require('sequelize')
-const { Store, User, Order, Product, Customer, Return, Setting } = require('../db/init').db
+const db = require('../db/init').db
+const { Store, User, Order, Product, Customer, Return, Setting } = db
 const logger = require('../utils/logger')
 const { generateMultiStoreData } = require('../generateMultiStoreData')
 
@@ -265,11 +266,8 @@ const deleteStore = async (req, res) => {
         const storeId = store.id
         const storeName = store.name
 
-        // Use db.sequelize.transaction if possible, but we need access to db instance
-        // We imported models from db.init.db, so we can access sequelize there
-        const { sequelize } = require('../db/init').db
-
-        await sequelize.transaction(async (transaction) => {
+        // Use db.sequelize directly
+        await db.sequelize.transaction(async (transaction) => {
             await Order.destroy({ where: { storeId }, transaction })
             await Return.destroy({ where: { storeId }, transaction })
             await Product.destroy({ where: { storeId }, transaction })

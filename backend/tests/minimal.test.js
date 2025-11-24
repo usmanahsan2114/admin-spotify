@@ -8,6 +8,7 @@ jest.mock('../db/init', () => ({
 jest.mock('../middleware/auth', () => ({
     authenticateToken: (req, res, next) => next(),
     authorizeRole: () => (req, res, next) => next(),
+    authenticateCustomer: (req, res, next) => next(),
     buildStoreWhere: (req) => ({}),
 }));
 

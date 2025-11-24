@@ -1,151 +1,173 @@
-const crypto = require('crypto')
-const jwt = require('jsonwebtoken')
+const { Order, Product, Customer, Return, Store, User, sequelize } = require('../db/init').db
 const { Op } = require('sequelize')
-const { Order, Product, Customer, Return, User, Store, sequelize } = require('../db/init').db
+const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 const logger = require('../utils/logger')
-const { normalizeEmail, normalizePhone, normalizeAddress } = require('../utils/helpers')
-const { detectOrderColumns, getMappingSummary, extractRowData } = require('../utils/columnDetector')
+const { normalizeEmail, normalizePhone, normalizeAddress, ensureArray } = require('../utils/helpers')
 
-const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey'
 
-// Helpers
-const findStoreById = async (storeId) => {
-    if (!storeId) return null
-    return await Store.findByPk(storeId)
-}
+// Helper Functions
 
-const findOrderById = async (id, includeCustomer = false) => {
-    if (!id) return null
-    const options = {}
-    if (includeCustomer) {
-        options.include = [{ model: Customer, as: 'customer' }]
-    }
-    return await Order.findByPk(id, options)
-}
-
-const findCustomerByContact = async (email, phone, address, storeId = null) => {
-    if (!email && !phone && !address) return null
-
-    const normalizedEmail = email ? normalizeEmail(email) : null
-    const normalizedPhone = phone ? normalizePhone(phone) : null
-    const normalizedAddress = address ? normalizeAddress(address) : null
-
-    const whereConditions = []
-
-    if (normalizedEmail) {
-        whereConditions.push({
-            email: { [Op.like]: normalizedEmail },
-        })
-    }
-
-    if (normalizedPhone) {
-        whereConditions.push({
-            phone: { [Op.like]: `%${normalizedPhone}%` },
-        })
-    }
-
-    if (normalizedAddress) {
-        whereConditions.push({
-            address: { [Op.like]: `%${normalizedAddress}%` },
-        })
-    }
-
-    if (whereConditions.length === 0) return null
-
-    const where = {
-        [Op.or]: whereConditions,
-    }
-
+const findCustomerByContact = async (email, phone, name = null, storeId = null) => {
+    const where = {}
     if (storeId) where.storeId = storeId
 
-    const customer = await Customer.findOne({ where })
+    if (email) {
+        const normalizedEmail = normalizeEmail(email)
+        where.email = { [Op.like]: normalizedEmail }
+    } else if (phone) {
+        const normalizedPhone = normalizePhone(phone)
+        where.phone = { [Op.like]: `%${normalizedPhone}%` }
+    } else {
+        return null
+    }
 
-    if (customer) {
-        const customerData = customer.toJSON ? customer.toJSON() : customer
+    let customer = await Customer.findOne({ where })
 
-        if (normalizedEmail && customerData.alternativeEmails && Array.isArray(customerData.alternativeEmails)) {
-            const matchesEmail = customerData.alternativeEmails.some((altEmail) => normalizeEmail(altEmail) === normalizedEmail)
-            if (matchesEmail) return customer
+    // If not found by primary contact, check alternative fields
+    if (!customer) {
+        const orConditions = []
+        if (email) {
+            const normalizedEmail = normalizeEmail(email)
+            orConditions.push({
+                alternativeEmails: { [Op.contains]: [normalizedEmail] } // PostgreSQL array contains
+            })
+            // Fallback for SQLite/other if array not supported directly or for string storage
+            orConditions.push({
+                alternativeEmails: { [Op.like]: `%${normalizedEmail}%` }
+            })
+        }
+        if (phone) {
+            const normalizedPhone = normalizePhone(phone)
+            orConditions.push({
+                alternativePhones: { [Op.contains]: [normalizedPhone] }
+            })
+            orConditions.push({
+                alternativePhones: { [Op.like]: `%${normalizedPhone}%` }
+            })
         }
 
-        if (normalizedPhone && customerData.alternativePhones && Array.isArray(customerData.alternativePhones)) {
-            const matchesPhone = customerData.alternativePhones.some((altPhone) => normalizePhone(altPhone) === normalizedPhone)
-            if (matchesPhone) return customer
-        }
-
-        if (normalizedAddress && customerData.alternativeAddresses && Array.isArray(customerData.alternativeAddresses)) {
-            const matchesAddress = customerData.alternativeAddresses.some((altAddress) => normalizeAddress(altAddress) === normalizedAddress)
-            if (matchesAddress) return customer
+        if (orConditions.length > 0) {
+            customer = await Customer.findOne({
+                where: {
+                    [Op.and]: [
+                        storeId ? { storeId } : {},
+                        { [Op.or]: orConditions }
+                    ]
+                }
+            })
         }
     }
 
     return customer
 }
 
-const ensureArray = (value) => {
-    if (Array.isArray(value)) return value
-    if (typeof value === 'string') {
-        try {
-            const parsed = JSON.parse(value)
-            return Array.isArray(parsed) ? parsed : []
-        } catch {
-            return []
-        }
+const findOrderById = async (id, includeCustomer = false) => {
+    const options = {
+        where: { id },
     }
-    if (value === null || value === undefined) return []
-    return []
+    if (includeCustomer) {
+        options.include = [
+            {
+                model: Customer,
+                as: 'customer',
+            }
+        ]
+    }
+    return await Order.findOne(options)
 }
 
 const getOrdersForCustomer = async (customer) => {
-    if (!customer || !customer.id) return []
-
-    const customerData = customer.toJSON ? customer.toJSON() : customer
-    const alternativeEmails = ensureArray(customerData.alternativeEmails)
-
-    const customerEmails = [
-        customerData.email,
-        ...alternativeEmails
-    ].filter(Boolean).map(normalizeEmail)
-
-    const customerPhones = [
-        customerData.phone,
-        customerData.alternativePhone,
-    ].filter(Boolean).map(normalizePhone)
-
-    const where = {
-        storeId: customerData.storeId,
-        [Op.or]: [
-            { customerId: customerData.id },
-            ...(customerEmails.length > 0 ? [{ email: { [Op.in]: customerEmails } }] : []),
-            ...(customerPhones.length > 0 ? [{ phone: { [Op.like]: `%${customerPhones[0]}%` } }] : []),
-        ],
-    }
-
     const orders = await Order.findAll({
-        where,
+        where: { customerId: customer.id },
         order: [['createdAt', 'DESC']],
     })
-
     return orders.map(order => order.toJSON ? order.toJSON() : order)
 }
 
-const serializeReturn = async (returnRequest) => {
-    const order = await findOrderById(returnRequest.orderId)
-    const customer =
-        (returnRequest.customerId && await Customer.findByPk(returnRequest.customerId)) ||
-        (order ? await findCustomerByContact(order.email, order.phone, null, order.storeId) : null)
+const detectOrderColumns = (headers) => {
+    const mappings = {
+        productName: null,
+        customerName: null,
+        email: null,
+        phone: null,
+        quantity: null,
+        notes: null
+    }
 
-    const returnData = returnRequest.toJSON ? returnRequest.toJSON() : returnRequest
+    const normalize = (h) => h.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+    headers.forEach((header, index) => {
+        const h = normalize(header)
+        if (['product', 'productname', 'item'].includes(h)) mappings.productName = index
+        else if (['customer', 'customername', 'name', 'client'].includes(h)) mappings.customerName = index
+        else if (['email', 'mail', 'e-mail'].includes(h)) mappings.email = index
+        else if (['phone', 'mobile', 'cell', 'contact'].includes(h)) mappings.phone = index
+        else if (['quantity', 'qty', 'amount', 'count'].includes(h)) mappings.quantity = index
+        else if (['notes', 'note', 'comment', 'comments', 'remarks'].includes(h)) mappings.notes = index
+    })
+
+    return mappings
+}
+
+const getMappingSummary = (mappings) => {
+    const required = ['productName', 'customerName', 'email']
+    const missing = required.filter(field => mappings[field] === null)
     return {
-        ...returnData,
-        history: Array.isArray(returnData.history) ? [...returnData.history] : [],
-        customer: customer
-            ? {
-                id: customer.id,
-                name: customer.name,
-                email: customer.email,
+        mappings,
+        missing,
+        isValid: missing.length === 0,
+        requiredMissing: missing.length
+    }
+}
+
+const extractRowData = (row, mappings) => {
+    const getValue = (index) => (index !== null && row[index] !== undefined) ? String(row[index]).trim() : null
+
+    // Handle object rows (JSON import) vs array rows (CSV)
+    if (!Array.isArray(row)) {
+        // If row is an object, we try to match keys fuzzily if mappings are indices, 
+        // but usually for JSON import we expect keys to match or be mapped differently.
+        // For simplicity, if it's an object, we assume keys match our internal names or standard variations.
+        const getObjValue = (keys) => {
+            for (const key of keys) {
+                if (row[key] !== undefined) return String(row[key]).trim()
             }
-            : null,
+            return null
+        }
+
+        return {
+            productName: getObjValue(['productName', 'product', 'Product Name']),
+            customerName: getObjValue(['customerName', 'customer', 'Customer Name', 'name']),
+            email: getObjValue(['email', 'Email']),
+            phone: getObjValue(['phone', 'Phone']),
+            quantity: getObjValue(['quantity', 'qty', 'Quantity']) || '1',
+            notes: getObjValue(['notes', 'Notes'])
+        }
+    }
+
+    return {
+        productName: getValue(mappings.productName),
+        customerName: getValue(mappings.customerName),
+        email: getValue(mappings.email),
+        phone: getValue(mappings.phone),
+        quantity: getValue(mappings.quantity) || '1',
+        notes: getValue(mappings.notes)
+    }
+}
+
+const serializeReturn = async (returnItem) => {
+    const order = await Order.findByPk(returnItem.orderId)
+    return {
+        id: returnItem.id,
+        orderId: returnItem.orderId,
+        reason: returnItem.reason,
+        status: returnItem.status,
+        dateRequested: returnItem.dateRequested,
+        customerName: order ? order.customerName : 'Unknown',
+        productName: order ? order.productName : 'Unknown',
+        refundAmount: returnItem.refundAmount,
         order: order
             ? {
                 id: order.id,
@@ -429,6 +451,7 @@ const createOrder = async (req, res) => {
         }
 
         let customer = await findCustomerByContact(email, phone, null, orderStoreId)
+
         if (!customer) {
             customer = await Customer.create({
                 storeId: orderStoreId,
@@ -727,7 +750,7 @@ const importOrders = async (req, res) => {
                         id: crypto.randomUUID(),
                         description: 'Order imported via CSV',
                         timestamp: new Date().toISOString(),
-                        actor: req.user?.email || 'System',
+                        actor: req.user?.email ?? 'System',
                     }],
                 })
 
@@ -742,20 +765,20 @@ const importOrders = async (req, res) => {
         }
 
         return res.json({
-            message: `Import completed. Created: ${results.created}, Failed: ${results.failed}`,
+            message: 'Import completed',
             results
         })
     } catch (error) {
-        logger.error('Import failed:', error)
-        return res.status(500).json({ message: 'Import failed', error: error.message })
+        logger.error('Failed to import orders:', error)
+        return res.status(500).json({ message: 'Failed to import orders', error: error.message })
     }
 }
 
 module.exports = {
+    searchOrdersByContact,
     getOrders,
     getOrderById,
     createOrder,
     updateOrder,
-    searchOrdersByContact,
-    importOrders,
+    importOrders
 }
