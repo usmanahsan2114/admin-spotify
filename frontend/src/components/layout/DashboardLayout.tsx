@@ -4,7 +4,6 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
   AppBar,
   Avatar,
-  Alert,
   Box,
   Divider,
   Drawer,
@@ -175,7 +174,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
       })
     },
     [pendingReturns, lowStockCount, user],
-  )
+  ) as NavItem[]
 
   return (
     <Box role="presentation" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -185,6 +184,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
             src={settings.logoUrl}
             sx={{ width: 40, height: 40 }}
             alt="Logo"
+            imgProps={{ loading: 'lazy' }}
           />
         ) : (
           <Avatar sx={{ bgcolor: 'primary.main' }}>SA</Avatar>
@@ -290,7 +290,7 @@ const DashboardLayout = () => {
 
   const drawer = useMemo(
     () => <DrawerContent onNavigate={() => setMobileOpen(false)} />,
-    [settings],
+    [],
   )
 
   return (
@@ -340,6 +340,7 @@ const DashboardLayout = () => {
                 src={settings.logoUrl}
                 sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, mr: 1 }}
                 alt="Logo"
+                imgProps={{ loading: 'lazy' }}
               />
             )}
             <Typography
@@ -414,6 +415,7 @@ const DashboardLayout = () => {
                 }}
                 src={user?.profilePictureUrl || undefined}
                 alt={user?.fullName || user?.name || user?.email || 'User'}
+                imgProps={{ loading: 'lazy' }}
               >
                 {user?.fullName?.[0] || user?.name?.[0] || user?.email?.[0] || 'U'}
               </Avatar>
@@ -481,22 +483,7 @@ const DashboardLayout = () => {
             bgcolor: 'transparent',
           }}
         >
-          {false && (
-            <Alert
-              severity="info"
-              sx={{
-                mb: 2,
-                mx: { xs: 1, sm: 0 },
-              }}
-            >
-              <Typography variant="body2" fontWeight={600}>
-                Demo Mode – Limited Permissions
-              </Typography>
-              <Typography variant="caption" component="div">
-                You are viewing the demo store with read-only access. Some features are disabled.
-              </Typography>
-            </Alert>
-          )}
+
           <Outlet />
           <SiteAttribution sx={{ mt: 4, pb: 4 }} />
         </Box>

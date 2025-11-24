@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -10,34 +8,13 @@ import {
 
 import { apiFetch, setStoredToken, getStoredToken } from '../services/apiClient'
 import type { User } from '../types/user'
-
-type AuthState = {
-  isAuthenticated: boolean
-  user: User | null
-  token: string | null
-  needsPasswordChange: boolean
-  login: (email: string, password: string) => Promise<{ needsPasswordChange?: boolean }>
-  signup: (payload: SignupPayload) => Promise<void>
-  logout: () => Promise<void>
-  loading: boolean
-}
-
-const AuthContext = createContext<AuthState | undefined>(undefined)
+import { AuthContext, type AuthState, type SignupPayload, STORAGE_KEY } from './AuthContext'
 
 type LoginResponse = {
   token: string
   user: User
   needsPasswordChange?: boolean
 }
-
-type SignupPayload = {
-  name: string
-  email: string
-  password: string
-  role?: User['role']
-}
-
-const STORAGE_KEY = 'dashboard.user'
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -57,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const parsedUser = JSON.parse(storedUser) as User
         setToken(savedToken)
         setUser(parsedUser)
-      } catch (error) {
+      } catch {
         // Invalid stored user data - clear it
         window.localStorage.removeItem(STORAGE_KEY)
       }
@@ -126,14 +103,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }
 
 

@@ -40,6 +40,9 @@ const getPublicBusinessSettings = async (req, res) => {
         // If no storeId provided, return generic settings (for public pages like login/signup)
         const storeId = req.query.storeId
 
+        // Set cache control for 10 minutes
+        res.set('Cache-Control', 'public, max-age=600')
+
         if (!storeId) {
             // Return generic settings for public pages (no store-specific branding)
             return res.json({

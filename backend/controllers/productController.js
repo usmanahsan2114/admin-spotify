@@ -5,6 +5,18 @@ const { buildStoreWhere } = require('../middleware/auth')
 const { detectProductColumns, getMappingSummary, extractRowData } = require('../utils/columnDetector')
 const redisClient = require('../utils/redisClient')
 
+// Helper to pick specific fields from an object
+const pickFields = (obj, fields) => {
+    if (!fields || fields.length === 0) return obj
+    const result = {}
+    fields.forEach(field => {
+        if (Object.prototype.hasOwnProperty.call(obj, field)) {
+            result[field] = obj[field]
+        }
+    })
+    return result
+}
+
 // Helper to find product by ID
 const findProductById = async (productId) => {
     if (!productId) return null
@@ -16,40 +28,51 @@ const getProductsPublic = async (req, res) => {
     try {
         // Filter by storeId if provided
         const storeId = req.query.storeId
+        const requestedFields = req.query.fields ? req.query.fields.split(',').map(f => f.trim()) : null
 
         // Try to get from cache first
         const cacheKey = `products:public:${storeId || 'all'}`
+        let publicProducts = []
         const cachedData = await redisClient.get(cacheKey)
+
         if (cachedData) {
-            return res.json(JSON.parse(cachedData))
-        }
-
-        const where = { status: 'active' }
-        if (storeId) {
-            where.storeId = storeId
-        }
-
-        const productsList = await Product.findAll({
-            where,
-            order: [['name', 'ASC']],
-        })
-
-        // Return only active products with basic info (public access)
-        const publicProducts = productsList.map((p) => {
-            const productData = p.toJSON ? p.toJSON() : p
-            return {
-                id: productData.id,
-                name: productData.name,
-                price: productData.price,
-                stockQuantity: productData.stockQuantity,
-                category: productData.category,
-                imageUrl: productData.imageUrl,
-                status: productData.status,
+            publicProducts = JSON.parse(cachedData)
+            res.set('Cache-Control', 'public, max-age=300')
+        } else {
+            const where = { status: 'active' }
+            if (storeId) {
+                where.storeId = storeId
             }
-        })
 
-        // Cache the result for 5 minutes
-        await redisClient.set(cacheKey, JSON.stringify(publicProducts), { EX: 300 })
+            const productsList = await Product.findAll({
+                where,
+                order: [['name', 'ASC']],
+            })
+
+            // Return only active products with basic info (public access)
+            publicProducts = productsList.map((p) => {
+                const productData = p.toJSON ? p.toJSON() : p
+                return {
+                    id: productData.id,
+                    name: productData.name,
+                    price: productData.price,
+                    stockQuantity: productData.stockQuantity,
+                    category: productData.category,
+                    imageUrl: productData.imageUrl,
+                    status: productData.status,
+                }
+            })
+
+            // Cache the result for 5 minutes
+            await redisClient.set(cacheKey, JSON.stringify(publicProducts), { EX: 300 })
+            res.set('Cache-Control', 'public, max-age=300')
+        }
+
+        // Apply field selection if requested
+        if (requestedFields && requestedFields.length > 0) {
+            const filteredProducts = publicProducts.map(p => pickFields(p, requestedFields))
+            return res.json(filteredProducts)
+        }
 
         return res.json(publicProducts)
     } catch (error) {
@@ -62,6 +85,18 @@ const getProducts = async (req, res) => {
     try {
         const where = buildStoreWhere(req)
         const lowStockOnly = req.query.lowStock === 'true'
+
+        // Field selection
+        let attributes = ['id', 'name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'status', 'category', 'imageUrl', 'createdAt', 'updatedAt', 'storeId']
+        if (req.query.fields) {
+            const requestedFields = req.query.fields.split(',').map(f => f.trim())
+            // Validate against allowed attributes to prevent SQL injection or invalid column errors
+            const allowedFields = ['id', 'name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'status', 'category', 'imageUrl', 'createdAt', 'updatedAt', 'storeId']
+            const validFields = requestedFields.filter(f => allowedFields.includes(f))
+            if (validFields.length > 0) {
+                attributes = validFields
+            }
+        }
 
         if (lowStockOnly) {
             // Calculate lowStock condition: stockQuantity <= reorderThreshold
@@ -90,11 +125,11 @@ const getProducts = async (req, res) => {
             }
         }
 
-        // Optimize: Fetch only needed fields, calculate lowStock in memory (fast for textual data)
+        // Optimize: Fetch only needed fields
         const productsList = await Product.findAll({
             where,
             order: [['createdAt', 'DESC']],
-            attributes: ['id', 'name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'status', 'category', 'imageUrl', 'createdAt', 'updatedAt', 'storeId'],
+            attributes,
         })
 
         // Calculate lowStock flag for each product (fast operation)

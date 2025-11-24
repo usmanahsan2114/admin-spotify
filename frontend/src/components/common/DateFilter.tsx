@@ -44,7 +44,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
 
   // Use reference date matching seed data (Nov 15, 2025) for consistent filtering
   // This ensures date filters work correctly with seeded test data
-  const referenceDate = dayjs() // Use current date
+  const referenceDate = useMemo(() => dayjs(), []) // Use current date, stable across renders
 
   // Sync quickFilter state with value prop
   useEffect(() => {
@@ -95,7 +95,7 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
       setStartDateInput(start.format('YYYY-MM-DD'))
       setEndDateInput(end.format('YYYY-MM-DD'))
     }
-  }, [value.startDate, value.endDate])
+  }, [value.startDate, value.endDate, referenceDate])
 
   const getQuickFilterRange = (filter: QuickFilter): DateRange => {
     // Use reference date matching seed data (Nov 15, 2025) for consistent filtering

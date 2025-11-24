@@ -101,6 +101,7 @@ const StoresPage = () => {
     reset: resetStoreForm,
     formState: { errors: storeErrors },
   } = useForm<CreateStorePayload>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: yupResolver(storeSchema) as any,
     defaultValues: {
       name: '',
@@ -123,6 +124,7 @@ const StoresPage = () => {
     reset: resetCredentialsForm,
     formState: { errors: credentialsErrors },
   } = useForm<StoreAdminCredentialsPayload>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: yupResolver(credentialsSchema.pick(['email', 'password', 'name'])) as any,
     defaultValues: {
       email: '',
@@ -137,6 +139,7 @@ const StoresPage = () => {
     reset: resetUserCredentialsForm,
     formState: { errors: userCredentialsErrors },
   } = useForm<StoreAdminCredentialsPayload & { role?: string }>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: yupResolver(credentialsSchema) as any,
     defaultValues: {
       email: '',
@@ -147,7 +150,7 @@ const StoresPage = () => {
     },
   })
 
-  const loadStores = async () => {
+  const loadStores = useCallback(async () => {
     try {
       setLoading(true)
       const storesList = await fetchStoresWithStats()
@@ -158,7 +161,7 @@ const StoresPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [handleError, showNotification])
 
   const loadStoreUsers = async (storeId: string) => {
     try {
@@ -180,7 +183,7 @@ const StoresPage = () => {
     if (user?.role === 'superadmin') {
       loadStores()
     }
-  }, [user, handleError])
+  }, [user, loadStores])
 
   const handleOpenStoreDialog = (store?: StoreWithStats) => {
     if (store) {
@@ -330,6 +333,7 @@ const StoresPage = () => {
 
       if (selectedUser) {
         // Update existing user
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updatePayload: any = {
           email: data.email,
           name: data.name,

@@ -1,4 +1,4 @@
-import { useState, useCallback, type ReactNode } from 'react'
+import { useState, useCallback, useMemo, type ReactNode } from 'react'
 import { Snackbar, Alert, type AlertColor } from '@mui/material'
 import { NotificationContext, type NotificationType } from '../context/NotificationContext'
 
@@ -24,8 +24,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
         setOpen(false)
     }
 
+    const value = useMemo(() => ({ showNotification }), [showNotification])
+
     return (
-        <NotificationContext.Provider value={{ showNotification }}>
+        <NotificationContext.Provider value={value}>
             {children}
             <Snackbar
                 open={open}

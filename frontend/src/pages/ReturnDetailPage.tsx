@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Alert,
   Box,
@@ -71,7 +71,7 @@ const ReturnDetailPage = () => {
     },
   })
 
-  const loadReturn = async () => {
+  const loadReturn = useCallback(async () => {
     if (!returnId) return
     try {
       setLoading(true)
@@ -87,12 +87,11 @@ const ReturnDetailPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [returnId, reset])
 
   useEffect(() => {
     loadReturn()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [returnId])
+  }, [loadReturn])
 
   const onSubmit = async (values: FormValues) => {
     if (!returnId) return

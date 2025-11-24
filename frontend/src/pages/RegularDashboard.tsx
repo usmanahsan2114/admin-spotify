@@ -112,13 +112,13 @@ const RegularDashboard = () => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'))
   const chartHeight = isMobile ? 250 : isTablet ? 300 : isDesktop ? 360 : 320
 
-  const resolveError = (err: unknown, fallback: string) => {
+  const resolveError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
   useEffect(() => {
     const load = async () => {
@@ -165,7 +165,7 @@ const RegularDashboard = () => {
     }
 
     load()
-  }, [logout, growthPeriod, trendMetric, dateRange.startDate, dateRange.endDate])
+  }, [logout, growthPeriod, trendMetric, dateRange.startDate, dateRange.endDate, resolveError])
 
   const { formatCurrency } = useCurrency()
 

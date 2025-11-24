@@ -42,15 +42,15 @@ const InventoryAlertsPage = () => {
   const lowStockRowHover = alpha(theme.palette.error.main, theme.palette.mode === 'dark' ? 0.26 : 0.18)
   const { showNotification } = useNotification()
 
-  const resolveError = (err: unknown, fallback: string) => {
+  const resolveError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
-  const loadAlerts = async () => {
+  const loadAlerts = useCallback(async () => {
     try {
       setLoading(true)
       // Fetch low stock products and filter by date if provided
@@ -81,13 +81,13 @@ const InventoryAlertsPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange.startDate, dateRange.endDate, showNotification, resolveError])
 
   useEffect(() => {
     loadAlerts()
-  }, [dateRange.startDate, dateRange.endDate])
+  }, [loadAlerts])
 
-  const handleMarkReordered = async (productId: string) => {
+  const handleMarkReordered = useCallback(async (productId: string) => {
     try {
       setReorderingId(productId)
       await markProductReordered(productId)
@@ -98,7 +98,7 @@ const InventoryAlertsPage = () => {
     } finally {
       setReorderingId(null)
     }
-  }
+  }, [showNotification, resolveError])
 
   const columns = useMemo<GridColDef<Product>[]>(() => [
     { field: 'id', headerName: 'ID', flex: 1.2, minWidth: 160 },
@@ -154,7 +154,7 @@ const InventoryAlertsPage = () => {
         </Stack>
       ),
     },
-  ], [])
+  ], [handleMarkReordered, reorderingId])
 
   return (
     <Stack spacing={3}>

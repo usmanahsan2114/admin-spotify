@@ -4,8 +4,8 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { ThemeModeProvider } from './providers/ThemeModeProvider'
-import { AuthProvider } from './context/AuthContext'
-import { BusinessSettingsProvider } from './context/BusinessSettingsContext'
+import { AuthProvider } from './context/AuthProvider'
+import { BusinessSettingsProvider } from './context/BusinessSettingsProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

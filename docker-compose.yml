@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_HOST=db
+      - DB_USER=shopify_user
+      - DB_PASSWORD=shopify_password
+      - DB_NAME=shopify_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=production_secret_key_change_this
+      - CORS_ORIGIN=http://localhost:80,http://localhost:3000
+    depends_on:
+      - db
+      - redis
+    networks:
+      - shopify-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - shopify-network
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: shopify_db
+      MYSQL_USER: shopify_user
+      MYSQL_PASSWORD: shopify_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - shopify-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - shopify-network
+
+networks:
+  shopify-network:
+    driver: bridge
+
+volumes:
+  db_data:

@@ -1,15 +1,8 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
+import { useEffect, useState, useCallback, useMemo, type ReactNode } from 'react'
 import { apiFetch } from '../services/apiClient'
 import { useAuth } from './AuthContext'
 import type { BusinessSettings } from '../types/user'
-
-type BusinessSettingsContextValue = {
-  settings: BusinessSettings | null
-  loading: boolean
-  refreshSettings: () => Promise<void>
-}
-
-const BusinessSettingsContext = createContext<BusinessSettingsContextValue | undefined>(undefined)
+import { BusinessSettingsContext } from './BusinessSettingsContext'
 
 export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<BusinessSettings | null>(null)
@@ -51,7 +44,7 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
           country: publicSettings.country || 'US',
         })
       }
-    } catch (err) {
+    } catch {
       // Failed to load settings - use defaults
       setSettings({
         logoUrl: undefined,
@@ -68,19 +61,16 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
     refreshSettings()
   }, [refreshSettings, isAuthenticated])
 
+  const value = useMemo(
+    () => ({ settings, loading, refreshSettings }),
+    [settings, loading, refreshSettings]
+  )
+
   return (
-    <BusinessSettingsContext.Provider value={{ settings, loading, refreshSettings }}>
+    <BusinessSettingsContext.Provider value={value}>
       {children}
     </BusinessSettingsContext.Provider>
   )
-}
-
-export const useBusinessSettings = () => {
-  const context = useContext(BusinessSettingsContext)
-  if (!context) {
-    throw new Error('useBusinessSettings must be used within BusinessSettingsProvider')
-  }
-  return context
 }
 
 

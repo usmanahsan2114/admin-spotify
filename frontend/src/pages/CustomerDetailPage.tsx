@@ -120,15 +120,15 @@ const CustomerDetailPage = () => {
     },
   })
 
-  const handleApiError = (err: unknown, fallback: string) => {
+  const handleApiError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
       return 'Your session has expired. Please sign in again.'
     }
     return err instanceof Error ? err.message : fallback
-  }
+  }, [logout])
 
-  const loadCustomer = async () => {
+  const loadCustomer = useCallback(async () => {
     if (!customerId) return
     try {
       setLoading(true)
@@ -140,12 +140,11 @@ const CustomerDetailPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [customerId, handleApiError])
 
   useEffect(() => {
     loadCustomer()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId])
+  }, [loadCustomer])
 
   const handleOpenEdit = () => {
     if (!customer) return

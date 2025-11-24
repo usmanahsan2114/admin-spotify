@@ -15,10 +15,8 @@ type ThemeModeContextValue = {
 export const ThemeModeContext = createContext<ThemeModeContextValue>({
   mode: 'light',
   color: 'blue',
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  toggleMode: () => {},
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setColor: () => {},
+  toggleMode: () => { },
+  setColor: () => { },
 })
 
 const STORAGE_KEY = 'dashboard.theme'

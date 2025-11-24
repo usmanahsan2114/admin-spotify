@@ -18,8 +18,6 @@ import {
   Select,
   Stack,
   Switch,
-  Tab,
-  Tabs,
   TextField,
   Typography,
   useMediaQuery,
@@ -52,18 +50,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { CURRENCIES } from '../constants/currencies'
 import { COUNTRIES } from '../constants/countries'
 import { useNotification } from '../context/NotificationContext'
-
-type TabPanelProps = {
-  children?: React.ReactNode
-  index: number
-  value: number
-}
-
-const TabPanel = ({ children, value, index }: TabPanelProps) => (
-  <div role="tabpanel" hidden={value !== index} style={{ width: '100%' }}>
-    {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-  </div>
-)
+import LazyImage from '../components/common/LazyImage'
 
 const ImageUpload = ({
   label,
@@ -113,14 +100,12 @@ const ImageUpload = ({
           }}
         >
           {value ? (
-            <img
+            <LazyImage
               src={value}
               alt="Preview"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
+              width="100%"
+              height="100%"
+              objectFit="cover"
             />
           ) : (
             <PersonIcon sx={{ fontSize: previewSize * 0.5, color: 'text.secondary' }} />
@@ -229,7 +214,6 @@ const SettingsPage = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // Removed local success state
-  const [tabValue, setTabValue] = useState(0)
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(false)
   const { showNotification } = useNotification()
 
@@ -804,33 +788,12 @@ const SettingsPage = () => {
           )}
         </Stack>
       ) : (
-        <Card>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)}>
-              <Tab icon={<PersonIcon />} iconPosition="start" label="Profile" />
-              <Tab icon={<SettingsIcon />} iconPosition="start" label="Preferences" />
-              {authUser?.role === 'admin' && (
-                <Tab icon={<BusinessIcon />} iconPosition="start" label="Business" />
-              )}
-            </Tabs>
-          </Box>
-          <Box p={3}>
-            <TabPanel value={tabValue} index={0}>
-              {profileContent}
-            </TabPanel>
-            <TabPanel value={tabValue} index={1}>
-              {preferencesContent}
-            </TabPanel>
-            {authUser?.role === 'admin' && (
-              <TabPanel value={tabValue} index={2}>
-                {businessContent}
-              </TabPanel>
-            )}
-          </Box>
-        </Card>
+        <Stack spacing={3}>
+          {profileContent}
+          {preferencesContent}
+          {businessContent}
+        </Stack>
       )}
-
-      {/* Removed local Snackbar */}
     </Stack>
   )
 }

@@ -178,8 +178,10 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }))
 
 // Response caching headers middleware
 app.use((req, res, next) => {
-  // Don't cache API responses by default (except static assets)
-  if (req.path.startsWith('/api/')) {
+  // Don't cache API responses by default (except static assets and specific public endpoints)
+  if (req.originalUrl.startsWith('/api/') &&
+    !req.originalUrl.includes('/products/public') &&
+    !req.originalUrl.includes('/settings/business/public')) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private')
     res.setHeader('Pragma', 'no-cache')
     res.setHeader('Expires', '0')
@@ -332,6 +334,12 @@ app.use('/api/settings', demoWriteLimiter, restrictDemoStore)
 app.use('/api/settings', settingsRoutes)
 
 app.use('/api', metricsRoutes)
+
+// API Documentation
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
+// Mount Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Request logging middleware (using Winston)
 const requestLogger = (req, res, next) => {

@@ -27,6 +27,8 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import SearchIcon from '@mui/icons-material/Search'
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/UploadFile'
+import Inventory2Icon from '@mui/icons-material/Inventory2'
+import LazyImage from '../components/common/LazyImage'
 import {
   DataGrid,
   type GridColDef,
@@ -177,7 +179,7 @@ const ProductsPage = () => {
     return err instanceof Error ? err.message : fallback
   }
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true)
       const startDate = dateRange.startDate || undefined
@@ -190,11 +192,11 @@ const ProductsPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange.startDate, dateRange.endDate, showNotification])
 
   useEffect(() => {
     loadProducts()
-  }, [dateRange.startDate, dateRange.endDate])
+  }, [loadProducts])
 
   const handleExport = async () => {
     try {
@@ -416,6 +418,40 @@ const ProductsPage = () => {
   const columns = useMemo<GridColDef<Product>[]>(() => [
     { field: 'id', headerName: 'ID', flex: 1.1, minWidth: 150 },
     {
+      field: 'imageUrl',
+      headerName: 'Image',
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams) => (
+        <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {params.value ? (
+            <LazyImage
+              src={params.value as string}
+              alt={params.row.name}
+              width={40}
+              height={40}
+              borderRadius={1}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 1,
+                bgcolor: 'action.hover',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Inventory2Icon sx={{ fontSize: 20, color: 'text.disabled' }} />
+            </Box>
+          )}
+        </Box>
+      ),
+    },
+    {
       field: 'name',
       headerName: 'Name',
       flex: 1,
@@ -489,7 +525,7 @@ const ProductsPage = () => {
         </Stack>
       ),
     },
-  ], [])
+  ], [canEdit, canDelete, formatCurrency, statusChips])
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>

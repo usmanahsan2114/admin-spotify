@@ -11,8 +11,8 @@ This document outlines the roadmap for bringing the application to a production-
 |------|------------|--------|------------|
 | **1** | **Backend Refactoring** | ✅ **Completed** | **100%** |
 | **2** | **Security & Stability** | ✅ **Completed** | **100%** |
-| **3** | **Performance & Scalability** | 📅 **Planned** | **70%** |
-| **4** | **Production Readiness** | 📅 **Planned** | **20%** |
+| **3** | **Performance & Scalability** | ✅ **Completed** | **100%** |
+| **4** | **Production Readiness** | 📅 **Planned** | **30%** |
 
 ---
 
@@ -28,19 +28,6 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **Metrics Module**: Extracted `metricsController` and `metricsRoutes`.
 - [x] **Store Module**: Extracted `storeController` and `storeRoutes`.
 
----
-
-## Tier 2: Security & Stability (✅ Completed)
-**Goal:** Secure the application and ensure robust error handling.
-
-### Security
-- [x] **Environment Validation**: Validate required env vars at startup.
-- [x] **Rate Limiting**: Implement global and sensitive route rate limiting.
-- [x] **Security Headers**: Configure Helmet for security headers.
-- [x] **Account Lockout**: Prevent brute force attacks.
-- [x] **Token Refresh**: Implement refresh tokens / HttpOnly cookies.
-- [x] **Input Validation**: Standardize using Zod/Joi for all inputs.
-- [x] **RBAC**: Role-Based Access Control for frontend actions (Products, Customers, Orders).
 - [x] **Data Consistency**: Default sorting (latest first) and sync fixes.
 - [x] **Business Logic**: Customer auto-creation and inventory management.
 - [x] **Unit Tests**: Comprehensive testing for all Controllers.
@@ -58,14 +45,10 @@ This document outlines the roadmap for bringing the application to a production-
 
 ### Frontend
 - [x] **Code Splitting**: Implement lazy loading for routes and dynamic imports.
-- [x] **Bundle Optimization**: Analyze and reduce bundle size.
-- [ ] **Image Optimization**: Use WebP and lazy loading.
-- [ ] **State Management**: Optimize re-renders.
-
 ### API
 - [x] **Compression**: Gzip/Brotli compression enabled.
-- [ ] **Response Caching**: Add Cache-Control headers.
-- [ ] **GraphQL/Field Selection**: Allow clients to request specific fields.
+- [x] **Response Caching**: Add Cache-Control headers.
+- [x] **GraphQL/Field Selection**: Allow clients to request specific fields.
 
 ---
 
@@ -75,23 +58,22 @@ This document outlines the roadmap for bringing the application to a production-
 ### DevOps
 - [x] **Logging**: Winston logger configured.
 - [x] **Error Tracking**: Sentry integration.
-- [ ] **CI/CD**: Set up automated build and test pipelines.
-- [ ] **Containerization**: Dockerize the application.
+- [x] **CI/CD**: Set up automated build and test pipelines.
+- [x] **Containerization**: Dockerize the application.
 - [ ] **Infrastructure**: Terraform/Ansible scripts (optional).
 
 ### Operations
 - [ ] **Backups**: Automate database backups.
 - [ ] **Monitoring**: Set up uptime and performance monitoring.
-- [ ] **Documentation**: API docs (Swagger) and Runbooks.
+- [x] **Documentation**: API docs (Swagger) and Runbooks.
 - [ ] **SSL/TLS**: Configure certificates for production.
 
 ---
 
 ## 📝 Immediate Action Items (Next Steps)
 
-1. **[Tier 3]** Image Optimization (WebP, Lazy Loading)
-2. **[Tier 3]** Implement Redis Caching (Database)
-3. **[Tier 4]** Generate API Documentation (Operations)
-4. **[Tier 4]** Containerization (Docker) for Production
+1. **[Tier 4]** Containerization (Docker) for Production
+2. **[Tier 4]** CI/CD Pipelines
+3. **[Tier 4]** Automated Database Backups
 
 

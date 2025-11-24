@@ -267,7 +267,7 @@ const OrdersPage = () => {
     })
   }, [orders, searchQuery, statusFilter])
 
-  const handleStatusChange = async (orderId: string, nextStatus: OrderStatus) => {
+  const handleStatusChange = useCallback(async (orderId: string, nextStatus: OrderStatus) => {
     setUpdatingOrderId(orderId)
     try {
       const updated = await updateOrder(orderId, { status: nextStatus })
@@ -280,9 +280,9 @@ const OrdersPage = () => {
     } finally {
       setUpdatingOrderId(null)
     }
-  }
+  }, [showNotification, handleApiError])
 
-  const handlePaidChange = async (orderId: string, isPaid: boolean) => {
+  const handlePaidChange = useCallback(async (orderId: string, isPaid: boolean) => {
     try {
       setUpdatingOrderId(orderId)
       await updateOrder(orderId, { isPaid })
@@ -297,7 +297,7 @@ const OrdersPage = () => {
     } finally {
       setUpdatingOrderId(null)
     }
-  }
+  }, [showNotification, handleApiError])
 
   const onOrderSubmit = async (data: FormValues) => {
     try {
@@ -541,7 +541,7 @@ const OrdersPage = () => {
         })
       },
     },
-  ], [updatingOrderId])
+  ], [updatingOrderId, formatCurrency, handlePaidChange, handleStatusChange])
 
   return (
     <Stack spacing={3} sx={{ minWidth: 0 }}>

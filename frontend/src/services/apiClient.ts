@@ -14,7 +14,7 @@ const RETRYABLE_STATUS_CODES = [500, 502, 503, 504] // Server errors that might 
  * Retry logic for failed API requests
  * Only retries on server errors (5xx) and network errors
  */
-const retryFetch = async <TResponse>(
+const retryFetch = async (
   fetchFn: () => Promise<Response>,
   retries: number = DEFAULT_RETRIES,
   delay: number = RETRY_DELAY,
@@ -63,7 +63,7 @@ export const setStoredToken = (token: string | null) => {
 let isRefreshing = false
 let failedQueue: Array<{
   resolve: (value: unknown) => void
-  reject: (reason?: any) => void
+  reject: (reason?: unknown) => void
 }> = []
 
 const processQueue = (error: Error | null, token: string | null = null) => {

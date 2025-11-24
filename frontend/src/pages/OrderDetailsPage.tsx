@@ -95,7 +95,7 @@ const OrderDetailsPage = () => {
   const [quantity, setQuantity] = useState<number>(1)
   const [phone, setPhone] = useState('')
 
-  const loadOrder = async () => {
+  const loadOrder = useCallback(async () => {
     if (!orderId) return
     try {
       setLoading(true)
@@ -128,12 +128,11 @@ const OrderDetailsPage = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [orderId, handleError])
 
   useEffect(() => {
     loadOrder()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
+  }, [loadOrder])
 
   const hasChanges = useMemo(() => {
     if (!order) return false
