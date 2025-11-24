@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -13,7 +12,6 @@ import {
   Divider,
   MenuItem,
   Select,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -29,10 +27,9 @@ import UploadIcon from '@mui/icons-material/UploadFile'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState, useCallback, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { saveAs } from 'file-saver'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, XAxis, YAxis } from 'recharts'
 import dayjs from 'dayjs'
-import Papa from 'papaparse'
+
 import { Controller, useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
@@ -46,6 +43,7 @@ import type { Customer } from '../types/customer'
 import { useAuth } from '../context/AuthContext'
 import { useCurrency } from '../hooks/useCurrency'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
+import { useNotification } from '../context/NotificationContext'
 
 type StatusFilter = 'All' | OrderStatus
 
@@ -58,37 +56,27 @@ const statusOptions: OrderStatus[] = [
   'Completed',
 ]
 
-const getStatusColor = (status: OrderStatus) => {
-  switch (status) {
-    case 'Completed':
-    case 'Shipped':
-      return 'success'
-    case 'Refunded':
-      return 'error'
-    case 'Accepted':
-    case 'Paid':
-      return 'info'
-    default:
-      return 'warning'
-  }
-}
+
+
+
+
 
 
 
 
 const orderSchema = yup.object({
+  productId: yup.string().ensure(),
+  customerId: yup.string().ensure(),
   productName: yup.string().required('Product name is required'),
   customerName: yup.string().required('Customer name is required'),
   email: yup.string().email('Valid email is required').required('Email is required'),
-  phone: yup.string().optional(),
-  address: yup.string().optional(),
-  quantity: yup.number().typeError('Quantity must be a number').integer('Quantity must be an integer').min(1, 'Quantity must be at least 1').required('Quantity is required'),
-  notes: yup.string().optional(),
+  phone: yup.string().ensure(),
+  address: yup.string().ensure(),
+  quantity: yup.number().typeError('Quantity must be a number').positive('Quantity must be positive').integer('Quantity must be an integer').required('Quantity is required'),
+  notes: yup.string().ensure(),
 })
 
-import { useNotification } from '../context/NotificationContext'
-
-
+type FormValues = yup.InferType<typeof orderSchema>
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
@@ -119,16 +107,16 @@ const OrdersPage = () => {
   })
 
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const { showNotification } = useNotification()
   const { formatCurrency } = useCurrency()
 
-  const canEdit = user?.role === 'superadmin' || user?.role === 'admin' || user?.permissions?.editOrders !== false
 
 
-  const { control: orderControl, handleSubmit: handleOrderSubmit, formState: { isSubmitting, errors: orderErrors }, reset: resetOrderForm, watch, setValue } = useForm<FormValues>({
+
+  const { control: orderControl, handleSubmit: handleOrderSubmit, formState: { errors: orderErrors }, reset: resetOrderForm, watch } = useForm<FormValues>({
     resolver: yupResolver(orderSchema),
     defaultValues: {
       productId: '',
@@ -231,6 +219,7 @@ const OrdersPage = () => {
       setExporting(true)
       const blob = await downloadOrdersExport()
       const filename = `orders_export_${new Date().toISOString().slice(0, 10)}.csv`
+      const { saveAs } = await import('file-saver')
       saveAs(blob, filename)
       showNotification(`Export successful: ${orders.length} orders downloaded.`, 'success')
     } catch (err) {
@@ -270,8 +259,8 @@ const OrdersPage = () => {
     return orders.filter((order) => {
       const matchesSearch = !searchQuery ||
         order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+        order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.email.toLowerCase().includes(searchQuery.toLowerCase())
 
       const matchesStatus = statusFilter === 'All' || order.status === statusFilter
       return matchesSearch && matchesStatus
@@ -310,7 +299,7 @@ const OrdersPage = () => {
     }
   }
 
-  const onOrderSubmit = async (data: CreateOrderPayload) => {
+  const onOrderSubmit = async (data: FormValues) => {
     try {
       setSaving(true)
 
@@ -361,7 +350,7 @@ const OrdersPage = () => {
     }
   }
 
-  const handleImportFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -369,6 +358,8 @@ const OrdersPage = () => {
     setImporting(true)
     setImportSummary(null)
     setImportErrors([])
+
+    const Papa = (await import('papaparse')).default
 
     Papa.parse<Record<string, unknown>>(file, {
       header: true,
@@ -839,6 +830,7 @@ const OrdersPage = () => {
                     <Autocomplete
                       options={customers.map((c) => c.name)}
                       value={value || null}
+                      onChange={(_, newValue) => onChange(newValue)}
                       freeSolo
                       renderInput={(params) => (
                         <TextField

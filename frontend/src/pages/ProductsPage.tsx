@@ -37,8 +37,7 @@ import { Controller, useForm, type SubmitHandler } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import type { Product, ProductPayload, ProductStatus } from '../types/product'
-import Papa from 'papaparse'
-import { saveAs } from 'file-saver'
+
 import {
   createProduct,
   deleteProduct,
@@ -202,6 +201,7 @@ const ProductsPage = () => {
       setExporting(true)
       const blob = await downloadProductsExport()
       const filename = `products_export_${new Date().toISOString().slice(0, 10)}.csv`
+      const { saveAs } = await import('file-saver')
       saveAs(blob, filename)
       showNotification(`Export successful: ${products.length} products downloaded.`, 'success')
     } catch (err) {
@@ -211,7 +211,7 @@ const ProductsPage = () => {
     }
   }
 
-  const handleImportFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -219,6 +219,8 @@ const ProductsPage = () => {
     setImporting(true)
     setImportSummary(null)
     setImportErrors([])
+
+    const Papa = (await import('papaparse')).default
 
     Papa.parse<Record<string, unknown>>(file, {
       header: true,

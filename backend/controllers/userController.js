@@ -4,6 +4,7 @@ const { User, Store } = require('../db/init').db
 const logger = require('../utils/logger')
 const { normalizeEmail, sanitizeUser } = require('../utils/helpers')
 const { buildStoreWhere } = require('../middleware/auth')
+const redisClient = require('../utils/redisClient')
 
 // Helper to find user by email (duplicated to avoid circular dependency or complex exports)
 const findUserByEmail = async (email, storeId = null) => {
@@ -51,14 +52,33 @@ const getUsers = async (req, res) => {
     }
 }
 
-const getCurrentUser = (req, res) => {
+const getCurrentUser = async (req, res) => {
     // req.user is already set by authenticateToken middleware (full user object)
     if (!req.user || !req.user.id) {
         logger.error('[ERROR] /api/users/me: req.user is missing or invalid', { user: req.user })
         return res.status(401).json({ message: 'Invalid or missing token.' })
     }
-    // User is already found and attached by authenticateToken, just return it
-    return res.json(sanitizeUser(req.user))
+
+    try {
+        // Try to get from cache first
+        const cacheKey = `user:profile:${req.user.id}`
+        const cachedData = await redisClient.get(cacheKey)
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData))
+        }
+
+        // User is already found and attached by authenticateToken, just return it
+        const userData = sanitizeUser(req.user)
+
+        // Cache the result for 10 minutes
+        await redisClient.set(cacheKey, JSON.stringify(userData), { EX: 600 })
+
+        return res.json(userData)
+    } catch (error) {
+        logger.error('Failed to get current user:', error)
+        // Fallback to non-cached response
+        return res.json(sanitizeUser(req.user))
+    }
 }
 
 const changePassword = async (req, res) => {
@@ -95,6 +115,9 @@ const changePassword = async (req, res) => {
             passwordChangedAt: new Date(),
         })
 
+        // Invalidate cache
+        await redisClient.del(`user:profile:${user.id}`)
+
         logger.info(`[PASSWORD] Password changed for user: ${user.email}`)
 
         return res.json({ message: 'Password changed successfully.' })
@@ -129,6 +152,9 @@ const updateCurrentUser = async (req, res) => {
 
         await userInstance.update(updateData)
         await userInstance.reload()
+
+        // Invalidate cache
+        await redisClient.del(`user:profile:${userInstance.id}`)
 
         const userData = userInstance.toJSON ? userInstance.toJSON() : userInstance
         return res.json(sanitizeUser(userData))
@@ -279,6 +305,10 @@ const updateUser = async (req, res) => {
         if (permissions) user.permissions = permissions
 
         await user.save()
+
+        // Invalidate cache for this user
+        await redisClient.del(`user:profile:${user.id}`)
+
         const userData = user.toJSON ? user.toJSON() : user
         return res.json(sanitizeUser(userData))
     } catch (error) {
@@ -305,6 +335,10 @@ const deleteUser = async (req, res) => {
         }
 
         await user.destroy()
+
+        // Invalidate cache for this user
+        await redisClient.del(`user:profile:${user.id}`)
+
         return res.status(204).send()
     } catch (error) {
         logger.error('User deletion failed:', error)

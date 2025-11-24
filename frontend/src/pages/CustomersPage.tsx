@@ -30,7 +30,7 @@ import { Controller, useForm, type SubmitHandler, type Resolver } from 'react-ho
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
 import type { Customer, CustomerPayload } from '../types/customer'
-import { saveAs } from 'file-saver'
+
 import { createCustomer, fetchCustomers, downloadCustomersExport } from '../services/customersService'
 import { useAuth } from '../context/AuthContext'
 import DateFilter, { type DateRange } from '../components/common/DateFilter'
@@ -125,6 +125,7 @@ const CustomersPage = () => {
       setExporting(true)
       const blob = await downloadCustomersExport()
       const filename = `customers_export_${new Date().toISOString().slice(0, 10)}.csv`
+      const { saveAs } = await import('file-saver')
       saveAs(blob, filename)
       showNotification(`Export successful: ${customers.length} customers downloaded.`, 'success')
     } catch (err) {

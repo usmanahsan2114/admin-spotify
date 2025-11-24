@@ -55,6 +55,17 @@ module.exports = (sequelize, DataTypes) => {
       tableName: 'products',
       timestamps: true,
       underscored: false,
+      indexes: [
+        {
+          fields: ['storeId'],
+        },
+        {
+          fields: ['status'],
+        },
+        {
+          fields: ['category'],
+        },
+      ],
       hooks: {
         afterFind: (products) => {
           if (!products) return

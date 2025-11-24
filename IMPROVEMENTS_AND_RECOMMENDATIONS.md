@@ -11,7 +11,7 @@ This document outlines the roadmap for bringing the application to a production-
 |------|------------|--------|------------|
 | **1** | **Backend Refactoring** | ✅ **Completed** | **100%** |
 | **2** | **Security & Stability** | ✅ **Completed** | **100%** |
-| **3** | **Performance & Scalability** | 📅 **Planned** | **30%** |
+| **3** | **Performance & Scalability** | 📅 **Planned** | **70%** |
 | **4** | **Production Readiness** | 📅 **Planned** | **20%** |
 
 ---
@@ -53,12 +53,12 @@ This document outlines the roadmap for bringing the application to a production-
 ### Database
 - [x] **Connection Pooling**: Configured in `config/config.json`.
 - [x] **N+1 Query Fixes**: Optimized `findAll` with `include`.
-- [ ] **Caching**: Implement Redis for query result caching.
-- [ ] **Indexing**: Audit and add database indexes.
+- [x] **Caching**: Implement Redis for query result caching.
+- [x] **Indexing**: Audit and add database indexes.
 
 ### Frontend
-- [ ] **Code Splitting**: Implement lazy loading for routes.
-- [ ] **Bundle Optimization**: Analyze and reduce bundle size.
+- [x] **Code Splitting**: Implement lazy loading for routes and dynamic imports.
+- [x] **Bundle Optimization**: Analyze and reduce bundle size.
 - [ ] **Image Optimization**: Use WebP and lazy loading.
 - [ ] **State Management**: Optimize re-renders.
 
@@ -89,7 +89,7 @@ This document outlines the roadmap for bringing the application to a production-
 
 ## 📝 Immediate Action Items (Next Steps)
 
-1. **[Tier 3]** Implement Frontend Code Splitting (Performance)
+1. **[Tier 3]** Image Optimization (WebP, Lazy Loading)
 2. **[Tier 3]** Implement Redis Caching (Database)
 3. **[Tier 4]** Generate API Documentation (Operations)
 4. **[Tier 4]** Containerization (Docker) for Production

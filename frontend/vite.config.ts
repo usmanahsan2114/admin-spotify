@@ -1,24 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), visualizer({
+    open: false,
+    gzipSize: true,
+    brotliSize: true,
+  })],
   build: {
     outDir: 'dist',
     sourcemap: false, // Disable sourcemaps in production for security
     minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.log in production
-        drop_debugger: true,
-      },
-    },
+
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
-          mui: ['@mui/material', '@mui/icons-material', '@mui/x-data-grid'],
+          mui: ['@mui/material'],
+          mui_icons: ['@mui/icons-material'],
+          mui_grid: ['@mui/x-data-grid'],
           charts: ['recharts'],
         },
       },

@@ -530,10 +530,10 @@ const OrderDetailsPage = () => {
                   <strong>Phone:</strong> {order.phone || '—'}
                 </Typography>
                 <Typography>
-                  <strong>Alt. Phone:</strong> {order.customer?.alternativePhone || '—'}
+                  <strong>Alt. Phone:</strong> {'—'}
                 </Typography>
                 <Typography>
-                  <strong>Address:</strong> {order.shippingAddress || (order.customer?.address) || '—'}
+                  <strong>Address:</strong> {order.shippingAddress || '—'}
                 </Typography>
                 <Typography>
                   <strong>Comments:</strong> {order.notes || '—'}

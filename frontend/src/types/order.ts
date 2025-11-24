@@ -30,6 +30,7 @@ export type Order = {
     actor?: string
   }>
   returns?: ReturnRequest[]
+  shippingAddress?: string
 }
 
 export type OrderUpdatePayload = Partial<

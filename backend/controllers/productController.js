@@ -3,6 +3,7 @@ const { Product } = require('../db/init').db
 const logger = require('../utils/logger')
 const { buildStoreWhere } = require('../middleware/auth')
 const { detectProductColumns, getMappingSummary, extractRowData } = require('../utils/columnDetector')
+const redisClient = require('../utils/redisClient')
 
 // Helper to find product by ID
 const findProductById = async (productId) => {
@@ -15,6 +16,13 @@ const getProductsPublic = async (req, res) => {
     try {
         // Filter by storeId if provided
         const storeId = req.query.storeId
+
+        // Try to get from cache first
+        const cacheKey = `products:public:${storeId || 'all'}`
+        const cachedData = await redisClient.get(cacheKey)
+        if (cachedData) {
+            return res.json(JSON.parse(cachedData))
+        }
 
         const where = { status: 'active' }
         if (storeId) {
@@ -39,6 +47,9 @@ const getProductsPublic = async (req, res) => {
                 status: productData.status,
             }
         })
+
+        // Cache the result for 5 minutes
+        await redisClient.set(cacheKey, JSON.stringify(publicProducts), { EX: 300 })
 
         return res.json(publicProducts)
     } catch (error) {
@@ -183,6 +194,9 @@ const createProduct = async (req, res) => {
             imageUrl: imageUrl ? String(imageUrl).trim() : undefined,
         })
 
+        // Invalidate cache
+        await redisClient.delPattern(`products:public:${targetStoreId}*`)
+
         const productData = newProduct.toJSON ? newProduct.toJSON() : newProduct
         const productWithLowStock = {
             ...productData,
@@ -222,6 +236,9 @@ const updateProduct = async (req, res) => {
         await product.update(updateData)
         await product.reload()
 
+        // Invalidate cache
+        await redisClient.delPattern(`products:public:${productData.storeId}*`)
+
         const updatedProduct = product.toJSON ? product.toJSON() : product
         const productWithLowStock = {
             ...updatedProduct,
@@ -250,6 +267,10 @@ const deleteProduct = async (req, res) => {
         }
 
         await product.destroy()
+
+        // Invalidate cache
+        await redisClient.delPattern(`products:public:${productData.storeId}*`)
+
         return res.status(204).send()
     } catch (error) {
         logger.error('Failed to delete product:', error)
@@ -274,6 +295,9 @@ const reorderProduct = async (req, res) => {
         // Mark as reordered (in a real app, this would update a flag or create a purchase order)
         await product.update({ updatedAt: new Date() })
         await product.reload()
+
+        // Invalidate cache
+        await redisClient.delPattern(`products:public:${productData.storeId}*`)
 
         const updatedProduct = product.toJSON ? product.toJSON() : product
         const productWithLowStock = {
@@ -471,6 +495,11 @@ const importProducts = async (req, res) => {
                     row: item,
                 })
             }
+        }
+
+        // Invalidate cache if any changes were made
+        if (created > 0 || updated > 0) {
+            await redisClient.delPattern(`products:public:${req.storeId}*`)
         }
 
         return res.json({
