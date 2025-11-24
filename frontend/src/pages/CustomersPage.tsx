@@ -58,7 +58,13 @@ const customerSchema = yup
   })
   .required()
 
-type FormValues = yup.InferType<typeof customerSchema>
+type FormValues = {
+  name: string
+  email: string
+  phone: string
+  address: string | null | undefined
+  alternativePhone: string | null | undefined
+}
 
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -68,11 +74,14 @@ const CustomersPage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange>({ startDate: null, endDate: null })
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const theme = useTheme()
   const isSmall = useMediaQuery(theme.breakpoints.down('sm'))
   const navigate = useNavigate()
   const { showNotification } = useNotification()
+
+  const canEdit = user?.role === 'superadmin' || user?.role === 'admin' || user?.permissions?.editCustomers !== false
+
 
   const {
     control,
@@ -80,7 +89,7 @@ const CustomersPage = () => {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: yupResolver(customerSchema),
+    resolver: yupResolver(customerSchema) as any,
     defaultValues: {
       name: '',
       email: '',
@@ -276,14 +285,16 @@ const CustomersPage = () => {
               >
                 {exporting ? 'Exporting…' : 'Export customers'}
               </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleOpenDialog}
-                fullWidth={isSmall}
-              >
-                Add Customer
-              </Button>
+              {canEdit && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleOpenDialog}
+                  fullWidth={isSmall}
+                >
+                  Add Customer
+                </Button>
+              )}
             </Stack>
           </Stack>
 

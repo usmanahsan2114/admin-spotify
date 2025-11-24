@@ -127,7 +127,7 @@ const createOrderSchema = z.object({
         email: z.string().email('Invalid customer email'),
         quantity: z.number().int().positive('Quantity must be positive'),
         totalAmount: z.number().min(0).optional(),
-        status: z.enum(['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed', 'Cancelled']).optional(),
+        status: z.enum(['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed', 'Cancelled', 'Paid']).optional(),
         paymentMethod: z.string().optional(),
         shippingAddress: z.string().optional(),
     }),
@@ -138,7 +138,7 @@ const updateOrderSchema = z.object({
         id: z.string().uuid('Invalid order ID'),
     }),
     body: z.object({
-        status: z.enum(['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed', 'Cancelled']).optional(),
+        status: z.enum(['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed', 'Cancelled', 'Paid']).optional(),
         isPaid: z.boolean().optional(),
         quantity: z.number().int().min(0).optional(),
         trackingNumber: z.string().optional(),

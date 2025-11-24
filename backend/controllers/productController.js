@@ -82,7 +82,7 @@ const getProducts = async (req, res) => {
         // Optimize: Fetch only needed fields, calculate lowStock in memory (fast for textual data)
         const productsList = await Product.findAll({
             where,
-            order: [['name', 'ASC']],
+            order: [['createdAt', 'DESC']],
             attributes: ['id', 'name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'status', 'category', 'imageUrl', 'createdAt', 'updatedAt', 'storeId'],
         })
 

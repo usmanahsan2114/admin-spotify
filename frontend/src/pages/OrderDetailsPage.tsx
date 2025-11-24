@@ -530,6 +530,12 @@ const OrderDetailsPage = () => {
                   <strong>Phone:</strong> {order.phone || '—'}
                 </Typography>
                 <Typography>
+                  <strong>Alt. Phone:</strong> {order.customer?.alternativePhone || '—'}
+                </Typography>
+                <Typography>
+                  <strong>Address:</strong> {order.shippingAddress || (order.customer?.address) || '—'}
+                </Typography>
+                <Typography>
                   <strong>Comments:</strong> {order.notes || '—'}
                 </Typography>
               </Stack>

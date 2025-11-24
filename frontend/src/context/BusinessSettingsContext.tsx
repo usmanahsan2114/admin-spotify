@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 import { apiFetch } from '../services/apiClient'
+import { useAuth } from './AuthContext'
 import type { BusinessSettings } from '../types/user'
 
 type BusinessSettingsContextValue = {
@@ -13,6 +14,7 @@ const BusinessSettingsContext = createContext<BusinessSettingsContextValue | und
 export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<BusinessSettings | null>(null)
   const [loading, setLoading] = useState(true)
+  const { isAuthenticated } = useAuth()
 
   const refreshSettings = useCallback(async () => {
     try {
@@ -22,10 +24,10 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
         '/api/settings/business/public',
         { skipAuth: true }
       )
-      
+
       // Check if we have a token before trying authenticated endpoint
       const token = typeof window !== 'undefined' ? window.localStorage.getItem('dashboard.authToken') : null
-      
+
       if (token) {
         // Try to get full settings if authenticated (will fail silently if not)
         try {
@@ -34,7 +36,7 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
         } catch {
           // If authenticated endpoint fails, use public settings
           setSettings({
-            logoUrl: publicSettings.logoUrl,
+            logoUrl: publicSettings.logoUrl || undefined,
             dashboardName: publicSettings.dashboardName,
             defaultCurrency: publicSettings.defaultCurrency || 'USD',
             country: publicSettings.country || 'US',
@@ -43,7 +45,7 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
       } else {
         // If not authenticated, use generic settings (don't show store-specific branding)
         setSettings({
-          logoUrl: null, // No logo on public pages
+          logoUrl: undefined, // No logo on public pages
           dashboardName: 'Shopify Admin Dashboard', // Generic title for public pages
           defaultCurrency: publicSettings.defaultCurrency || 'USD',
           country: publicSettings.country || 'US',
@@ -52,7 +54,7 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
     } catch (err) {
       // Failed to load settings - use defaults
       setSettings({
-        logoUrl: null,
+        logoUrl: undefined,
         dashboardName: 'Shopify Admin Dashboard',
         defaultCurrency: 'USD',
         country: 'US',
@@ -64,7 +66,7 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     refreshSettings()
-  }, [refreshSettings])
+  }, [refreshSettings, isAuthenticated])
 
   return (
     <BusinessSettingsContext.Provider value={{ settings, loading, refreshSettings }}>

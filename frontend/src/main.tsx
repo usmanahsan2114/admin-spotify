@@ -10,13 +10,13 @@ import { BusinessSettingsProvider } from './context/BusinessSettingsContext'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <BusinessSettingsProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <BusinessSettingsProvider>
           <ThemeModeProvider>
             <App />
           </ThemeModeProvider>
-        </AuthProvider>
-      </BusinessSettingsProvider>
+        </BusinessSettingsProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>
 )

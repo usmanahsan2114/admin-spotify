@@ -122,7 +122,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
     }
 
     let isMounted = true
-    
+
     // Fetch metrics for badges
     fetchMetricsOverview()
       .then((metrics) => {
@@ -136,7 +136,7 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
         setPendingReturns(0)
         setLowStockCount(0)
       })
-    
+
     return () => {
       isMounted = false
     }
@@ -152,10 +152,10 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
           { label: 'Settings', to: '/settings', icon: <SettingsIcon /> },
         ]
       }
-      
+
       // Regular users see all base nav items
       const items = [...baseNavItems]
-      
+
       return items.map((item) => {
         if (item.label === 'Returns') {
           return {
@@ -227,8 +227,8 @@ const DrawerContent = ({ onNavigate }: { onNavigate?: () => void }) => {
                         size="small"
                         label={item.badge}
                         color={item.badgeColor || 'error'}
-                        sx={{ 
-                          fontWeight: 600, 
+                        sx={{
+                          fontWeight: 600,
                           height: { xs: 22, sm: 20 },
                           minWidth: { xs: 22, sm: 20 },
                           fontSize: { xs: '0.75rem', sm: '0.7rem' },
@@ -394,67 +394,30 @@ const DashboardLayout = () => {
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
               </IconButton>
             </Tooltip>
-            {/* Store Name and Logo */}
-            {settings?.dashboardName && (
-              <Box 
-                display="flex" 
-                alignItems="center" 
-                gap={0.75}
-                sx={{ 
-                  maxWidth: { xs: '120px', sm: '200px', md: '300px' },
-                  minWidth: 0,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                  sx={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    fontSize: { xs: '0.75rem', sm: '0.875rem', md: '0.9375rem' },
-                    display: { xs: 'none', md: 'block' },
-                  }}
-                >
-                  {settings.dashboardName}
+            {/* User Profile */}
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="subtitle2" fontWeight={600} lineHeight={1.2}>
+                  {user?.fullName || user?.name || 'User'}
                 </Typography>
-                <Tooltip title={settings.dashboardName} arrow>
-                  <Avatar
-                    sx={{
-                      width: { xs: 32, sm: 36 },
-                      height: { xs: 32, sm: 36 },
-                      fontSize: { xs: '0.875rem', sm: '1rem' },
-                      flexShrink: 0,
-                      cursor: 'pointer',
-                    }}
-                    src={
-                      settings?.logoUrl || 
-                      (settings?.dashboardName 
-                        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(settings.dashboardName)}&size=128&background=0d8abc&color=fff&bold=true`
-                        : undefined)
-                    }
-                    alt={settings?.dashboardName || 'Store'}
-                  >
-                    {settings?.dashboardName?.[0]?.toUpperCase() || 'S'}
-                  </Avatar>
-                </Tooltip>
+                <Typography variant="caption" color="text.secondary" lineHeight={1}>
+                  {user?.email}
+                </Typography>
               </Box>
-            )}
-            {/* User Avatar - Show for superadmin or when no store settings */}
-            {(!settings?.dashboardName || user?.role === 'superadmin') && (
               <Avatar
                 sx={{
                   bgcolor: 'primary.main',
-                  width: { xs: 32, sm: 36 },
-                  height: { xs: 32, sm: 36 },
+                  width: { xs: 32, sm: 40 },
+                  height: { xs: 32, sm: 40 },
                   fontSize: { xs: '0.875rem', sm: '1rem' },
+                  cursor: 'pointer',
                 }}
                 src={user?.profilePictureUrl || undefined}
                 alt={user?.fullName || user?.name || user?.email || 'User'}
               >
                 {user?.fullName?.[0] || user?.name?.[0] || user?.email?.[0] || 'U'}
               </Avatar>
-            )}
+            </Box>
             <Tooltip title="Log out">
               <IconButton
                 color="inherit"

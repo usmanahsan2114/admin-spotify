@@ -1,7 +1,7 @@
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
 const { Op } = require('sequelize')
-const { Order, Product, Customer, Return, User, Store } = require('../db/init').db
+const { Order, Product, Customer, Return, User, Store, sequelize } = require('../db/init').db
 const logger = require('../utils/logger')
 const { normalizeEmail, normalizePhone, normalizeAddress } = require('../utils/helpers')
 const { detectOrderColumns, getMappingSummary, extractRowData } = require('../utils/columnDetector')
@@ -14,9 +14,13 @@ const findStoreById = async (storeId) => {
     return await Store.findByPk(storeId)
 }
 
-const findOrderById = async (id) => {
+const findOrderById = async (id, includeCustomer = false) => {
     if (!id) return null
-    return await Order.findByPk(id)
+    const options = {}
+    if (includeCustomer) {
+        options.include = [{ model: Customer, as: 'customer' }]
+    }
+    return await Order.findByPk(id, options)
 }
 
 const findCustomerByContact = async (email, phone, address, storeId = null) => {
@@ -303,7 +307,7 @@ const getOrders = async (req, res) => {
 
 const getOrderById = async (req, res) => {
     try {
-        const order = await findOrderById(req.params.id)
+        const order = await findOrderById(req.params.id, true)
         if (!order) {
             return res.status(404).json({ message: 'Order not found.' })
         }
@@ -344,6 +348,7 @@ const getOrderById = async (req, res) => {
 }
 
 const createOrder = async (req, res) => {
+    const t = await sequelize.transaction()
     try {
         const { productName, customerName, email, phone, quantity, notes, storeId, address, alternativeNames, alternativeEmails, alternativePhones, alternativeAddresses } = req.body
 
@@ -374,18 +379,36 @@ const createOrder = async (req, res) => {
                 name: { [Op.like]: productName },
                 ...(orderStoreId ? { storeId: orderStoreId } : {}),
             },
+            transaction: t
         })
 
         if (!product) {
+            await t.rollback()
             return res.status(400).json({
                 message: `Product "${productName}" not found`
             })
         }
 
-        if (product.stockQuantity < quantity) {
+        // Atomic stock check and decrement
+        // We use a direct update with a where clause to ensure concurrency safety
+        const [affectedRows] = await Product.update(
+            { stockQuantity: sequelize.literal(`"stockQuantity" - ${quantity}`) },
+            {
+                where: {
+                    id: product.id,
+                    stockQuantity: { [Op.gte]: quantity }
+                },
+                transaction: t
+            }
+        )
+
+        if (affectedRows === 0) {
+            await t.rollback()
+            // Re-fetch to get current stock for the error message
+            const currentProduct = await Product.findByPk(product.id)
             return res.status(400).json({
-                message: `Insufficient stock. Only ${product.stockQuantity} units available.`,
-                availableStock: product.stockQuantity
+                message: `Insufficient stock. Only ${currentProduct ? currentProduct.stockQuantity : 0} units available.`,
+                availableStock: currentProduct ? currentProduct.stockQuantity : 0
             })
         }
 
@@ -397,8 +420,9 @@ const createOrder = async (req, res) => {
         }
 
         if (!orderStoreId) {
-            const firstStore = await Store.findOne({ order: [['name', 'ASC']] })
+            const firstStore = await Store.findOne({ order: [['name', 'ASC']], transaction: t })
             if (!firstStore) {
+                await t.rollback()
                 return res.status(400).json({ message: 'No store available. Please create a store first.' })
             }
             orderStoreId = firstStore.id
@@ -417,7 +441,52 @@ const createOrder = async (req, res) => {
                 alternativeNames: alternativeNames ? alternativeNames.split(',').map(s => s.trim()).filter(Boolean) : [],
                 alternativeAddresses: alternativeAddresses ? alternativeAddresses.split(',').map(s => s.trim()).filter(Boolean) : [],
                 alternativePhones: alternativePhones ? alternativePhones.split(',').map(s => s.trim()).filter(Boolean) : [],
-            })
+            }, { transaction: t })
+        } else {
+            // Update existing customer address if provided and different
+            if (address) {
+                const normalizedNew = normalizeAddress(address)
+                const normalizedOld = normalizeAddress(customer.address)
+
+                if (!normalizedOld) {
+                    await customer.update({ address: address }, { transaction: t })
+                } else if (normalizedNew !== normalizedOld) {
+                    let altAddresses = ensureArray(customer.alternativeAddresses)
+                    const exists = altAddresses.some(a => normalizeAddress(a) === normalizedNew)
+                    if (!exists) {
+                        altAddresses.push(address)
+                        await customer.update({ alternativeAddresses: altAddresses }, { transaction: t })
+                    }
+                }
+            }
+
+            // Merge alternative fields
+            const mergeField = async (field, value, normalizeFunc = (v) => v) => {
+                if (!value) return
+                const values = value.split(',').map(s => s.trim()).filter(Boolean)
+                if (values.length === 0) return
+
+                let current = ensureArray(customer[field])
+                let changed = false
+
+                for (const v of values) {
+                    const normalizedV = normalizeFunc(v)
+                    const exists = current.some(c => normalizeFunc(c) === normalizedV)
+                    if (!exists) {
+                        current.push(v)
+                        changed = true
+                    }
+                }
+
+                if (changed) {
+                    await customer.update({ [field]: current }, { transaction: t })
+                }
+            }
+
+            await mergeField('alternativeNames', alternativeNames)
+            await mergeField('alternativeEmails', alternativeEmails, normalizeEmail)
+            await mergeField('alternativePhones', alternativePhones, normalizePhone)
+            await mergeField('alternativeAddresses', alternativeAddresses, normalizeAddress)
         }
 
         const orderDate = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -438,18 +507,23 @@ const createOrder = async (req, res) => {
             submittedBy,
             total: orderTotal,
             customerId: customer.id,
+            shippingAddress: address || null,
             timeline: [{
                 id: crypto.randomUUID(),
                 description: 'Order created',
                 timestamp: new Date().toISOString(),
                 actor: customerName,
             }],
-        })
+        }, { transaction: t })
+
+        await t.commit()
 
         logger.info(`[orders] New order received: ${newOrder.id}`)
+
         const orderData = newOrder.toJSON ? newOrder.toJSON() : newOrder
         return res.status(201).json(orderData)
     } catch (error) {
+        await t.rollback()
         logger.error('Order creation failed:', error)
         return res.status(500).json({ message: 'Order creation failed', error: error.message })
     }
@@ -477,6 +551,11 @@ const updateOrder = async (req, res) => {
             }
         })
 
+        // Auto-set isPaid if status is Paid
+        if (req.body.status === 'Paid' && req.body.isPaid === undefined) {
+            updateData.isPaid = true
+        }
+
         const existingTimeline = Array.isArray(orderData.timeline) ? [...orderData.timeline] : []
         const updatedFields = Object.keys(req.body).filter((key) => allowedFields.includes(key) && req.body[key] !== undefined)
 
@@ -488,6 +567,31 @@ const updateOrder = async (req, res) => {
                 actor: req.user?.email ?? 'System',
             })
             updateData.timeline = existingTimeline
+        }
+
+        // Handle stock adjustments based on status change
+        if (req.body.status && req.body.status !== orderData.status) {
+            const oldStatus = orderData.status
+            const newStatus = req.body.status
+            const isCancelledOrRefunded = (s) => ['Cancelled', 'Refunded'].includes(s)
+
+            const product = await Product.findByPk(orderData.productName ? (await Product.findOne({ where: { name: orderData.productName, storeId: orderData.storeId } }))?.id : null)
+
+            if (product) {
+                // If cancelling/refunding, restore stock
+                if (!isCancelledOrRefunded(oldStatus) && isCancelledOrRefunded(newStatus)) {
+                    await product.increment('stockQuantity', { by: orderData.quantity })
+                    logger.info(`[orders] Restored stock for order ${orderData.id} (Status: ${newStatus})`)
+                }
+                // If reactivating a cancelled/refunded order, reduce stock
+                else if (isCancelledOrRefunded(oldStatus) && !isCancelledOrRefunded(newStatus)) {
+                    if (product.stockQuantity < orderData.quantity) {
+                        return res.status(400).json({ message: `Insufficient stock to reactivate order. Available: ${product.stockQuantity}` })
+                    }
+                    await product.decrement('stockQuantity', { by: orderData.quantity })
+                    logger.info(`[orders] Reduced stock for reactivated order ${orderData.id} (Status: ${newStatus})`)
+                }
+            }
         }
 
         await order.update(updateData)

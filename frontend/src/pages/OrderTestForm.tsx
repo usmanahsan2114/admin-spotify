@@ -97,9 +97,23 @@ const OrderTestForm = () => {
   const handleChange =
     (field: keyof OrderFormData) =>
       (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        let value = event.target.value
+
+        // Strict quantity validation
+        if (field === 'quantity' && formData.product) {
+          const numValue = parseInt(value)
+          if (!isNaN(numValue)) {
+            if (numValue > formData.product.stockQuantity) {
+              value = formData.product.stockQuantity.toString()
+            } else if (numValue < 1) {
+              value = '1'
+            }
+          }
+        }
+
         setFormData((prev) => ({
           ...prev,
-          [field]: event.target.value,
+          [field]: value,
         }))
       }
 
@@ -230,6 +244,8 @@ const OrderTestForm = () => {
         phone: trimmedPhone || '',
         quantity: parsedQuantity,
         notes: formData.notes.trim(),
+        address: trimmedAddress,
+        alternativePhone: trimmedAlternativePhone || undefined,
         ...(storeId ? { storeId } : {}), // Include storeId from URL if available
       }
 
@@ -270,11 +286,42 @@ const OrderTestForm = () => {
           // Failed to reload customers - non-critical
         }
       }
+
+      // Reload products to get updated stock
+      try {
+        const productsUrl = storeId
+          ? `/api/products/public?storeId=${storeId}`
+          : '/api/products/public'
+        const updatedProducts = await apiFetch<Product[]>(productsUrl, { skipAuth: true })
+        setProducts(updatedProducts)
+      } catch {
+        // Failed to reload products
+      }
+
       setFormData({
         ...initialFormState,
         product: null,
       })
     } catch (error) {
+      // Reload products to get updated stock in case of error (e.g. race condition)
+      try {
+        const productsUrl = storeId
+          ? `/api/products/public?storeId=${storeId}`
+          : '/api/products/public'
+        const updatedProducts = await apiFetch<Product[]>(productsUrl, { skipAuth: true })
+        setProducts(updatedProducts)
+
+        // Update selected product if it exists in new list
+        if (formData.product) {
+          const updatedSelected = updatedProducts.find(p => p.id === formData.product?.id)
+          if (updatedSelected) {
+            setFormData(prev => ({ ...prev, product: updatedSelected }))
+          }
+        }
+      } catch {
+        // Ignore product reload error
+      }
+
       if (error instanceof Error) {
         showNotification(error.message, 'error')
       } else {
@@ -452,8 +499,8 @@ const OrderTestForm = () => {
                 <TextField
                   id="order-quantity"
                   name="quantity"
-                  select
                   label="Quantity *"
+                  type="number"
                   value={formData.quantity}
                   onChange={handleChange('quantity')}
                   required
@@ -461,20 +508,11 @@ const OrderTestForm = () => {
                   autoComplete="off"
                   helperText={formData.product ? `Total: ${formatCurrency(formData.product.price * Number(formData.quantity))}` : undefined}
                   disabled={!formData.product || formData.product.stockQuantity === 0}
-                >
-                  {formData.product ? (
-                    [...Array(Math.min(20, formData.product.stockQuantity))].map((_, index) => {
-                      const optionValue = (index + 1).toString()
-                      return (
-                        <MenuItem key={optionValue} value={optionValue}>
-                          {optionValue}
-                        </MenuItem>
-                      )
-                    })
-                  ) : (
-                    <MenuItem value="1">1</MenuItem>
-                  )}
-                </TextField>
+                  inputProps={{
+                    min: 1,
+                    max: formData.product?.stockQuantity,
+                  }}
+                />
 
                 <TextField
                   id="order-notes"
