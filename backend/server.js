@@ -239,6 +239,31 @@ const restrictDemoStore = (req, res, next) => {
 // Apply rate limiting to all API routes
 app.use('/api/', generalLimiter)
 
+// Test DB Connection Endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    await db.sequelize.authenticate();
+    const [results] = await db.sequelize.query('SELECT NOW() as now');
+    res.json({
+      status: 'success',
+      message: 'Database connection working!',
+      timestamp: results[0].now,
+      config: {
+        host: process.env.DB_HOST,
+        database: process.env.DB_NAME,
+        ssl: process.env.DB_SSL === 'true'
+      }
+    });
+  } catch (error) {
+    console.error('Test DB Connection Error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Database connection failed',
+      error: error.message
+    });
+  }
+});
+
 // Health check endpoint - Enhanced with performance metrics
 app.get('/api/health', async (_req, res) => {
   const startTime = Date.now()
