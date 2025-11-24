@@ -56,6 +56,8 @@ if (dialect === 'mysql') {
       rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
     } : false,
   }
+  // Explicitly provide the pg module to Sequelize to avoid Vercel bundling issues
+  dbConfig.dialectModule = require('pg')
 }
 
 // Debug: Log the actual configuration being used
