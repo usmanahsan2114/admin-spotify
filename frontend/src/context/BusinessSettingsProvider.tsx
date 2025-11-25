@@ -12,36 +12,33 @@ export const BusinessSettingsProvider = ({ children }: { children: ReactNode }) 
   const refreshSettings = useCallback(async () => {
     try {
       setLoading(true)
-      // Always fetch public settings first (no auth required)
-      const publicSettings = await apiFetch<{ logoUrl?: string | null; dashboardName?: string; defaultCurrency?: string; country?: string }>(
-        '/api/settings/business/public',
-        { skipAuth: true }
-      )
 
-      // Check if we have a token before trying authenticated endpoint
+      // Check if we have a token before trying any API calls
       const token = typeof window !== 'undefined' ? window.localStorage.getItem('dashboard.authToken') : null
 
-      if (token) {
-        // Try to get full settings if authenticated (will fail silently if not)
-        try {
-          const fullSettings = await apiFetch<BusinessSettings>('/api/settings/business')
-          setSettings(fullSettings)
-        } catch {
-          // If authenticated endpoint fails, use public settings
-          setSettings({
-            logoUrl: publicSettings.logoUrl || undefined,
-            dashboardName: publicSettings.dashboardName,
-            defaultCurrency: publicSettings.defaultCurrency || 'USD',
-            country: publicSettings.country || 'US',
-          })
-        }
-      } else {
-        // If not authenticated, use generic settings (don't show store-specific branding)
+      if (!token) {
+        // If not authenticated, use default settings immediately (don't call API)
         setSettings({
           logoUrl: undefined, // No logo on public pages
           dashboardName: 'Shopify Admin Dashboard', // Generic title for public pages
-          defaultCurrency: publicSettings.defaultCurrency || 'USD',
-          country: publicSettings.country || 'US',
+          defaultCurrency: 'USD',
+          country: 'US',
+        })
+        setLoading(false)
+        return
+      }
+
+      // Only fetch settings if authenticated
+      try {
+        const fullSettings = await apiFetch<BusinessSettings>('/api/settings/business')
+        setSettings(fullSettings)
+      } catch {
+        // If authenticated endpoint fails, use defaults
+        setSettings({
+          logoUrl: undefined,
+          dashboardName: 'Shopify Admin Dashboard',
+          defaultCurrency: 'USD',
+          country: 'US',
         })
       }
     } catch {
