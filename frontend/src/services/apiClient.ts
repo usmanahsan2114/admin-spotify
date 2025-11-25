@@ -94,11 +94,17 @@ export const apiFetch = async <TResponse>(
     headerInstance.set('Authorization', `Bearer ${token}`)
   }
 
-  const fetchFn = () =>
-    fetch(`${API_BASE_URL}${path}`, {
+  const fetchFn = () => {
+    let url = `${API_BASE_URL}${path}`
+    // Fix double /api/api issue if VITE_API_BASE_URL is set to /api
+    if (url.includes('/api/api/')) {
+      url = url.replace('/api/api/', '/api/')
+    }
+    return fetch(url, {
       ...rest,
       headers: headerInstance,
     })
+  }
 
   let response = await retryFetch(fetchFn, retries)
 
