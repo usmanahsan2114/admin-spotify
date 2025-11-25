@@ -51,6 +51,46 @@ module.exports = {
       })))
     }
 
+    // Add Super Admin user
+    const superAdminId = 'super-admin-00000000-0000-0000-0000-000000000001'
+    await queryInterface.bulkInsert('users', [{
+      id: superAdminId,
+      email: 'superadmin@shopifyadmin.pk',
+      passwordHash: bcrypt.hashSync('superadmin123', 10),
+      name: 'Super Administrator',
+      role: 'superadmin',
+      storeId: null, // Super admin is not tied to a specific store
+      fullName: 'Super Administrator',
+      phone: '+92-21-11111111',
+      profilePictureUrl: null,
+      defaultDateRangeFilter: 'last30',
+      notificationPreferences: JSON.stringify({
+        newOrders: true,
+        lowStock: true,
+        returnsPending: true,
+      }),
+      permissions: JSON.stringify({
+        viewOrders: true,
+        editOrders: true,
+        deleteOrders: true,
+        viewProducts: true,
+        editProducts: true,
+        deleteProducts: true,
+        viewCustomers: true,
+        editCustomers: true,
+        viewReturns: true,
+        processReturns: true,
+        viewReports: true,
+        manageUsers: true,
+        manageSettings: true,
+        manageStores: true,
+      }),
+      active: true,
+      passwordChangedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }])
+
     // Seed products
     if (multiStoreData.products && multiStoreData.products.length > 0) {
       await queryInterface.bulkInsert('products', multiStoreData.products.map(product => ({
