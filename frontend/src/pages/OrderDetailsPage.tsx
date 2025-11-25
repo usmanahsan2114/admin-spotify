@@ -536,7 +536,7 @@ const OrderDetailsPage = () => {
                   {typeof order.shippingAddress === 'string'
                     ? order.shippingAddress || '—'
                     : order.shippingAddress
-                      ? `${order.shippingAddress.address || ''}, ${order.shippingAddress.city || ''}, ${order.shippingAddress.postalCode || ''}`.trim().replace(/(^[,\s]+|[,\s]+$)/g, '') || '—'
+                      ? `${(order.shippingAddress as any).address || ''}, ${(order.shippingAddress as any).city || ''}, ${(order.shippingAddress as any).postalCode || ''}`.trim().replace(/(^[,\s]+|[,\s]+$)/g, '') || '—'
                       : '—'}
                 </Typography>
                 <Typography>
