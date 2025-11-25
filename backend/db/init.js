@@ -2,34 +2,21 @@
 const db = require('../models')
 const winston = require('winston')
 
-// Detect serverless environment (Vercel, AWS Lambda, etc.)
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-
-// Configure transports based on environment
-const transports = [
-  new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  })
-]
-
-// Only add file transports in local/development environments
-// Serverless environments have read-only filesystems
-if (!isServerless && process.env.NODE_ENV !== 'production') {
-  transports.push(
-    new winston.transports.File({ filename: 'logs/database.log' })
-  )
-}
-
+// Simple console-only logger (Vercel-compatible)
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.simple()
   ),
-  transports,
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ],
 })
 
 async function initializeDatabase() {

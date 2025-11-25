@@ -1,39 +1,23 @@
 // Global error handler middleware
 // Note: Logger and Sentry should be initialized in server.js before this middleware
-const NODE_ENV = process.env.NODE_ENV || 'development'
 const winston = require('winston')
 
-// Detect serverless environment
-const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
-
-// Configure transports based on environment
-const transports = [
-  new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  })
-]
-
-// Only add file transports in local/development environments
-// Serverless environments have read-only filesystems
-if (!isServerless && NODE_ENV !== 'production') {
-  transports.push(
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
-  )
-}
-
-// Create logger with configured transports
+// Simple console-only logger (Vercel-compatible)
 const logger = winston.createLogger({
-  level: NODE_ENV === 'production' ? 'info' : 'debug',
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  transports,
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ],
 })
 
 /**

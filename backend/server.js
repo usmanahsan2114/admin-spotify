@@ -63,26 +63,7 @@ if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
 // Detect serverless environment (Vercel, AWS Lambda, etc.)
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 
-// Configure transports based on environment
-const transports = [
-  new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  })
-]
-
-// Only add file transports in local/development environments
-// Serverless environments have read-only filesystems (except /tmp)
-if (!isServerless && NODE_ENV !== 'production') {
-  transports.push(
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
-  )
-}
-
-// Configure Winston logger (must be defined before Sentry initialization)
+// Simple console-only logger (Vercel-compatible)
 const logger = winston.createLogger({
   level: NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
@@ -91,7 +72,14 @@ const logger = winston.createLogger({
     winston.format.json()
   ),
   defaultMeta: { service: 'shopify-admin-api' },
-  transports,
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
+  ],
 })
 
 // Initialize Sentry for error tracking (only in production, after logger is defined)
