@@ -13,14 +13,22 @@
             }
         }
     ],
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/(.*)",
-            "destination": "/backend/server.js"
+            "src": "/api/(.*)",
+            "dest": "/backend/server.js"
         },
         {
-            "source": "/(.*)",
-            "destination": "/frontend/index.html"
+            "src": "/assets/(.*)",
+            "dest": "/frontend/assets/$1"
+        },
+        {
+            "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot))",
+            "dest": "/frontend/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/frontend/index.html"
         }
     ]
 }
