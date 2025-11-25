@@ -56,9 +56,9 @@ const LoginPage = () => {
     setSubmitting(true)
     setError(null)
     setEmail('demo@demo.shopifyadmin.pk')
-    setPassword('demo123')
+    setPassword('demo1234')
     try {
-      const result = await login('demo@demo.shopifyadmin.pk', 'demo123')
+      const result = await login('demo@demo.shopifyadmin.pk', 'demo1234')
       if (result.needsPasswordChange) {
         navigate('/change-password', { replace: true })
       } else {
