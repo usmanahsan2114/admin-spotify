@@ -1,6 +1,7 @@
 // Global error handler middleware
 // Note: Logger and Sentry should be initialized in server.js before this middleware
 const NODE_ENV = process.env.NODE_ENV || 'development'
+const winston = require('winston')
 
 // Detect serverless environment
 const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
@@ -24,9 +25,7 @@ if (!isServerless && NODE_ENV !== 'production') {
   )
 }
 
-// We'll require logger from a shared location or pass it as parameter
-// For now, create a simple logger here
-const winston = require('winston')
+// Create logger with configured transports
 const logger = winston.createLogger({
   level: NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
