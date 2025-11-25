@@ -2,78 +2,135 @@
 const { Sequelize } = require('sequelize')
 require('dotenv').config()
 
-// Get database dialect from environment, default to 'mysql' for local development
-const dialect = (process.env.DB_DIALECT || 'mysql').toLowerCase()
+// Detect serverless environment for optimized pool configuration
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
 
-// Validate dialect is supported
-const supportedDialects = ['mysql', 'postgres']
-if (!supportedDialects.includes(dialect)) {
-  throw new Error(
-    `Unsupported DB_DIALECT: ${dialect}. Supported dialects: ${supportedDialects.join(', ')}`
-  )
-}
+let sequelize
+let connectionMethod = 'Individual Variables'
 
-// Default ports per dialect
-const defaultPorts = {
-  mysql: 3306,
-  postgres: 5432,
-}
+// Priority 1: Use DATABASE_URL if present (Supabase integration, Heroku, etc.)
+if (process.env.DATABASE_URL) {
+  connectionMethod = 'DATABASE_URL'
 
-// Get connection config from environment
-const dbConfig = {
-  database: process.env.DB_NAME || (dialect === 'mysql' ? 'shopify_admin_dev' : 'shopify_admin'),
-  username: process.env.DB_USER || (dialect === 'mysql' ? 'root' : 'postgres'),
-  password: process.env.DB_PASSWORD || '',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || defaultPorts[dialect], 10),
-  dialect,
-  logging: process.env.NODE_ENV === 'development' ? console.log : false,
-  pool: {
-    max: process.env.NODE_ENV === 'production'
-      ? parseInt(process.env.DB_POOL_MAX || '20', 10)
-      : parseInt(process.env.DB_POOL_MAX || '20', 10), // Increased for large datasets
-    min: process.env.NODE_ENV === 'production'
-      ? parseInt(process.env.DB_POOL_MIN || '5', 10)
-      : parseInt(process.env.DB_POOL_MIN || '2', 10),
-    acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10), // Increased timeout for large datasets
-    idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
-    evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Check for idle connections every second
-  },
-}
+  // Parse DATABASE_URL to extract dialect for logging
+  const urlMatch = process.env.DATABASE_URL.match(/^(\w+):\/\//)
+  const urlDialect = urlMatch ? urlMatch[1] : 'postgres'
 
-// Dialect-specific options
-if (dialect === 'mysql') {
-  dbConfig.dialectOptions = {
-    connectTimeout: 60000,
+  console.log('[DEBUG] Database Configuration:')
+  console.log(`  Connection Method: ${connectionMethod}`)
+  console.log(`  Dialect: ${urlDialect}`)
+  console.log(`  URL: ${process.env.DATABASE_URL.replace(/:[^:@]+@/, ':***@')}`) // Hide password
+
+  // Configure Sequelize with connection string
+  const connectionOptions = {
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+      max: isServerless
+        ? parseInt(process.env.DB_POOL_MAX || '3', 10)
+        : parseInt(process.env.DB_POOL_MAX || '20', 10),
+      min: isServerless
+        ? parseInt(process.env.DB_POOL_MIN || '0', 10)
+        : parseInt(process.env.DB_POOL_MIN || '5', 10),
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10),
+      idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
+      evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10),
+    },
   }
-} else if (dialect === 'postgres') {
-  // Postgres-specific options (e.g., for Supabase)
-  dbConfig.dialectOptions = {
-    connectTimeout: 60000,
-    // SSL is typically required for Supabase
-    ssl: process.env.DB_SSL === 'true' ? {
-      require: true,
-      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
-    } : false,
+
+  // Add dialect-specific options for PostgreSQL (most common for DATABASE_URL)
+  if (urlDialect === 'postgres' || urlDialect === 'postgresql') {
+    connectionOptions.dialectOptions = {
+      connectTimeout: 60000,
+      ssl: {
+        require: true,
+        rejectUnauthorized: false, // Required for Supabase and most cloud providers
+      },
+    }
+    connectionOptions.dialectModule = require('pg')
   }
-  // Explicitly provide the pg module to Sequelize to avoid Vercel bundling issues
-  dbConfig.dialectModule = require('pg')
-}
 
-// Debug: Log the actual configuration being used
-console.log('[DEBUG] Database Configuration:')
-console.log(`  Dialect: ${dialect}`)
-console.log(`  Host: ${dbConfig.host}`)
-console.log(`  Port: ${dbConfig.port}`)
-console.log(`  Database: ${dbConfig.database}`)
-console.log(`  User: ${dbConfig.username}`)
-console.log(`  SSL: ${process.env.DB_SSL}`)
-console.log(`  SSL Reject Unauthorized: ${process.env.DB_SSL_REJECT_UNAUTHORIZED}`)
-if (dbConfig.dialectOptions && dbConfig.dialectOptions.ssl) {
-  console.log('  SSL Config:', JSON.stringify(dbConfig.dialectOptions.ssl, null, 2))
-}
+  sequelize = new Sequelize(process.env.DATABASE_URL, connectionOptions)
 
-const sequelize = new Sequelize(dbConfig)
+} else {
+  // Priority 2: Use individual environment variables (existing behavior)
+  connectionMethod = 'Individual Variables'
+
+  // Get database dialect from environment, default to 'mysql' for local development
+  const dialect = (process.env.DB_DIALECT || 'mysql').toLowerCase()
+
+  // Validate dialect is supported
+  const supportedDialects = ['mysql', 'postgres']
+  if (!supportedDialects.includes(dialect)) {
+    throw new Error(
+      `Unsupported DB_DIALECT: ${dialect}. Supported dialects: ${supportedDialects.join(', ')}`
+    )
+  }
+
+  // Default ports per dialect
+  const defaultPorts = {
+    mysql: 3306,
+    postgres: 5432,
+  }
+
+  // Get connection config from environment
+  const dbConfig = {
+    database: process.env.DB_NAME || (dialect === 'mysql' ? 'shopify_admin_dev' : 'shopify_admin'),
+    username: process.env.DB_USER || (dialect === 'mysql' ? 'root' : 'postgres'),
+    password: process.env.DB_PASSWORD || '',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || defaultPorts[dialect], 10),
+    dialect,
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    pool: {
+      max: isServerless
+        ? parseInt(process.env.DB_POOL_MAX || '3', 10)
+        : parseInt(process.env.DB_POOL_MAX || '20', 10),
+      min: isServerless
+        ? parseInt(process.env.DB_POOL_MIN || '0', 10)
+        : (process.env.NODE_ENV === 'production'
+          ? parseInt(process.env.DB_POOL_MIN || '5', 10)
+          : parseInt(process.env.DB_POOL_MIN || '2', 10)),
+      acquire: parseInt(process.env.DB_POOL_ACQUIRE || '60000', 10),
+      idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10),
+      evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10),
+    },
+  }
+
+  // Dialect-specific options
+  if (dialect === 'mysql') {
+    dbConfig.dialectOptions = {
+      connectTimeout: 60000,
+    }
+  } else if (dialect === 'postgres') {
+    // Postgres-specific options (e.g., for Supabase)
+    dbConfig.dialectOptions = {
+      connectTimeout: 60000,
+      // SSL is typically required for Supabase
+      ssl: process.env.DB_SSL === 'true' ? {
+        require: true,
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+      } : false,
+    }
+    // Explicitly provide the pg module to Sequelize to avoid Vercel bundling issues
+    dbConfig.dialectModule = require('pg')
+  }
+
+  // Debug: Log the actual configuration being used
+  console.log('[DEBUG] Database Configuration:')
+  console.log(`  Connection Method: ${connectionMethod}`)
+  console.log(`  Dialect: ${dialect}`)
+  console.log(`  Host: ${dbConfig.host}`)
+  console.log(`  Port: ${dbConfig.port}`)
+  console.log(`  Database: ${dbConfig.database}`)
+  console.log(`  User: ${dbConfig.username}`)
+  console.log(`  SSL: ${process.env.DB_SSL}`)
+  console.log(`  SSL Reject Unauthorized: ${process.env.DB_SSL_REJECT_UNAUTHORIZED}`)
+  if (dbConfig.dialectOptions && dbConfig.dialectOptions.ssl) {
+    console.log('  SSL Config:', JSON.stringify(dbConfig.dialectOptions.ssl, null, 2))
+  }
+
+  sequelize = new Sequelize(dbConfig)
+}
 
 const db = {}
 

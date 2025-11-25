@@ -19,7 +19,24 @@ JWT_SECRET=<GENERATE_STRONG_SECRET_32_CHARS_MINIMUM>
 
 ---
 
-### 🗄️ Database Configuration (Supabase)
+### 🗄️ Database Configuration
+
+**You have TWO options for database configuration:**
+
+#### Option 1: Use DATABASE_URL (Recommended - Supabase Integration)
+
+If you have Supabase integration enabled in Vercel, it automatically provides `DATABASE_URL`. **You don't need to set individual DB_* variables** - the integration handles everything!
+
+```bash
+# Automatically provided by Supabase integration - DO NOT set manually
+# DATABASE_URL=postgresql://postgres.yqzwfbufcmxzeqfbdlpf:PASSWORD@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres
+```
+
+> **✅ Advantage:** Fewer variables to manage, automatic updates from Supabase
+
+#### Option 2: Use Individual Variables (Manual Configuration)
+
+If you're NOT using Supabase integration, set these individual variables:
 
 ```bash
 DB_HOST=aws-1-ap-northeast-2.pooler.supabase.com
@@ -32,9 +49,11 @@ DB_SSL=true
 DB_SSL_REJECT_UNAUTHORIZED=false
 ```
 
+> **📝 Note:** If both `DATABASE_URL` and individual variables are present, `DATABASE_URL` takes precedence.
+
 ---
 
-### 🔧 Connection Pool (Optimized for Serverless)
+### 🔧 Connection Pool (Optional - Optimized for Serverless)
 
 ```bash
 DB_POOL_MAX=3
@@ -45,6 +64,7 @@ DB_POOL_ACQUIRE=30000
 
 > **Note:** These values are optimized for Vercel's serverless environment.
 > Lower pool sizes prevent connection exhaustion.
+> **If using DATABASE_URL, these are automatically configured with sensible defaults.**
 
 ---
 
