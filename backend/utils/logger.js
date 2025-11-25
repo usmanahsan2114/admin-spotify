@@ -1,9 +1,9 @@
 const winston = require('winston')
-const path = require('path')
 
 const NODE_ENV = process.env.NODE_ENV || 'development'
 
-// Configure Winston logger
+// Simple console-only logger (Vercel-compatible)
+// Vercel captures console output in Runtime Logs
 const logger = winston.createLogger({
     level: NODE_ENV === 'production' ? 'info' : 'debug',
     format: winston.format.combine(
@@ -13,19 +13,14 @@ const logger = winston.createLogger({
     ),
     defaultMeta: { service: 'shopify-admin-api' },
     transports: [
-        new winston.transports.File({ filename: path.join(__dirname, '../logs/error.log'), level: 'error' }),
-        new winston.transports.File({ filename: path.join(__dirname, '../logs/combined.log') }),
+        new winston.transports.Console({
+            format: winston.format.combine(
+                winston.format.colorize(),
+                winston.format.simple()
+            )
+        })
     ],
 })
 
-// Add console transport for development
-if (NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-        format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple()
-        )
-    }))
-}
-
 module.exports = logger
+
