@@ -337,7 +337,7 @@ const generateMultiStoreData = () => {
       email: adminEmail,
       name: adminName,
       role: 'admin',
-      passwordHash: bcrypt.hashSync(template.isDemo ? 'demo123' : 'admin123', 10),
+      passwordHash: bcrypt.hashSync(template.isDemo ? 'demo1234' : 'admin123', 10),
       active: true,
       createdAt: storeCreatedAt,
       updatedAt: storeCreatedAt,
