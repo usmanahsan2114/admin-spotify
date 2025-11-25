@@ -2,16 +2,34 @@
 const db = require('../models')
 const winston = require('winston')
 
+// Detect serverless environment (Vercel, AWS Lambda, etc.)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+
+// Configure transports based on environment
+const transports = [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      winston.format.simple()
+    )
+  })
+]
+
+// Only add file transports in local/development environments
+// Serverless environments have read-only filesystems
+if (!isServerless && process.env.NODE_ENV !== 'production') {
+  transports.push(
+    new winston.transports.File({ filename: 'logs/database.log' })
+  )
+}
+
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.simple()
   ),
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'logs/database.log' }),
-  ],
+  transports,
 })
 
 async function initializeDatabase() {
@@ -20,16 +38,18 @@ async function initializeDatabase() {
     const dialect = db.sequelize.getDialect()
     const dbConfig = db.sequelize.config
     logger.info(`Connecting to ${dialect.toUpperCase()} database: ${dbConfig.host}:${dbConfig.port}/${dbConfig.database}`)
-    
+
     // Test database connection
     await db.sequelize.authenticate()
     logger.info(`✅ Database connection established successfully (dialect: ${dialect})`)
-    
+
     // Configure connection pool for production
     if (process.env.NODE_ENV === 'production') {
+      // Optimized pool configuration for serverless environments
+      // Serverless functions don't maintain persistent connections, so use smaller pools
       const poolConfig = {
-        max: parseInt(process.env.DB_POOL_MAX || '20', 10), // Max connections (default 20)
-        min: parseInt(process.env.DB_POOL_MIN || '5', 10), // Min connections (default 5)
+        max: parseInt(process.env.DB_POOL_MAX || (isServerless ? '3' : '20'), 10), // Lower max for serverless
+        min: parseInt(process.env.DB_POOL_MIN || (isServerless ? '0' : '5'), 10), // No minimum for serverless
         idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10), // Idle timeout (default 10s)
         acquire: parseInt(process.env.DB_POOL_ACQUIRE || '30000', 10), // Acquire timeout (default 30s)
         evict: parseInt(process.env.DB_POOL_EVICT || '1000', 10), // Evict check interval (default 1s)
@@ -39,16 +59,16 @@ async function initializeDatabase() {
       db.sequelize.connectionManager.pool.idle = poolConfig.idle
       db.sequelize.connectionManager.pool.acquire = poolConfig.acquire
       db.sequelize.connectionManager.pool.evict = poolConfig.evict
-      logger.info(`Database connection pool configured for production: max=${poolConfig.max}, min=${poolConfig.min}`)
+      logger.info(`Database connection pool configured for ${isServerless ? 'serverless' : 'production'}: max=${poolConfig.max}, min=${poolConfig.min}`)
     }
-    
+
     // Sync database (creates tables if they don't exist)
     // In production, use migrations instead
     if (process.env.NODE_ENV === 'development') {
       await db.sequelize.sync({ alter: false }) // Use migrations in production
       logger.info('Database synchronized.')
     }
-    
+
     return true
   } catch (error) {
     logger.error('Unable to connect to database:', error)

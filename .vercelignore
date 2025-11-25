@@ -1,0 +1,71 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Logs
+logs
+*.log
+debug*.log
+error.log
+startup.log
+
+# Test outputs
+test_output*.txt
+credentials_output.txt
+
+# Large SQL files
+*.sql
+
+# Environment files (use Vercel dashboard for env vars)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist
+build
+.cache
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Git
+.git
+.gitignore
+
+# Documentation (optional - remove if you want docs deployed)
+*.md
+!README.md
+
+# Scripts (not needed in production)
+scripts/
+check-*.js
+test-*.js
+verify-*.js
+create-*.js
+drop-*.js
+fetch_*.js
+list-*.js
+manual-seed.js
+reset_*.js
+debug_*.js
