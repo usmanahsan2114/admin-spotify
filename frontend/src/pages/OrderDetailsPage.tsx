@@ -532,7 +532,12 @@ const OrderDetailsPage = () => {
                   <strong>Alt. Phone:</strong> {'—'}
                 </Typography>
                 <Typography>
-                  <strong>Address:</strong> {order.shippingAddress || '—'}
+                  <strong>Address:</strong>{' '}
+                  {typeof order.shippingAddress === 'string'
+                    ? order.shippingAddress || '—'
+                    : order.shippingAddress
+                      ? `${order.shippingAddress.address || ''}, ${order.shippingAddress.city || ''}, ${order.shippingAddress.postalCode || ''}`.trim().replace(/(^[,\s]+|[,\s]+$)/g, '') || '—'
+                      : '—'}
                 </Typography>
                 <Typography>
                   <strong>Comments:</strong> {order.notes || '—'}
