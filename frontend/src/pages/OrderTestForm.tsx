@@ -83,7 +83,13 @@ const OrderTestForm = () => {
           token ? fetchCustomers().catch(() => []) : Promise.resolve([]),
         ])
         setProducts(productsData)
-        setCustomers(customersData)
+        if (Array.isArray(customersData)) {
+          setCustomers(customersData)
+        } else if ('data' in customersData && Array.isArray(customersData.data)) {
+          setCustomers(customersData.data)
+        } else {
+          setCustomers([])
+        }
       } catch {
         showNotification('Failed to load products. Please refresh the page.', 'error')
       } finally {
@@ -172,8 +178,12 @@ const OrderTestForm = () => {
             // Reload customers list to get the existing one
             try {
               const updatedCustomers = await fetchCustomers()
-              setCustomers(updatedCustomers)
-              existingCustomer = updatedCustomers.find(
+              const customersList = Array.isArray(updatedCustomers)
+                ? updatedCustomers
+                : ('data' in updatedCustomers && Array.isArray(updatedCustomers.data) ? updatedCustomers.data : [])
+
+              setCustomers(customersList)
+              existingCustomer = customersList.find(
                 (c) => normalizeEmail(c.email) === trimmedEmail
               )
             } catch {
@@ -280,7 +290,11 @@ const OrderTestForm = () => {
       if (token) {
         try {
           const updatedCustomers = await fetchCustomers()
-          setCustomers(updatedCustomers)
+          if (Array.isArray(updatedCustomers)) {
+            setCustomers(updatedCustomers)
+          } else if ('data' in updatedCustomers && Array.isArray(updatedCustomers.data)) {
+            setCustomers(updatedCustomers.data)
+          }
         } catch {
           // Failed to reload customers - non-critical
         }

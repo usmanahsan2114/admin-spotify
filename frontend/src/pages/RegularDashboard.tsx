@@ -148,7 +148,13 @@ const RegularDashboard = () => {
           fetchGrowthReport(growthPeriod, true, startDate, endDate),
           fetchTrendReport(trendMetric, startDate, endDate),
         ])
-        setOrders(ordersResponse)
+        if (Array.isArray(ordersResponse)) {
+          setOrders(ordersResponse)
+        } else if ('data' in ordersResponse && Array.isArray(ordersResponse.data)) {
+          setOrders(ordersResponse.data)
+        } else {
+          setOrders([])
+        }
         setProducts(productsResponse)
         setLowStockProducts(lowStockResponse)
         setMetrics(metricsResponse)

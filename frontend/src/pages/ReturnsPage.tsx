@@ -120,7 +120,13 @@ const ReturnsPage = () => {
         fetchOrders(startDate, endDate),
       ])
       setReturns(returnsResponse)
-      setOrders(ordersResponse)
+      if (Array.isArray(ordersResponse)) {
+        setOrders(ordersResponse)
+      } else if ('data' in ordersResponse && Array.isArray(ordersResponse.data)) {
+        setOrders(ordersResponse.data)
+      } else {
+        setOrders([])
+      }
     } catch (err) {
       showNotification(err instanceof Error ? err.message : 'Failed to load returns.', 'error')
     } finally {
