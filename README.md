@@ -26,51 +26,6 @@
 
 ## Getting Started
 
-### Prerequisites
-
-- **Node.js**: ≥ 18 (LTS recommended)
-- **npm**: ≥ 9
-- **XAMPP**: For local MySQL database (Windows recommended) - Download from [https://www.apachefriends.org/](https://www.apachefriends.org/)
-
-## Local Development (XAMPP)
-
-This guide uses **XAMPP MySQL** for local development, which is the recommended setup for Windows users.
-
-### Step 1: Install and Start XAMPP
-
-1. **Download and Install XAMPP**:
-   - Visit https://www.apachefriends.org/
-   - Download XAMPP for Windows
-   - Run the installer and follow the setup wizard
-   - Default installation path: `C:\xampp`
-
-2. **Start XAMPP Services**:
-   - Open **XAMPP Control Panel** (from Start Menu or desktop shortcut)
-   - Click **"Start"** next to **Apache** service (optional, for phpMyAdmin access)
-   - Click **"Start"** next to **MySQL** service (required)
-   - Verify MySQL is running (green indicator shows)
-
-### Step 2: Create Database in phpMyAdmin
-
-1. **Access phpMyAdmin**:
-   - Open browser: http://localhost/phpmyadmin
-   - Or navigate: http://localhost:80/phpmyadmin
-
-2. **Create Database**:
-   - Click **"New"** in the left sidebar
-   - Enter database name: `shopify_admin_dev`
-   - Select collation: `utf8mb4_unicode_ci` (from dropdown)
-   - Click **"Create"**
-
-   **OR** use SQL command:
-   ```sql
-   CREATE DATABASE shopify_admin_dev CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-
-### Step 3: Install Dependencies
-
-```bash
-# Clone repository (if not already)
 git clone https://github.com/usmanahsan2114/admin-spotify.git
 cd admin-spotify
 
@@ -88,30 +43,23 @@ npm --prefix frontend install
 
 **Backend (`backend/.env`):**
 
-Create `backend/.env` file with the following content (matches XAMPP defaults):
+Create `backend/.env` file with the following content:
 
 ```env
 NODE_ENV=development
 PORT=5000
 JWT_SECRET=development-secret-please-change-in-production-min-32-chars
-DB_DIALECT=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=shopify_admin_dev
-DB_USER=root
-DB_PASSWORD=
+DB_DIALECT=postgres
+DB_HOST=aws-1-ap-northeast-2.pooler.supabase.com
+DB_PORT=6543
+DB_NAME=postgres
+DB_USER=[your-supabase-user]
+DB_PASSWORD=[your-supabase-password]
+DB_SSL=true
 CORS_ORIGIN=http://localhost:5173,http://localhost:3000
 ```
 
-**XAMPP Connection Details:**
-- `DB_DIALECT=mysql` - Database dialect (defaults to 'mysql' if not set, supports 'mysql' or 'postgres')
-- `DB_HOST=localhost` - XAMPP MySQL runs on localhost
-- `DB_PORT=3306` - Default MySQL port
-- `DB_NAME=shopify_admin_dev` - Database name you created in Step 2
-- `DB_USER=root` - Default XAMPP MySQL user
-- `DB_PASSWORD=` - Empty (XAMPP default), or your MySQL root password if you set one
-
-**Database Dialect Support:**
+**Database Strategy: Supabase for All**
 - **Local Development**: Uses Supabase Postgres (configured in `backend/.env`)
 - **Production**: Uses Supabase Postgres (configured in production environment variables)
 - The backend is configured to use Supabase for both environments to ensure consistency.
@@ -189,33 +137,6 @@ Expected response:
 ```
 
 **Check Database in phpMyAdmin:**
-- Open http://localhost/phpmyadmin
-- Select `shopify_admin_dev` database
-- Verify tables exist: `stores`, `users`, `products`, `customers`, `orders`, `returns`, `settings`
-
----
-
-## Quick Reference
-
-### Local Development URLs
-
-- **Frontend**: http://localhost:5173/
-- **Backend API**: http://localhost:5000/
-- **Health Check**: http://localhost:5000/api/health
-- **phpMyAdmin**: http://localhost/phpmyadmin
-
-### XAMPP MySQL Connection
-
-- **Host**: `localhost`
-- **Port**: `3306`
-- **User**: `root`
-- **Password**: (empty, or your MySQL root password)
-- **Database**: `shopify_admin_dev`
-
-### Important Notes
-
-- ✅ **Always start XAMPP MySQL** before starting the backend server
-- ✅ **Frontend must run on `http://localhost:5173/`** - This is configured in `VITE_API_BASE_URL`
 - ✅ **Backend must run on `http://localhost:5000/`** - This is configured in `PORT` environment variable
 - ✅ **Database will auto-seed** with 6 stores and comprehensive test data on first run
 - ✅ **All examples assume XAMPP MySQL** for local development

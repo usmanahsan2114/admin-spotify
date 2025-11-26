@@ -10,7 +10,7 @@ async function resetPass() {
             return
         }
 
-        const newHash = await bcrypt.hash('password123', 10)
+        const newHash = await bcrypt.hash('admin123', 10)
         console.log('Old Hash:', user.passwordHash)
         console.log('New Hash:', newHash)
 
@@ -20,7 +20,7 @@ async function resetPass() {
         console.log('Password updated successfully.')
 
         // Verify immediately
-        const isMatch = await bcrypt.compare('password123', newHash)
+        const isMatch = await bcrypt.compare('admin123', newHash)
         console.log('Immediate Verification:', isMatch)
 
     } catch (error) {
