@@ -5,7 +5,7 @@ import {
   Stack,
   TextField,
   Typography,
-  useMediaQuery,
+
   Collapse,
   Chip,
   Paper,
@@ -36,7 +36,7 @@ interface DateFilterProps {
 
 const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) => {
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null)
   const [showCustomRange, setShowCustomRange] = useState(false)
   const [startDateInput, setStartDateInput] = useState<string>('')
