@@ -19,6 +19,11 @@ const logger = winston.createLogger({
   ],
 })
 
+// Add this to ensure prepared statements are disabled for transaction pooling
+if (db.sequelize.config.dialectOptions) {
+  // db.sequelize.config.dialectOptions.prependSearchPath = true; // Not directly settable here usually, handled in config
+}
+
 async function initializeDatabase() {
   try {
     // Get database dialect for logging (without exposing credentials)

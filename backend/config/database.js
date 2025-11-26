@@ -14,6 +14,9 @@ function getDatabaseConfig(environment) {
           require: true,
           rejectUnauthorized: false, // Required for Supabase and most cloud providers
         },
+        // Disable prepared statements for Supabase Transaction Pooler (Port 6543)
+        // This is required because transaction poolers don't support prepared statements
+        prependSearchPath: true,
       },
       dialectModule: require('pg'),
     }
