@@ -223,7 +223,7 @@ This document contains the complete development workflow, history, and implement
 - Verified store admin permissions.
 
 ### Step 41 – Database Reset & Reseed Script
-- Created comprehensive database reset and reseed script (`backend/scripts/reset-and-seed-database.js`).
+- Created comprehensive database reset and reseed script (`backend/reset_db.js`).
 - Script clears all existing data, resets auto-increment counters, ensures `storeId` column allows NULL for superadmin users.
 - Seeds fresh data using `generateMultiStoreData()` function.
 - Inserts data in batches to avoid MySQL packet size limits.

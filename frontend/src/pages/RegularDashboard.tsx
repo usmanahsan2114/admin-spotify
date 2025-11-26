@@ -12,7 +12,11 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import {
   Line,
   LineChart,
@@ -418,703 +422,770 @@ const RegularDashboard = () => {
       </Box>
 
       {/* Summary Cards */}
-      <Box mb={{ xs: 3, sm: 4 }} >
-        <Box
+      <Accordion defaultExpanded sx={{ background: 'transparent', boxShadow: 'none', '&:before': { display: 'none' }, mb: { xs: 3, sm: 4 } }}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
           sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-              lg: 'repeat(4, 1fr)',
-            },
-            gap: { xs: 1.5, sm: 2 },
+            px: 0,
+            '& .MuiAccordionSummary-content': { margin: 0 },
+            minHeight: 48,
           }}
         >
-          {summary.map((card, index) => (
-            <Card
-              key={index}
-              component={card.to ? RouterLink : Box}
-              to={card.to}
-              className="animate-slide-up"
-              sx={{
-                textDecoration: 'none',
-                transition: 'all 0.2s',
-                cursor: card.to ? 'pointer' : 'default',
-                minHeight: { xs: 110, sm: 130 },
-                position: 'relative',
-                overflow: 'hidden',
-                animationDelay: `${index * 50}ms`,
-                backdropFilter: 'blur(12px)',
-                backgroundColor: (theme) => theme.palette.mode === 'light'
-                  ? 'rgba(255,255,255,0.7)'
-                  : 'rgba(30, 41, 59, 0.6)',
-                border: (theme) => `1px solid ${theme.palette.mode === 'light' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                boxShadow: (theme) => theme.palette.mode === 'light'
-                  ? '0 4px 20px -4px rgba(0,0,0,0.05)'
-                  : '0 4px 20px -4px rgba(0,0,0,0.2)',
-                '&:hover': card.to
-                  ? {
-                    transform: 'translateY(-4px)',
-                    boxShadow: (theme) => theme.palette.mode === 'light'
-                      ? '0 12px 30px -8px rgba(0,0,0,0.1)'
-                      : '0 12px 30px -8px rgba(0,0,0,0.3)',
-                    borderColor: (theme) => theme.palette.primary.main,
-                  }
-                  : {},
-              }}
-            >
-              <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      gutterBottom
-                      sx={{
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                        fontWeight: 500,
-                      }}
-                    >
-                      {card.label}
-                    </Typography>
-                    <Typography
-                      variant="h4"
-                      fontWeight={700}
-                      sx={{
-                        fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
-                        wordBreak: 'break-word',
-                        lineHeight: 1.2,
-                        background: (theme) => card.intent === 'alert'
-                          ? `linear-gradient(135deg, ${theme.palette.error.main}, ${theme.palette.error.dark})`
-                          : card.intent === 'info'
-                            ? `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`
-                            : `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                      }}
-                    >
-                      {card.value}
-                    </Typography>
-                    {card.subtitle && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{
-                          fontSize: { xs: '0.7rem', sm: '0.75rem' },
-                          mt: 0.5,
-                          display: 'block',
-                        }}
-                      >
-                        {card.subtitle}
-                      </Typography>
-                    )}
-                  </Box>
-                  {card.icon && (
-                    <Box
-                      sx={{
-                        p: { xs: 0.75, sm: 1 },
-                        borderRadius: 2,
-                        background: (theme) =>
-                          card.intent === 'alert'
-                            ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)}, ${alpha(theme.palette.error.main, 0.2)})`
-                            : card.intent === 'info'
-                              ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)}, ${alpha(theme.palette.info.main, 0.2)})`
-                              : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.2)})`,
-                        color: card.intent === 'alert'
-                          ? 'error.main'
-                          : card.intent === 'info'
-                            ? 'info.main'
-                            : 'primary.main',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)',
-                        '& svg': {
-                          fontSize: { xs: '1.25rem', sm: '1.5rem' },
-                        },
-                      }}
-                    >
-                      {card.icon}
-                    </Box>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-      </Box>
-
-      {/* Charts Grid - Two Column Layout */}
-      <Box mb={{ xs: 3, sm: 4 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              lg: 'repeat(2, 1fr)',
-            },
-            gap: { xs: 2, sm: 3 },
-          }}
-        >
-          {/* Sales Over Time - Full Width */}
-          {salesOverTime && salesOverTime.data && salesOverTime.data.length > 0 && (
-            <Card sx={{ gridColumn: { xs: '1', lg: '1 / -1' } }}>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Box mb={2}>
-                  <Typography
-                    variant="h6"
-                    fontWeight={600}
-                    sx={{
-                      fontSize: { xs: '1rem', sm: '1.25rem' },
-                    }}
-                  >
-                    Sales Over Time
-                  </Typography>
-                  {salesOverTime.summary && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      Total: {formatCurrency(salesOverTime.summary.totalRevenue)} · {salesOverTime.summary.totalOrders} orders · Avg: {formatCurrency(salesOverTime.summary.totalRevenue / (salesOverTime.summary.totalOrders || 1))} per order
-                    </Typography>
-                  )}
-                </Box>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <AreaChart data={salesOverTime.data}>
-                      <defs>
-                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8} />
-                          <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis
-                        dataKey="dateLabel"
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        angle={isMobile ? -45 : 0}
-                        textAnchor={isMobile ? 'end' : 'middle'}
-                        height={isMobile ? 60 : 40}
-                      />
-                      <YAxis
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        tickFormatter={(value) => formatCurrency(value)}
-                        domain={salesOverTimeDomain}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                        formatter={(value: number) => formatCurrency(value)}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke={theme.palette.primary.main}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill="url(#colorSales)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Revenue vs Orders Comparison */}
-          {revenueVsOrdersData.length > 0 && (
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    mb: { xs: 1.5, sm: 2 },
-                  }}
-                >
-                  Revenue vs Orders
-                </Typography>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <LineChart data={revenueVsOrdersData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: isMobile ? 9 : 11 }}
-                        angle={isMobile ? -45 : 0}
-                        textAnchor={isMobile ? 'end' : 'middle'}
-                        height={isMobile ? 60 : 40}
-                      />
-                      <YAxis
-                        yAxisId="left"
-                        tick={{ fontSize: isMobile ? 9 : 11 }}
-                        tickFormatter={(value) => formatCurrency(value)}
-                        domain={revenueVsOrdersDomain.revenue}
-                      />
-                      <YAxis
-                        yAxisId="right"
-                        orientation="right"
-                        tick={{ fontSize: isMobile ? 9 : 11 }}
-                        domain={revenueVsOrdersDomain.orders}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                        formatter={(value: number, name: string) =>
-                          name === 'revenue' ? formatCurrency(value) : value
-                        }
-                      />
-                      <Line
-                        yAxisId="left"
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke={theme.palette.primary.main}
-                        strokeWidth={2}
-                        dot={{ r: isMobile ? 3 : 4 }}
-                        name="Revenue"
-                      />
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey="orders"
-                        stroke={theme.palette.secondary.main}
-                        strokeWidth={2}
-                        dot={{ r: isMobile ? 3 : 4 }}
-                        name="Orders"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Growth Comparison */}
-          {growthChartData.length > 0 && (
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    mb: { xs: 1.5, sm: 2 },
-                  }}
-                >
-                  Period Comparison
-                </Typography>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <BarChart data={growthChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis
-                        dataKey="period"
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                      />
-                      <YAxis
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        tickFormatter={(value) => formatCurrency(value)}
-                        domain={growthChartDomain}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                        formatter={(value: number) => formatCurrency(value)}
-                      />
-                      <Bar
-                        dataKey="value"
-                        fill={theme.palette.primary.main}
-                        radius={[8, 8, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Order Status Distribution */}
-          {statusDistribution.length > 0 && (
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    mb: { xs: 1.5, sm: 2 },
-                  }}
-                >
-                  Order Status Distribution
-                </Typography>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <PieChart>
-                      <Pie
-                        data={statusDistribution}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) =>
-                          isMobile
-                            ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
-                            : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
-                        }
-                        outerRadius={isMobile ? 70 : isTablet ? 85 : 100}
-                        innerRadius={isMobile ? 30 : isTablet ? 40 : 50}
-                        fill="#8884d8"
-                        dataKey="value"
-                        paddingAngle={2}
-                      >
-                        {statusDistribution.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                      />
-                      <Legend
-                        wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
-                        iconType="circle"
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Product Category Distribution */}
-          {categoryDistribution.length > 0 && (
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    mb: { xs: 1.5, sm: 2 },
-                  }}
-                >
-                  Products by Category
-                </Typography>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <PieChart>
-                      <Pie
-                        data={categoryDistribution}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) =>
-                          isMobile
-                            ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
-                            : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
-                        }
-                        outerRadius={isMobile ? 70 : isTablet ? 85 : 100}
-                        innerRadius={isMobile ? 30 : isTablet ? 40 : 50}
-                        fill="#8884d8"
-                        dataKey="value"
-                        paddingAngle={2}
-                      >
-                        {categoryDistribution.map((_, index) => (
-                          <Cell key={`cat-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                      />
-                      <Legend
-                        wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
-                        iconType="circle"
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Customer Acquisition */}
-          {customerAcquisitionData.length > 0 && (
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    mb: { xs: 1.5, sm: 2 },
-                  }}
-                >
-                  Customer Acquisition
-                </Typography>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <AreaChart data={customerAcquisitionData}>
-                      <defs>
-                        <linearGradient id="colorCustomers" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.8} />
-                          <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        angle={isMobile ? -45 : 0}
-                        textAnchor={isMobile ? 'end' : 'middle'}
-                        height={isMobile ? 60 : 40}
-                      />
-                      <YAxis
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        domain={customerAcquisitionDomain}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="customers"
-                        stroke={theme.palette.success.main}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill="url(#colorCustomers)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Low Stock Trend */}
-          {lowStockTrend.length > 0 && (
-            <Card>
-              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-                <Typography
-                  variant="h6"
-                  fontWeight={600}
-                  gutterBottom
-                  sx={{
-                    fontSize: { xs: '1rem', sm: '1.25rem' },
-                    mb: { xs: 1.5, sm: 2 },
-                  }}
-                >
-                  Low Stock Trend
-                </Typography>
-                <Box sx={{ width: '100%', minHeight: chartHeight }}>
-                  <ResponsiveContainer width="100%" height={chartHeight}>
-                    <LineChart data={lowStockTrend}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                      <XAxis
-                        dataKey="dateLabel"
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        angle={isMobile ? -45 : 0}
-                        textAnchor={isMobile ? 'end' : 'middle'}
-                        height={isMobile ? 60 : 40}
-                      />
-                      <YAxis
-                        tick={{ fontSize: isMobile ? 10 : 12 }}
-                        domain={lowStockTrendDomain}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          fontSize: isMobile ? '0.75rem' : '0.875rem',
-                          padding: isMobile ? '8px' : '12px',
-                          backgroundColor: theme.palette.background.paper,
-                          border: `1px solid ${theme.palette.divider}`,
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="lowStockCount"
-                        stroke={theme.palette.warning.main}
-                        strokeWidth={isMobile ? 1.5 : 2}
-                        dot={{ r: isMobile ? 3 : 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          )}
-        </Box>
-      </Box>
-
-      {/* Growth KPI */}
-      {growthReport && (
-        <Box mb={{ xs: 3, sm: 4 }}>
-          <Box mb={{ xs: 2, sm: 2.5 }}>
-            <Typography
-              variant="h6"
-              fontWeight={600}
-              sx={{
-                fontSize: { xs: '1rem', sm: '1.25rem' },
-                color: 'text.primary',
-              }}
-            >
-              Performance Metrics
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                fontSize: { xs: '0.75rem', sm: '0.875rem' },
-                mt: 0.5,
-              }}
-            >
-              Key metrics compared to previous period
-            </Typography>
-          </Box>
+          <Typography variant="h6" fontWeight={700}>
+            Key Metrics
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: 0, pb: 0 }}>
           <Box
             sx={{
               display: 'grid',
               gridTemplateColumns: {
                 xs: '1fr',
                 sm: 'repeat(2, 1fr)',
-                md: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
                 lg: 'repeat(4, 1fr)',
               },
               gap: { xs: 1.5, sm: 2 },
             }}
           >
-            <GrowthKPI
-              label="Sales This Period"
-              value={growthReport.totalSales || 0}
-              growthPct={growthReport.growthSalesPct}
-              formatValue={(val) => formatCurrency(val as number)}
-            />
-            <GrowthKPI
-              label="Orders This Period"
-              value={growthReport.totalOrders || 0}
-              growthPct={growthReport.growthOrdersPct}
-            />
-            <GrowthKPI
-              label="Avg Order Value"
-              value={growthReport.averageOrderValue || 0}
-              growthPct={
-                growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
-                  ? parseFloat(
-                    (
-                      (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
-                      (1 + growthReport.growthOrdersPct / 100)
-                    ).toFixed(1),
-                  )
-                  : undefined
-              }
-              formatValue={(val) => formatCurrency(val as number)}
-            />
-            <GrowthKPI
-              label="Return Rate"
-              value={`${growthReport.returnRatePct || 0}%`}
-              growthPct={growthReport.returnRateChangePct}
-            />
+            {summary.map((card, index) => (
+              <Card
+                key={index}
+                component={card.to ? RouterLink : Box}
+                to={card.to}
+                className="animate-slide-up"
+                sx={{
+                  textDecoration: 'none',
+                  transition: 'all 0.2s',
+                  cursor: card.to ? 'pointer' : 'default',
+                  minHeight: { xs: 110, sm: 130 },
+                  position: 'relative',
+                  overflow: 'hidden',
+                  animationDelay: `${index * 50}ms`,
+                  backdropFilter: 'blur(12px)',
+                  backgroundColor: (theme) => theme.palette.mode === 'light'
+                    ? 'rgba(255,255,255,0.7)'
+                    : 'rgba(30, 41, 59, 0.6)',
+                  border: (theme) => `1px solid ${theme.palette.mode === 'light' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                  boxShadow: (theme) => theme.palette.mode === 'light'
+                    ? '0 4px 20px -4px rgba(0,0,0,0.05)'
+                    : '0 4px 20px -4px rgba(0,0,0,0.2)',
+                  '&:hover': card.to
+                    ? {
+                      transform: 'translateY(-4px)',
+                      boxShadow: (theme) => theme.palette.mode === 'light'
+                        ? '0 12px 30px -8px rgba(0,0,0,0.1)'
+                        : '0 12px 30px -8px rgba(0,0,0,0.3)',
+                      borderColor: (theme) => theme.palette.primary.main,
+                    }
+                    : {},
+                }}
+              >
+                <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{
+                          fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                          fontWeight: 500,
+                        }}
+                      >
+                        {card.label}
+                      </Typography>
+                      <Typography
+                        variant="h4"
+                        fontWeight={700}
+                        sx={{
+                          fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                          wordBreak: 'break-word',
+                          lineHeight: 1.2,
+                          background: (theme) => card.intent === 'alert'
+                            ? `linear-gradient(135deg, ${theme.palette.error.main}, ${theme.palette.error.dark})`
+                            : card.intent === 'info'
+                              ? `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`
+                              : `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                        }}
+                      >
+                        {card.value}
+                      </Typography>
+                      {card.subtitle && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                            mt: 0.5,
+                            display: 'block',
+                          }}
+                        >
+                          {card.subtitle}
+                        </Typography>
+                      )}
+                    </Box>
+                    {card.icon && (
+                      <Box
+                        sx={{
+                          p: { xs: 0.75, sm: 1 },
+                          borderRadius: 2,
+                          background: (theme) =>
+                            card.intent === 'alert'
+                              ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)}, ${alpha(theme.palette.error.main, 0.2)})`
+                              : card.intent === 'info'
+                                ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)}, ${alpha(theme.palette.info.main, 0.2)})`
+                                : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.2)})`,
+                          color: card.intent === 'alert'
+                            ? 'error.main'
+                            : card.intent === 'info'
+                              ? 'info.main'
+                              : 'primary.main',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)',
+                          '& svg': {
+                            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                          },
+                        }}
+                      >
+                        {card.icon}
+                      </Box>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
           </Box>
-        </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Charts Grid - Two Column Layout */}
+      <Accordion defaultExpanded sx={{ background: 'transparent', boxShadow: 'none', '&:before': { display: 'none' }, mb: { xs: 3, sm: 4 } }}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          sx={{
+            px: 0,
+            '& .MuiAccordionSummary-content': { margin: 0 },
+            minHeight: 48,
+          }}
+        >
+          <Typography variant="h6" fontWeight={700}>
+            Analytics & Charts
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: 0, pb: 0 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                lg: 'repeat(2, 1fr)',
+              },
+              gap: { xs: 2, sm: 3 },
+            }}
+          >
+            {/* Sales Over Time - Full Width */}
+            {salesOverTime && salesOverTime.data && salesOverTime.data.length > 0 && (
+              <Card sx={{ gridColumn: { xs: '1', lg: '1 / -1' } }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Box mb={2}>
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      sx={{
+                        fontSize: { xs: '1rem', sm: '1.25rem' },
+                      }}
+                    >
+                      Sales Over Time
+                    </Typography>
+                    {salesOverTime.summary && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        Total: {formatCurrency(salesOverTime.summary.totalRevenue)} · {salesOverTime.summary.totalOrders} orders · Avg: {formatCurrency(salesOverTime.summary.totalRevenue / (salesOverTime.summary.totalOrders || 1))} per order
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <AreaChart data={salesOverTime.data}>
+                        <defs>
+                          <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8} />
+                            <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                        <XAxis
+                          dataKey="dateLabel"
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          angle={isMobile ? -45 : 0}
+                          textAnchor={isMobile ? 'end' : 'middle'}
+                          height={isMobile ? 60 : 40}
+                        />
+                        <YAxis
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          tickFormatter={(value) => formatCurrency(value)}
+                          domain={salesOverTimeDomain}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                          formatter={(value: number) => formatCurrency(value)}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke={theme.palette.primary.main}
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorSales)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Revenue vs Orders Comparison */}
+            {revenueVsOrdersData.length > 0 && (
+              <Card>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      mb: { xs: 1.5, sm: 2 },
+                    }}
+                  >
+                    Revenue vs Orders
+                  </Typography>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <LineChart data={revenueVsOrdersData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: isMobile ? 9 : 11 }}
+                          angle={isMobile ? -45 : 0}
+                          textAnchor={isMobile ? 'end' : 'middle'}
+                          height={isMobile ? 60 : 40}
+                        />
+                        <YAxis
+                          yAxisId="left"
+                          tick={{ fontSize: isMobile ? 9 : 11 }}
+                          tickFormatter={(value) => formatCurrency(value)}
+                          domain={revenueVsOrdersDomain.revenue}
+                        />
+                        <YAxis
+                          yAxisId="right"
+                          orientation="right"
+                          tick={{ fontSize: isMobile ? 9 : 11 }}
+                          domain={revenueVsOrdersDomain.orders}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                          formatter={(value: number, name: string) =>
+                            name === 'revenue' ? formatCurrency(value) : value
+                          }
+                        />
+                        <Line
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke={theme.palette.primary.main}
+                          strokeWidth={2}
+                          dot={{ r: isMobile ? 3 : 4 }}
+                          name="Revenue"
+                        />
+                        <Line
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="orders"
+                          stroke={theme.palette.secondary.main}
+                          strokeWidth={2}
+                          dot={{ r: isMobile ? 3 : 4 }}
+                          name="Orders"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Growth Comparison */}
+            {growthChartData.length > 0 && (
+              <Card>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      mb: { xs: 1.5, sm: 2 },
+                    }}
+                  >
+                    Period Comparison
+                  </Typography>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <BarChart data={growthChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                        <XAxis
+                          dataKey="period"
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          tickFormatter={(value) => formatCurrency(value)}
+                          domain={growthChartDomain}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                          formatter={(value: number) => formatCurrency(value)}
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill={theme.palette.primary.main}
+                          radius={[8, 8, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Order Status Distribution */}
+            {statusDistribution.length > 0 && (
+              <Card>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      mb: { xs: 1.5, sm: 2 },
+                    }}
+                  >
+                    Order Status Distribution
+                  </Typography>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <PieChart>
+                        <Pie
+                          data={statusDistribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) =>
+                            isMobile
+                              ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
+                              : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
+                          }
+                          outerRadius={isMobile ? 70 : isTablet ? 85 : 100}
+                          innerRadius={isMobile ? 30 : isTablet ? 40 : 50}
+                          fill="#8884d8"
+                          dataKey="value"
+                          paddingAngle={2}
+                        >
+                          {statusDistribution.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                        />
+                        <Legend
+                          wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
+                          iconType="circle"
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Product Category Distribution */}
+            {categoryDistribution.length > 0 && (
+              <Card>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      mb: { xs: 1.5, sm: 2 },
+                    }}
+                  >
+                    Products by Category
+                  </Typography>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <PieChart>
+                        <Pie
+                          data={categoryDistribution}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) =>
+                            isMobile
+                              ? `${(percent ? (percent * 100).toFixed(0) : 0)}%`
+                              : `${name} ${percent ? (percent * 100).toFixed(0) : 0}%`
+                          }
+                          outerRadius={isMobile ? 70 : isTablet ? 85 : 100}
+                          innerRadius={isMobile ? 30 : isTablet ? 40 : 50}
+                          fill="#8884d8"
+                          dataKey="value"
+                          paddingAngle={2}
+                        >
+                          {categoryDistribution.map((_, index) => (
+                            <Cell key={`cat-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                        />
+                        <Legend
+                          wrapperStyle={{ fontSize: isMobile ? '0.75rem' : '0.875rem' }}
+                          iconType="circle"
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Customer Acquisition */}
+            {customerAcquisitionData.length > 0 && (
+              <Card>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      mb: { xs: 1.5, sm: 2 },
+                    }}
+                  >
+                    Customer Acquisition
+                  </Typography>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <AreaChart data={customerAcquisitionData}>
+                        <defs>
+                          <linearGradient id="colorCustomers" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.8} />
+                            <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          angle={isMobile ? -45 : 0}
+                          textAnchor={isMobile ? 'end' : 'middle'}
+                          height={isMobile ? 60 : 40}
+                        />
+                        <YAxis
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          domain={customerAcquisitionDomain}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="customers"
+                          stroke={theme.palette.success.main}
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorCustomers)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Low Stock Trend */}
+            {lowStockTrend.length > 0 && (
+              <Card>
+                <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                  <Typography
+                    variant="h6"
+                    fontWeight={600}
+                    gutterBottom
+                    sx={{
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      mb: { xs: 1.5, sm: 2 },
+                    }}
+                  >
+                    Low Stock Trend
+                  </Typography>
+                  <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                    <ResponsiveContainer width="100%" height={chartHeight}>
+                      <LineChart data={lowStockTrend}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                        <XAxis
+                          dataKey="dateLabel"
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          angle={isMobile ? -45 : 0}
+                          textAnchor={isMobile ? 'end' : 'middle'}
+                          height={isMobile ? 60 : 40}
+                        />
+                        <YAxis
+                          tick={{ fontSize: isMobile ? 10 : 12 }}
+                          domain={lowStockTrendDomain}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            padding: isMobile ? '8px' : '12px',
+                            backgroundColor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="lowStockCount"
+                          stroke={theme.palette.warning.main}
+                          strokeWidth={isMobile ? 1.5 : 2}
+                          dot={{ r: isMobile ? 3 : 4 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+          </Box>
+        </AccordionDetails>
+      </Accordion>
+
+      {/* Growth KPI */}
+      {growthReport && (
+        <Accordion defaultExpanded sx={{ background: 'transparent', boxShadow: 'none', '&:before': { display: 'none' }, mb: { xs: 3, sm: 4 } }}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{
+              px: 0,
+              '& .MuiAccordionSummary-content': { margin: 0 },
+              minHeight: 48,
+            }}
+          >
+            <Box>
+              <Typography
+                variant="h6"
+                fontWeight={600}
+                sx={{
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                  color: 'text.primary',
+                }}
+              >
+                Performance Metrics
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                  mt: 0.5,
+                }}
+              >
+                Key metrics compared to previous period
+              </Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails sx={{ px: 0, pb: 0 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  md: 'repeat(2, 1fr)',
+                  lg: 'repeat(4, 1fr)',
+                },
+                gap: { xs: 1.5, sm: 2 },
+              }}
+            >
+              <GrowthKPI
+                label="Sales This Period"
+                value={growthReport.totalSales || 0}
+                growthPct={growthReport.growthSalesPct}
+                formatValue={(val) => formatCurrency(val as number)}
+              />
+              <GrowthKPI
+                label="Orders This Period"
+                value={growthReport.totalOrders || 0}
+                growthPct={growthReport.growthOrdersPct}
+              />
+              <GrowthKPI
+                label="Avg Order Value"
+                value={growthReport.averageOrderValue || 0}
+                growthPct={
+                  growthReport.growthOrdersPct !== 0 && growthReport.growthSalesPct !== 0
+                    ? parseFloat(
+                      (
+                        (growthReport.growthSalesPct - growthReport.growthOrdersPct) /
+                        (1 + growthReport.growthOrdersPct / 100)
+                      ).toFixed(1),
+                    )
+                    : undefined
+                }
+                formatValue={(val) => formatCurrency(val as number)}
+              />
+              <GrowthKPI
+                label="Return Rate"
+                value={`${growthReport.returnRatePct || 0}%`}
+                growthPct={growthReport.returnRateChangePct}
+              />
+            </Box>
+          </AccordionDetails>
+        </Accordion>
       )}
 
       {/* System Status */}
-      <Box mb={{ xs: 3, sm: 4 }}>
-        <SystemStatusCard />
-      </Box>
+      <Accordion defaultExpanded sx={{ background: 'transparent', boxShadow: 'none', '&:before': { display: 'none' }, mb: { xs: 3, sm: 4 } }}>
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          sx={{
+            px: 0,
+            '& .MuiAccordionSummary-content': { margin: 0 },
+            minHeight: 48,
+          }}
+        >
+          <Typography variant="h6" fontWeight={700}>
+            System Status
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails sx={{ px: 0, pb: 0 }}>
+          <SystemStatusCard />
+        </AccordionDetails>
+      </Accordion>
 
       {/* Trend Report - Full Width */}
       {trendReport && trendReport.data && trendReport.data.length > 0 && (
-        <Card sx={{ mb: { xs: 3, sm: 4 } }}>
-          <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
-            <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-              <Typography variant="h6" fontWeight={600}>
-                Detailed Trend Analysis
-              </Typography>
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Metric</InputLabel>
-                <Select
-                  value={trendMetric}
-                  label="Metric"
-                  onChange={(e) => setTrendMetric(e.target.value as 'sales' | 'orders' | 'customers')}
-                >
-                  <MenuItem value="sales">Sales</MenuItem>
-                  <MenuItem value="orders">Orders</MenuItem>
-                  <MenuItem value="customers">Customers</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-            <Box sx={{ width: '100%', minHeight: chartHeight }}>
-              <ResponsiveContainer width="100%" height={chartHeight}>
-                <LineChart data={trendReport.data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                  <XAxis
-                    dataKey="dateLabel"
-                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                    angle={isMobile ? -45 : 0}
-                    textAnchor={isMobile ? 'end' : 'middle'}
-                    height={isMobile ? 60 : 40}
-                  />
-                  <YAxis
-                    tick={{ fontSize: isMobile ? 10 : 12 }}
-                    tickFormatter={(value) =>
-                      trendMetric === 'sales' ? formatCurrency(value) : value.toString()
-                    }
-                    domain={trendReportDomain}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      fontSize: isMobile ? '0.75rem' : '0.875rem',
-                      padding: isMobile ? '8px' : '12px',
-                      backgroundColor: theme.palette.background.paper,
-                      border: `1px solid ${theme.palette.divider}`,
-                    }}
-                    formatter={(value: number) =>
-                      trendMetric === 'sales' ? formatCurrency(value) : value
-                    }
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={trendMetric}
-                    stroke={theme.palette.primary.main}
-                    strokeWidth={2}
-                    dot={{ r: isMobile ? 3 : 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          </CardContent>
-        </Card>
+        <Accordion defaultExpanded sx={{ background: 'transparent', boxShadow: 'none', '&:before': { display: 'none' }, mb: { xs: 3, sm: 4 } }}>
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{
+              px: 0,
+              '& .MuiAccordionSummary-content': { margin: 0 },
+              minHeight: 48,
+            }}
+          >
+            <Typography variant="h6" fontWeight={700}>
+              Detailed Trend Analysis
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ px: 0, pb: 0 }}>
+            <Card>
+              <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
+                <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                  <Box /> {/* Spacer for title alignment if needed, or remove if title is in AccordionSummary */}
+                  <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <InputLabel>Metric</InputLabel>
+                    <Select
+                      value={trendMetric}
+                      label="Metric"
+                      onChange={(e) => setTrendMetric(e.target.value as 'sales' | 'orders' | 'customers')}
+                    >
+                      <MenuItem value="sales">Sales</MenuItem>
+                      <MenuItem value="orders">Orders</MenuItem>
+                      <MenuItem value="customers">Customers</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ width: '100%', minHeight: chartHeight }}>
+                  <ResponsiveContainer width="100%" height={chartHeight}>
+                    <LineChart data={trendReport.data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
+                      <XAxis
+                        dataKey="dateLabel"
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        angle={isMobile ? -45 : 0}
+                        textAnchor={isMobile ? 'end' : 'middle'}
+                        height={isMobile ? 60 : 40}
+                      />
+                      <YAxis
+                        tick={{ fontSize: isMobile ? 10 : 12 }}
+                        tickFormatter={(value) =>
+                          trendMetric === 'sales' ? formatCurrency(value) : value.toString()
+                        }
+                        domain={trendReportDomain}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          fontSize: isMobile ? '0.75rem' : '0.875rem',
+                          padding: isMobile ? '8px' : '12px',
+                          backgroundColor: theme.palette.background.paper,
+                          border: `1px solid ${theme.palette.divider}`,
+                        }}
+                        formatter={(value: number) =>
+                          trendMetric === 'sales' ? formatCurrency(value) : value
+                        }
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey={trendMetric}
+                        stroke={theme.palette.primary.main}
+                        strokeWidth={2}
+                        dot={{ r: isMobile ? 3 : 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
+              </CardContent>
+            </Card>
+          </AccordionDetails>
+        </Accordion>
       )}
     </Box>
   )

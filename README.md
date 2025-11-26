@@ -17,6 +17,7 @@
 - **Dark Mode**: Theme toggle with preference persistence via `ThemeModeProvider`.
 - **Public Pages**: Only 3 public pages available - Login, Track Order (for customers to track orders without login), and Test Order (for placing orders). Each store has its own URLs (`/store/:storeId/track-order` and `/store/:storeId/test-order`) to differentiate orders and make it easier to manage all customer orders without requiring login.
 - **Modern UI**: Completely redesigned interface featuring glassmorphism, vibrant gradients, and smooth animations. Includes a custom theme with light/dark mode support, responsive layouts, and interactive elements for a premium user experience.
+- **Mobile-First Design**: Optimized for mobile devices with Accordion-based layouts for dashboards, ensuring critical information is accessible without excessive scrolling. Touch-friendly targets and responsive charts.
 - **Dummy Order Form**: `/store/:storeId/test-order` route for marketing-site integration testing (store-specific).
 
 ## Tech Stack

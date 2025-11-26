@@ -147,6 +147,7 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 
 **What you see:**
 - **Modern UI** - Glassmorphism cards, vibrant gradients, and smooth entrance animations
+- **Mobile Optimized** - Sections collapse into Accordions on mobile devices for better navigation
 - **System Status** - Real-time health monitoring (database status, API latency, server uptime, memory usage)
 - **Total Orders** - All orders ever received
 - **Pending Orders** - Orders waiting to be processed
@@ -371,7 +372,7 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 **Reset Database:**
 ```bash
 cd backend
-node scripts/reset-and-seed-database.js
+node reset_db.js
 ```
 
 ### Common Issues

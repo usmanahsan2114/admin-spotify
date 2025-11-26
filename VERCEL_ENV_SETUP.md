@@ -80,6 +80,13 @@ CORS_ORIGIN=https://your-frontend-domain.vercel.app
 > CORS_ORIGIN=https://app.example.com,https://www.example.com
 > ```
 
+### 🔗 Frontend API Configuration
+Ensure your Frontend Vercel project has:
+```bash
+VITE_API_BASE_URL=https://your-backend-domain.vercel.app
+```
+> This must match the URL where your backend is deployed.
+
 ---
 
 ### 📊 Optional: Error Tracking (Sentry)

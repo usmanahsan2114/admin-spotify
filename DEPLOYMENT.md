@@ -21,7 +21,7 @@ To reset database and seed fresh data (Supabase):
 
 ```bash
 cd backend
-node scripts/reset-and-seed-database.js
+node reset_db.js
 ```
 
 This will:
@@ -54,7 +54,7 @@ Since we are using Supabase for both local development and production, the setup
    For production, use the "production" seed mode to create only the Superadmin and Demo accounts:
    ```bash
    cd backend
-   SEED_MODE=production node scripts/reset-and-seed-database.js
+   SEED_MODE=production node reset_db.js
    ```
 
 ---

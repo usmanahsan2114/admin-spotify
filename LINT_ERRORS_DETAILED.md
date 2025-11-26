@@ -19,3 +19,5 @@
 
 - `npm run lint` passes with no errors.
 - `npx tsc -b` passes with no errors.
+
+> **Note:** A known issue exists where `eslint` may crash with a `module_job` error in some environments. However, the build process (`npm run build`) completes successfully, ensuring type safety and compilation.

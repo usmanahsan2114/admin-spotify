@@ -35,6 +35,8 @@
 - Returns/refunds processing
 - Comprehensive analytics and reporting
 - Pakistan-specific: PKR currency, Pakistani addresses
+- **Modern UI**: Glassmorphism design, smooth animations, and responsive layouts
+- **Supabase Integration**: Unified Postgres database for development and production
 
 ---
 
