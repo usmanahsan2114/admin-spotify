@@ -139,7 +139,7 @@ Each store contains:
 
 ## 🎯 Notes
 
-- All stores have **independent data** - data is completely isolated by `storeId` (fully migrated to MySQL database)
+- All stores have **independent data** - data is completely isolated by `storeId` (fully migrated to Supabase Postgres database)
 - Each store has its own **settings, logo, currency (PKR), and country (Pakistan)** configuration
 - **Default currency**: PKR (Pakistani Rupee) for all stores
 - **Default country**: Pakistan (PK) for all stores

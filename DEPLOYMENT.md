@@ -12,6 +12,8 @@ Complete guide for deploying the Shopify Admin Dashboard to production, includin
 7. [Production Readiness Checklist](#production-readiness-checklist)
 
 - **Frontend**: `http://localhost:5173` should show login page
+- **Backend**: `http://localhost:5000` should return health check
+- **Database**: Supabase Postgres (Cloud)
 
 ### Database Reset & Seeding
 
@@ -82,10 +84,10 @@ openssl rand -base64 32
 
 ### 2. Database Setup
 
-- [ ] **MySQL database created**
-  - [ ] Database name matches `DB_NAME` in `.env`
-  - [ ] Database user created with proper permissions
-  - [ ] Database password set and matches `DB_PASSWORD` in `.env`
+- [ ] **Supabase project created**
+  - [ ] Database credentials obtained from Supabase Dashboard
+  - [ ] Connection pooler enabled (Transaction mode recommended)
+  - [ ] `DB_SSL=true` configured
 
 - [ ] **Database migrations run:**
 ```bash
@@ -150,17 +152,12 @@ npm run build
 
 **Local Development:**
 - Node.js 18+ (LTS)
-- MySQL 5.7+ or 8.0+ (via XAMPP on Windows)
-- XAMPP for Windows (includes MySQL and phpMyAdmin)
+- Supabase Account (Free Tier)
+- Git
 
-**Production (Cloud VM - e.g., Oracle Cloud Always Free):**
-- **VM**: Ubuntu 20.04+ or similar Linux distribution
-- **Node.js**: 18+ (LTS recommended)
-- **MySQL**: 8.0+ (can be installed on same VM or separate database server)
-- **Nginx**: Reverse proxy (install via apt: `sudo apt install nginx`)
-- **PM2**: Process manager (install via npm: `npm install -g pm2`)
-- **SSL Certificates**: Let's Encrypt (via Certbot)
-- **Firewall**: Configure to allow HTTP (80), HTTPS (443), and SSH (22) ports
+**Production (Vercel):**
+- Vercel Account (Frontend & Backend)
+- Supabase Account (Database)
 
 ### Backend Production Setup
 
@@ -189,15 +186,9 @@ openssl rand -base64 32
 
 #### 2. Database Setup
 
-```bash
-# Create database
-mysql -u root -p
-CREATE DATABASE shopify_admin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'shopify_admin'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
-GRANT ALL PRIVILEGES ON shopify_admin.* TO 'shopify_admin'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
+The database is hosted on Supabase. Ensure your `.env` points to the Supabase connection pooler.
 
+```bash
 # Run migrations
 cd backend
 npx sequelize-cli db:migrate
@@ -380,14 +371,8 @@ curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
 sudo yum install -y nodejs
 ```
 
-#### Install MySQL:
-```bash
-sudo apt install -y mysql-server
-# Or for Oracle Linux:
-sudo yum install -y mysql-server
-sudo systemctl start mysqld
-sudo systemctl enable mysqld
-```
+#### Database (Supabase):
+We use Supabase (Cloud Postgres) for the database. No local MySQL installation is required on the VM. Ensure your `.env` file points to the Supabase connection pooler.
 
 #### Install Nginx:
 ```bash
@@ -414,23 +399,9 @@ npm --prefix backend install
 npm --prefix frontend install
 ```
 
-### Step 6: Configure Database
+### Step 6: Configure Database (Supabase)
 
-```bash
-# Secure MySQL installation
-sudo mysql_secure_installation
-
-# Create database
-sudo mysql -u root -p
-```
-
-```sql
-CREATE DATABASE shopify_admin CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'shopify_admin'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
-GRANT ALL PRIVILEGES ON shopify_admin.* TO 'shopify_admin'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
+Skip local database creation. We will connect to Supabase.
 
 ### Step 7: Configure Environment Variables
 
@@ -528,7 +499,9 @@ curl https://admin.yourdomain.com/api/health
 
 ### Migration Status: ✅ 100% Complete
 
-All API endpoints have been migrated from in-memory arrays to Sequelize ORM with MySQL database.
+### Migration Status: ✅ 100% Complete
+
+All API endpoints have been migrated from in-memory arrays to Sequelize ORM with Supabase Postgres database.
 
 ### Migrated Endpoints
 

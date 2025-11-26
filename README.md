@@ -23,7 +23,7 @@
 ## Tech Stack
 
 - **Frontend**: React 19 (TypeScript), Vite, Material UI (Custom Theme with Glassmorphism), MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
-- **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with MySQL** (fully migrated). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
+- **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with Supabase Postgres** (fully migrated). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
 - **Tooling**: npm-run-all for concurrent dev servers, nodemon for backend reloads, ESLint.
 
 ## Getting Started
@@ -141,7 +141,7 @@ Expected response:
 **Check Database in phpMyAdmin:**
 - ✅ **Backend must run on `http://localhost:5000/`** - This is configured in `PORT` environment variable
 - ✅ **Database will auto-seed** with 6 stores and comprehensive test data on first run
-- ✅ **All examples assume XAMPP MySQL** for local development
+- ✅ **All examples assume Supabase Postgres** for local development
 
 **See [STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md) for complete login credentials after seeding.**
 
@@ -215,11 +215,11 @@ npm start
 NODE_ENV=production
 PORT=5000
 JWT_SECRET=STRONG_RANDOM_STRING_MIN_32_CHARS  # Required in production, minimum 32 characters
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=shopify_admin
-DB_USER=shopify_admin
-DB_PASSWORD=STRONG_PASSWORD
+DB_HOST=aws-1-ap-northeast-2.pooler.supabase.com
+DB_PORT=6543
+DB_NAME=postgres
+DB_USER=[your-supabase-user]
+DB_PASSWORD=[your-supabase-password]
 CORS_ORIGIN=https://admin.yourdomain.com,https://techhub.yourdomain.com
 SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id  # Optional: for error tracking
 ```

@@ -239,8 +239,8 @@ This document contains the complete development workflow, history, and implement
   - Removed Hostinger-specific deployment guides and merged generic parts into `DEPLOYMENT.md`
   - Updated all documentation files to remove Hostinger mentions and replace with generic cloud VM deployment (Oracle Cloud Always Free, AWS EC2, DigitalOcean)
   - Standardized deployment model:
-    - **Local Development**: XAMPP MySQL + Node backend + Vite/React frontend (localhost:5173, localhost:5000)
-    - **Production**: Generic Linux VM + MySQL (e.g., Oracle Cloud Always Free)
+    - **Local Development**: Supabase Postgres + Node backend (`localhost:5000`) + Vite/React frontend (`localhost:5173`)
+    - **Production**: Supabase Postgres + Vercel Frontend + Vercel Backend
 - Added comprehensive Oracle Cloud Always Free deployment guide to `DEPLOYMENT.md`:
   - Step-by-step VM instance creation, security list configuration, software installation
   - Database setup, environment variables, PM2 deployment, Nginx reverse proxy, SSL setup
@@ -250,8 +250,8 @@ This document contains the complete development workflow, history, and implement
 **Impact:**
 - Infrastructure-agnostic deployment model allows flexibility in cloud provider choice
 - Oracle Cloud Always Free tier documented as primary production deployment option
-- Local development standardized on XAMPP MySQL for Windows users
-- Clean separation between local dev (localhost:5173, localhost:5000, XAMPP) and production (cloud VM)
+- Local development standardized on Supabase Postgres
+- Clean separation between local dev (localhost) and production (Vercel)
 
 ### Step 44 – Local Development Standardization: Supabase Setup
 - Standardized all local development instructions on **Supabase Postgres**:
@@ -471,7 +471,7 @@ This document contains the complete development workflow, history, and implement
 ### 2025-01-XX (Latest)
 - **Vercel Frontend Deployment**: Prepared frontend for Vercel deployment with clean environment-based API configuration. Created `frontend/.env` for local development and `frontend/.env.production.example` for production reference. All API calls use `VITE_API_BASE_URL` environment variable. Added comprehensive Vercel deployment guide in DEPLOYMENT.md with step-by-step setup instructions. Updated TESTING.md with production smoke test checklist. Frontend is now ready for Vercel deployment while maintaining local dev workflow unchanged.
 
-- **Supabase Integration**: Integrated Supabase Postgres as production database target. Added comprehensive deployment documentation in DEPLOYMENT.md with step-by-step Supabase setup guide. Updated reset-and-seed script to support `SEED_MODE` environment variable (development/production) for controlled seeding. Made seed script dialect-agnostic (MySQL and Postgres compatible). Added startup logging to show active database dialect without exposing credentials. Health check endpoint works with both MySQL and Postgres.
+- **Supabase Integration**: Integrated Supabase Postgres as production database target. Added comprehensive deployment documentation in DEPLOYMENT.md with step-by-step Supabase setup guide. Updated reset-and-seed script to support `SEED_MODE` environment variable (development/production) for controlled seeding. Health check endpoint works with Supabase Postgres.
 
 - **Supabase for All**: Standardized on Supabase Postgres for both local development and production. Removed XAMPP/MySQL support to simplify the stack and ensure environment consistency. Updated all documentation to reflect this change.
 

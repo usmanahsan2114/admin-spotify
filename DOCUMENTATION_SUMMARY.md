@@ -179,7 +179,7 @@ Documentation/
 
 ## Recent Updates (January 2025)
 
-- **Dual Database Support**: Added Supabase/Postgres support alongside MySQL. Backend now supports both MySQL (local dev via XAMPP) and Postgres (production via Supabase) via `DB_DIALECT` environment variable. All models and migrations are dialect-agnostic. Installed `pg` package, updated migrations for dialect compatibility, created `backend/.env.example` with dual database configuration examples. Documentation updated to explain dual database setup.
+- **Supabase Standardization**: Backend now standardized on Supabase Postgres for both local development and production. All models and migrations are Postgres-optimized. Installed `pg` package and updated configuration. Documentation updated to reflect Supabase-only workflow.
 - **Documentation Consolidation**: Merged PRODUCTION_READINESS_CHECKLIST.md and REGENERATE_DATABASE.md into DEPLOYMENT.md. Removed empty files (ERRORS_WARNINGS_IMPROVEMENTS.md, backend/config/README.md). Documentation now consists of exactly 9 root MD files.
 - **Production Readiness Verification**: Complete verification of all internal pages and backend endpoints. All 14 frontend pages and 56 backend API endpoints verified and working correctly. Fixed chart dimensions warnings, order update timeline issues, and customer update cross-store handling. Production readiness checklist integrated into DEPLOYMENT.md.
 
@@ -188,8 +188,8 @@ Documentation/
 - **Responsive Typography Improvements**: Applied responsive font sizes across all page titles and descriptions. Enhanced mobile UX with proper text truncation, responsive spacing, mobile-optimized dialogs, and DataGrid components. Improved header display with responsive store name and logo positioning.
 - **Modern UI Implementation**: Complete UI overhaul with "art-driven" aesthetic. Implemented glassmorphism, gradient backgrounds, and smooth animations (`animate-fade-in`, `animate-slide-up`). Updated color palette and typography (Outfit font). Refactored `RegularDashboard`, `SuperAdminDashboard`, `LoginPage`, and `DashboardLayout` to align with new design principles.
 - **Documentation Consolidation**: Reduced from 40+ markdown files to 10 essential files
-- **Seed/Reset Logic Alignment**: Aligned database reset/seed logic with XAMPP MySQL infrastructure. Updated REGENERATE_DATABASE.md with XAMPP workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin.
-- **Infrastructure Standardization**: Removed all Hostinger-specific logic, standardized on local dev (XAMPP MySQL) and production (Oracle Cloud Always Free/cloud VM) deployment
+- **Seed/Reset Logic Alignment**: Aligned database reset/seed logic with Supabase infrastructure. Updated REGENERATE_DATABASE.md with Supabase workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin.
+- **Infrastructure Standardization**: Removed all Hostinger-specific logic, standardized on local dev (Supabase) and production (Vercel + Supabase) deployment
 - **Production Readiness**: Merged PRODUCTION_READINESS_CHECKLIST.md into DEPLOYMENT.md (January 2025)
 - **Database Regeneration**: Merged REGENERATE_DATABASE.md into DEPLOYMENT.md (January 2025)
 - **Improvements Summary**: Consolidated IMPROVEMENTS_IMPLEMENTED.md and QUICK_IMPROVEMENTS_SUMMARY.md into IMPROVEMENTS_AND_RECOMMENDATIONS.md

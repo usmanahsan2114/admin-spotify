@@ -37,7 +37,7 @@ Comprehensive testing documentation covering functional testing, performance tes
 - Clean database state (fresh DB or test DB) - Reset using `node backend/scripts/reset-and-seed-database.js`
 - Test user accounts: Admin, Staff, Demo (for each store) - Created automatically on database seed
 
-**Note:** The same functional tests work with both MySQL (local dev) and Postgres (Supabase production). Simply set `DB_DIALECT=postgres` and Supabase credentials in `.env` to test against Supabase.
+**Note:** The same functional tests work with Supabase Postgres for both local dev and production.
 
 ### Test Accounts
 
