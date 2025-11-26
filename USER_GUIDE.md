@@ -68,20 +68,6 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 - Fashion Forward: `admin@fashionforward.pk` / `admin123`
 - Home & Living Store: `admin@homeliving.pk` / `admin123`
 - Fitness Gear Pro: `admin@fitnessgear.pk` / `admin123`
-- Beauty Essentials: `admin@beautyessentials.pk` / `admin123`
-
-**Staff Accounts:**
-- Pattern: `staff1@[store-domain].pk` through `staff12@[store-domain].pk`
-- Password: `staff123`
-
-**Demo Store:**
-- Email: `demo@shopifyadmin.pk`
-- Password: `demo1234`
-
----
-
-## All Pages & Features
-
 ### Public Pages (No Login Required)
 
 **Only 3 public pages are available:**

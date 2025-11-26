@@ -310,17 +310,6 @@ This section provides step-by-step instructions for deploying to Oracle Cloud In
 
 ### Step 1: Create VM Instance
 
-1. **Log in to Oracle Cloud Console**: https://cloud.oracle.com/
-2. **Navigate to Compute → Instances**
-3. **Click "Create Instance"**
-4. **Configure VM:**
-   - **Name**: `shopify-admin-vm`
-   - **Image**: Oracle Linux 8 or Ubuntu 20.04/22.04
-   - **Shape**: Always Free eligible shape (VM.Standard.E2.1.Micro - 1 OCPU, 1 GB RAM)
-   - **Network**: Create new VCN or use default
-   - **SSH Keys**: Upload your public SSH key
-5. **Click "Create"**
-
 ### Step 2: Configure Security List (Firewall)
 
 1. **Navigate to Networking → Virtual Cloud Networks**

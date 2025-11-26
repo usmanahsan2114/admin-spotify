@@ -242,17 +242,6 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 **Important:** All emails use `.pk` domain (Pakistan), NOT `.com`
 - **TechHub Electronics**: `admin@techhub.pk` / `admin123`
 - **Fashion Forward**: `admin@fashionforward.pk` / `admin123`
-- **Home & Living Store**: `admin@homeliving.pk` / `admin123`
-- **Fitness Gear Pro**: `admin@fitnessgear.pk` / `admin123`
-- **Beauty Essentials**: `admin@beautyessentials.pk` / `admin123`
-
-**Demo Store Account:**
-- **Demo Store**: `demo@shopifyadmin.pk` / `demo1234` (read-only access, limited permissions)
-
-### Client Onboarding
-
-**Creating a New Store:**
-1. Store data is seeded via `generateMultiStoreData.js` script
 2. Each store gets a default admin user with strong password (change on first login)
 3. Store settings (logo, brand color, currency) can be configured via Settings page
 

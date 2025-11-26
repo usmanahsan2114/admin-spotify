@@ -17,19 +17,6 @@
 - **Staff Password:** `staff123`
 
 ### Store 2: Pak Gusu Pvt Ltd
-- **Admin Email:** `admin@pakgusu.pk`
-- **Admin Password:** `admin123`
-- **Staff Emails:** `staff@pakgusu.pk`
-- **Staff Password:** `staff123`
-
-### Demo Store
-- **Demo Account:** `demo@shopifyadmin.pk` / `demo1234`
-- **Note:** Demo store is for testing and demonstrations only
-
----
-
-## 📍 All Application URLs & Purposes
-
 ### Public Pages (No Login Required)
 
 **Only 3 public pages are available:**

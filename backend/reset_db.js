@@ -126,10 +126,22 @@ async function resetAndSeedDatabase() {
             const storeIds = storesToSeed.map(s => s.id)
 
             // 2. Filter Data for these stores
-            const targetUsers = multiStoreData.users.filter(u => storeIds.includes(u.storeId))
+            // In production, only seed admins for the selected stores (and the specific demo user) to keep it clean
+            const targetUsers = multiStoreData.users.filter(u =>
+                storeIds.includes(u.storeId) && (u.role === 'admin' || u.email === 'demo@demo.shopifyadmin.pk')
+            )
+
+            // Reassign orders to the store admin since staff users are filtered out
+            const targetOrders = multiStoreData.orders.filter(o => storeIds.includes(o.storeId)).map(order => {
+                const storeAdmin = targetUsers.find(u => u.storeId === order.storeId)
+                return {
+                    ...order,
+                    submittedBy: storeAdmin ? storeAdmin.id : order.submittedBy
+                }
+            })
+
             const targetProducts = multiStoreData.products.filter(p => storeIds.includes(p.storeId))
             const targetCustomers = multiStoreData.customers.filter(c => storeIds.includes(c.storeId))
-            const targetOrders = multiStoreData.orders.filter(o => storeIds.includes(o.storeId))
             const targetReturns = multiStoreData.returns.filter(r => storeIds.includes(r.storeId))
 
             console.log(`[DEBUG] Dialect: ${db.sequelize.getDialect()}`)
@@ -291,7 +303,7 @@ async function resetAndSeedDatabase() {
             console.log('   Email: admin@techhub.pk')
             console.log('   Password: admin123')
             console.log('\n   Demo Store:')
-            console.log('   Email: demo@shopifyadmin.pk')
+            console.log('   Email: demo@demo.shopifyadmin.pk')
             console.log('   Password: demo1234')
             console.log('\n✨ You can now login with the above credentials!\n')
 
