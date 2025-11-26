@@ -24,6 +24,7 @@ import { useTheme } from '@mui/material/styles'
 import FilterListIcon from '@mui/icons-material/FilterList'
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/UploadFile'
+import AddIcon from '@mui/icons-material/Add'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState, useCallback, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -599,8 +600,12 @@ const OrdersPage = () => {
               >
                 {importing ? 'Importing…' : 'Import orders'}
               </Button>
-              <Button variant="outlined" startIcon={<FilterListIcon />} disabled>
-                Advanced filters
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setIsOrderDialogOpen(true)}
+              >
+                Add Order
               </Button>
             </Stack>
           </Stack>
