@@ -26,7 +26,7 @@ if (process.env.DATABASE_URL) {
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
       max: isServerless
-        ? parseInt(process.env.DB_POOL_MAX || '3', 10)
+        ? parseInt(process.env.DB_POOL_MAX || '1', 10)
         : parseInt(process.env.DB_POOL_MAX || '20', 10),
       min: isServerless
         ? parseInt(process.env.DB_POOL_MIN || '0', 10)
@@ -83,7 +83,7 @@ if (process.env.DATABASE_URL) {
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
       max: isServerless
-        ? parseInt(process.env.DB_POOL_MAX || '3', 10)
+        ? parseInt(process.env.DB_POOL_MAX || '1', 10)
         : parseInt(process.env.DB_POOL_MAX || '20', 10),
       min: isServerless
         ? parseInt(process.env.DB_POOL_MIN || '0', 10)

@@ -40,7 +40,7 @@ If you're NOT using Supabase integration, set these individual variables:
 
 ```bash
 DB_HOST=aws-1-ap-northeast-2.pooler.supabase.com
-DB_PORT=5432
+DB_PORT=6543
 DB_NAME=postgres
 DB_USER=postgres.yqzwfbufcmxzeqfbdlpf
 DB_PASSWORD=7!tR/HubhpWc!SF
@@ -53,10 +53,10 @@ DB_SSL_REJECT_UNAUTHORIZED=false
 
 ---
 
-### 🔧 Connection Pool (Optional - Optimized for Serverless)
+### 🔧 Connection Pool (Optimized for Serverless)
 
 ```bash
-DB_POOL_MAX=3
+DB_POOL_MAX=1
 DB_POOL_MIN=0
 DB_POOL_IDLE=10000
 DB_POOL_ACQUIRE=30000
