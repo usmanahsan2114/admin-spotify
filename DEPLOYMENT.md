@@ -68,19 +68,6 @@ Since we are using Supabase for both local development and production, the setup
 - [ ] **Backend `.env` file created** from `backend/.env.example`
   - [ ] `NODE_ENV=production` set
   - [ ] `JWT_SECRET` generated (32+ characters) - **CRITICAL**
-  - [ ] `DB_USER`, `DB_PASSWORD`, `DB_NAME` configured
-  - [ ] `CORS_ORIGIN` set to production domain(s)
-  - [ ] `SENTRY_DSN` configured (optional but recommended)
-
-- [ ] **Frontend environment variables configured**:
-  - [ ] **Local Development**: `frontend/.env` with `VITE_API_BASE_URL=http://localhost:5000`
-  - [ ] **Production (Vercel)**: `VITE_API_BASE_URL` set in Vercel dashboard (e.g., `https://api.shopifyadmin.pk`)
-  - [ ] See [Vercel Frontend Deployment](#vercel-frontend-deployment) section for detailed setup
-
-**Generate JWT Secret:**
-```bash
-openssl rand -base64 32
-```
 
 ### 2. Database Setup
 

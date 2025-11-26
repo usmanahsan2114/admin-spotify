@@ -165,8 +165,8 @@ After database seeding, you can login with:
 - Password: `staff123`
 
 **Demo Store:**
-- Email: `demo@demo.shopifyadmin.pk`
-- Password: `demo123`
+- Email: `demo@shopifyadmin.pk`
+- Password: `demo1234`
 
 **See [STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md) for complete credentials list.**
 
@@ -247,7 +247,7 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 - **Beauty Essentials**: `admin@beautyessentials.pk` / `admin123`
 
 **Demo Store Account:**
-- **Demo Store**: `demo@demo.shopifyadmin.pk` / `demo123` (read-only access, limited permissions)
+- **Demo Store**: `demo@shopifyadmin.pk` / `demo1234` (read-only access, limited permissions)
 
 ### Client Onboarding
 

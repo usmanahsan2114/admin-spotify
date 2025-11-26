@@ -75,8 +75,8 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 - Password: `staff123`
 
 **Demo Store:**
-- Email: `demo@demo.shopifyadmin.pk`
-- Password: `demo123`
+- Email: `demo@shopifyadmin.pk`
+- Password: `demo1234`
 
 ---
 

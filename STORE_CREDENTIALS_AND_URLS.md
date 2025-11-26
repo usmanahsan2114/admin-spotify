@@ -23,7 +23,7 @@
 - **Staff Password:** `staff123`
 
 ### Demo Store
-- **Demo Account:** `demo@demo.shopifyadmin.pk` / `demo123`
+- **Demo Account:** `demo@shopifyadmin.pk` / `demo1234`
 - **Note:** Demo store is for testing and demonstrations only
 
 ---
@@ -112,7 +112,7 @@
 - Pak Gusu Pvt Ltd: `admin@pakgusu.pk` / `admin123`
 
 **Demo Account:**
-- Demo Store: `demo@demo.shopifyadmin.pk` / `demo123`
+- Demo Store: `demo@shopifyadmin.pk` / `demo1234`
 
 **Public Pages Test:**
 1. Go to `http://localhost:5173/track-order` or `/test-order`

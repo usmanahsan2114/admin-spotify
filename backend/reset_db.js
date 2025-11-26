@@ -12,7 +12,7 @@
  * 
  * Seed Modes:
  *   - development (default): Seeds 5 client stores + 1 demo store + superadmin (thousands of rows)
- *   - production: Seeds superadmin + 1 demo store only (minimal data for production setup)
+ *   - production: Seeds superadmin + 1 demo store + TechHub store (minimal data for production setup)
  */
 
 require('dotenv').config()
@@ -110,36 +110,50 @@ async function resetAndSeedDatabase() {
 
         // Determine what to seed based on mode
         if (SEED_MODE === 'production') {
-            console.log('🌱 Production seed mode: Creating superadmin + populated Demo Store...')
+            console.log('🌱 Production seed mode: Creating superadmin + populated Demo Store + TechHub Store...')
 
-            // Generate full data set but filter for Demo Store only
+            // Generate full data set
             const multiStoreData = generateMultiStoreData()
 
+            // 1. Identify Stores to Seed (Demo + TechHub)
             const demoStore = multiStoreData.stores.find(s => s.isDemo)
+            const techHubStore = multiStoreData.stores.find(s => s.domain === 'techhub.pk')
+
             if (!demoStore) throw new Error('Demo store template not found in generator')
+            if (!techHubStore) throw new Error('TechHub store template not found in generator')
 
-            const demoUsers = multiStoreData.users.filter(u => u.storeId === demoStore.id)
-            const demoProducts = multiStoreData.products.filter(p => p.storeId === demoStore.id)
-            const demoCustomers = multiStoreData.customers.filter(c => c.storeId === demoStore.id)
-            const demoOrders = multiStoreData.orders.filter(o => o.storeId === demoStore.id)
-            const demoReturns = multiStoreData.returns.filter(r => r.storeId === demoStore.id)
+            const storesToSeed = [demoStore, techHubStore]
+            const storeIds = storesToSeed.map(s => s.id)
 
-            console.log(`📦 Seeding Demo Store (${demoStore.id})...`)
-            await Store.create({
-                id: demoStore.id,
-                name: demoStore.name,
-                dashboardName: demoStore.dashboardName,
-                domain: demoStore.domain,
-                category: demoStore.category,
-                defaultCurrency: demoStore.defaultCurrency || 'PKR',
-                country: demoStore.country || 'PK',
-                logoUrl: demoStore.logoUrl || null,
-                brandColor: demoStore.brandColor || '#1976d2',
-                isDemo: true,
-            })
+            // 2. Filter Data for these stores
+            const targetUsers = multiStoreData.users.filter(u => storeIds.includes(u.storeId))
+            const targetProducts = multiStoreData.products.filter(p => storeIds.includes(p.storeId))
+            const targetCustomers = multiStoreData.customers.filter(c => storeIds.includes(c.storeId))
+            const targetOrders = multiStoreData.orders.filter(o => storeIds.includes(o.storeId))
+            const targetReturns = multiStoreData.returns.filter(r => storeIds.includes(r.storeId))
 
-            console.log(`👥 Seeding ${demoUsers.length} demo users...`)
-            await User.bulkCreate(demoUsers.map(user => ({
+            console.log(`[DEBUG] Dialect: ${db.sequelize.getDialect()}`)
+            console.log(`[DEBUG] Stores to Seed: ${storesToSeed.map(s => s.name).join(', ')}`)
+            console.log(`[DEBUG] Total Orders: ${targetOrders.length}`)
+
+            // 3. Seed Stores
+            console.log(`📦 Seeding ${storesToSeed.length} stores...`)
+            await Store.bulkCreate(storesToSeed.map(store => ({
+                id: store.id,
+                name: store.name,
+                dashboardName: store.dashboardName,
+                domain: store.domain,
+                category: store.category,
+                defaultCurrency: store.defaultCurrency || 'PKR',
+                country: store.country || 'PK',
+                logoUrl: store.logoUrl || null,
+                brandColor: store.brandColor || '#1976d2',
+                isDemo: store.isDemo || false,
+            })))
+
+            // 4. Seed Users
+            console.log(`👥 Seeding ${targetUsers.length} users...`)
+            await User.bulkCreate(targetUsers.map(user => ({
                 id: user.id,
                 email: user.email,
                 passwordHash: user.passwordHash,
@@ -190,8 +204,9 @@ async function resetAndSeedDatabase() {
                 passwordChangedAt: new Date(),
             })
 
-            console.log(`📦 Seeding ${demoProducts.length} demo products...`)
-            await Product.bulkCreate(demoProducts.map(product => ({
+            // 5. Seed Products
+            console.log(`📦 Seeding ${targetProducts.length} products...`)
+            await Product.bulkCreate(targetProducts.map(product => ({
                 id: product.id,
                 storeId: product.storeId,
                 name: product.name,
@@ -206,70 +221,75 @@ async function resetAndSeedDatabase() {
                 updatedAt: product.updatedAt || product.createdAt || new Date(),
             })))
 
-            console.log(`👤 Seeding ${demoCustomers.length} demo customers...`)
-            // Batch customers
+            // 6. Seed Customers
+            console.log(`👤 Seeding ${targetCustomers.length} customers...`)
             const BATCH_SIZE = 50
-            for (let i = 0; i < demoCustomers.length; i += BATCH_SIZE) {
+            for (let i = 0; i < targetCustomers.length; i += BATCH_SIZE) {
                 try {
-                    const batch = demoCustomers.slice(i, i + BATCH_SIZE).map(c => ({
+                    const batch = targetCustomers.slice(i, i + BATCH_SIZE).map(c => ({
                         ...c,
                         createdAt: c.createdAt || new Date().toISOString(),
                         updatedAt: c.updatedAt || c.createdAt || new Date().toISOString()
                     }))
                     await Customer.bulkCreate(batch)
-                    console.log(`   Processed customers ${i + batch.length}/${demoCustomers.length}`)
+                    console.log(`   Processed customers ${i + batch.length}/${targetCustomers.length}`)
                 } catch (err) {
                     console.error(`❌ Error seeding customers batch ${i}:`, err.message)
                     throw err
                 }
             }
 
-            console.log(`📋 Seeding ${demoOrders.length} demo orders...`)
-            // Batch orders
-            for (let i = 0; i < demoOrders.length; i += BATCH_SIZE) {
+            // 7. Seed Orders
+            console.log(`📋 Seeding ${targetOrders.length} orders...`)
+            for (let i = 0; i < targetOrders.length; i += BATCH_SIZE) {
                 try {
-                    const batch = demoOrders.slice(i, i + BATCH_SIZE).map(o => ({
+                    const batch = targetOrders.slice(i, i + BATCH_SIZE).map(o => ({
                         ...o,
                         createdAt: o.createdAt || new Date().toISOString(),
                         updatedAt: o.updatedAt || o.createdAt || new Date().toISOString()
                     }))
                     await Order.bulkCreate(batch)
-                    console.log(`   Processed orders ${i + batch.length}/${demoOrders.length}`)
+                    console.log(`   Processed orders ${i + batch.length}/${targetOrders.length}`)
                 } catch (err) {
                     console.error(`❌ Error seeding orders batch ${i}:`, err.message)
                     throw err
                 }
             }
 
-            console.log(`↩️  Seeding ${demoReturns.length} demo returns...`)
-            await Return.bulkCreate(demoReturns.map(r => ({
+            // 8. Seed Returns
+            console.log(`↩️  Seeding ${targetReturns.length} returns...`)
+            await Return.bulkCreate(targetReturns.map(r => ({
                 ...r,
                 createdAt: r.createdAt || new Date().toISOString(),
                 updatedAt: r.updatedAt || r.createdAt || new Date().toISOString()
             })))
 
-            // Create demo store settings
-            await Setting.create({
+            // 9. Seed Settings
+            console.log('⚙️  Seeding settings...')
+            await Setting.bulkCreate(storesToSeed.map(store => ({
                 id: crypto.randomUUID(),
-                storeId: demoStore.id,
+                storeId: store.id,
                 logoUrl: null,
-                brandColor: '#1976d2',
+                brandColor: store.brandColor || '#1976d2',
                 defaultCurrency: 'PKR',
                 country: 'PK',
-                dashboardName: 'Demo Store',
+                dashboardName: store.dashboardName,
                 defaultOrderStatuses: ['Pending', 'Paid', 'Accepted', 'Shipped', 'Completed'],
-            })
+            })))
 
             console.log('✅ Production seed completed successfully!')
             console.log('\n📊 Summary:')
-            console.log(`   Stores: 1 (Demo Store)`)
-            console.log(`   Users: ${demoUsers.length + 1} (Superadmin + Demo Staff)`)
-            console.log(`   Products: ${demoProducts.length}`)
-            console.log(`   Orders: ${demoOrders.length}`)
+            console.log(`   Stores: ${storesToSeed.length} (Demo + TechHub)`)
+            console.log(`   Users: ${targetUsers.length + 1} (Superadmin + Staff)`)
+            console.log(`   Products: ${targetProducts.length}`)
+            console.log(`   Orders: ${targetOrders.length}`)
             console.log('\n🔐 Login Credentials:')
             console.log('\n   Superadmin:')
             console.log('   Email: superadmin@shopifyadmin.pk')
             console.log('   Password: superadmin123')
+            console.log('\n   TechHub Electronics:')
+            console.log('   Email: admin@techhub.pk')
+            console.log('   Password: admin123')
             console.log('\n   Demo Store:')
             console.log('   Email: demo@shopifyadmin.pk')
             console.log('   Password: demo1234')
