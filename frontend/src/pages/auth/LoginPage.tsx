@@ -81,11 +81,14 @@ const LoginPage = () => {
       display="flex"
       flexDirection="column"
       minHeight="100vh"
-      bgcolor="background.default"
       sx={{
         width: '100%',
         background: (theme) =>
-          theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+          theme.palette.mode === 'light'
+            ? 'radial-gradient(circle at 50% 0%, #2563eb 0%, transparent 50%), radial-gradient(circle at 100% 0%, #f43f5e 0%, transparent 30%), #f8fafc'
+            : 'radial-gradient(circle at 50% 0%, #1e40af 0%, transparent 50%), radial-gradient(circle at 100% 0%, #be123c 0%, transparent 30%), #0f172a',
+        backgroundSize: '100% 100%',
+        backgroundAttachment: 'fixed',
       }}
     >
       <PublicPageHeader />
@@ -98,21 +101,37 @@ const LoginPage = () => {
         px={{ xs: 2, md: 4 }}
         py={6}
         gap={4}
+        className="animate-fade-in"
       >
-        <Card sx={{ maxWidth: 420, width: '100%', boxShadow: 6, mx: 'auto' }}>
+        <Card
+          sx={{
+            maxWidth: 420,
+            width: '100%',
+            boxShadow: (theme) => theme.palette.mode === 'light'
+              ? '0 20px 40px -12px rgba(0,0,0,0.1)'
+              : '0 20px 40px -12px rgba(0,0,0,0.5)',
+            mx: 'auto',
+            backdropFilter: 'blur(16px)',
+            backgroundColor: (theme) => theme.palette.mode === 'light'
+              ? 'rgba(255,255,255,0.8)'
+              : 'rgba(30, 41, 59, 0.7)',
+            border: (theme) => `1px solid ${theme.palette.mode === 'light' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+          }}
+          className="animate-slide-up"
+        >
           <CardContent sx={{ p: { xs: 4, sm: 5 } }}>
             <Stack spacing={3} component="form" onSubmit={handleSubmit}>
               <Box textAlign="center">
-                <Typography variant="h4" fontWeight={700}>
+                <Typography variant="h3" fontWeight={700} sx={{ mb: 1, background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   Welcome back
                 </Typography>
-                <Typography variant="body2" color="text.secondary" mt={1}>
+                <Typography variant="body1" color="text.secondary">
                   Sign in to continue to the admin dashboard.
                 </Typography>
               </Box>
 
               {error && (
-                <Alert severity="error" onClose={() => setError(null)}>
+                <Alert severity="error" onClose={() => setError(null)} sx={{ borderRadius: 2 }}>
                   {error}
                 </Alert>
               )}
@@ -128,6 +147,7 @@ const LoginPage = () => {
                 autoFocus
                 autoComplete="username"
                 disabled={submitting}
+                variant="outlined"
               />
               <TextField
                 id="login-password"
@@ -139,6 +159,7 @@ const LoginPage = () => {
                 fullWidth
                 autoComplete="current-password"
                 disabled={submitting}
+                variant="outlined"
               />
 
               <Button
@@ -147,7 +168,7 @@ const LoginPage = () => {
                 size="large"
                 disabled={submitting || !email || !password}
                 startIcon={submitting ? <CircularProgress color="inherit" size={20} /> : null}
-                sx={{ mt: 1 }}
+                sx={{ mt: 1, height: 48, fontSize: '1rem' }}
                 fullWidth
               >
                 {submitting ? 'Signing in…' : 'Sign in'}
@@ -155,7 +176,7 @@ const LoginPage = () => {
 
               {/* Demo Account Button */}
               <Divider sx={{ my: 2 }}>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" color="text.secondary" fontWeight={500}>
                   OR
                 </Typography>
               </Divider>
@@ -168,19 +189,15 @@ const LoginPage = () => {
                 onClick={handleDemoLogin}
                 fullWidth
                 sx={{
-                  borderColor: 'primary.main',
-                  color: 'primary.main',
+                  height: 48,
+                  borderWidth: 2,
                   '&:hover': {
-                    borderColor: 'primary.dark',
-                    backgroundColor: 'primary.light',
-                    color: 'primary.dark',
+                    borderWidth: 2,
                   },
                 }}
               >
                 Try Demo Account
               </Button>
-
-
 
             </Stack>
           </CardContent>

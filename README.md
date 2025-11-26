@@ -16,11 +16,12 @@
 - **Time-Based Filtering**: Reusable DateFilter component with quick links (Last 7 days, This month, Last month) and custom date range picker. Available on Dashboard, Orders, Products, and Returns pages. Fully responsive with mobile-first design.
 - **Dark Mode**: Theme toggle with preference persistence via `ThemeModeProvider`.
 - **Public Pages**: Only 3 public pages available - Login, Track Order (for customers to track orders without login), and Test Order (for placing orders). Each store has its own URLs (`/store/:storeId/track-order` and `/store/:storeId/test-order`) to differentiate orders and make it easier to manage all customer orders without requiring login.
+- **Modern UI**: Completely redesigned interface featuring glassmorphism, vibrant gradients, and smooth animations. Includes a custom theme with light/dark mode support, responsive layouts, and interactive elements for a premium user experience.
 - **Dummy Order Form**: `/store/:storeId/test-order` route for marketing-site integration testing (store-specific).
 
 ## Tech Stack
 
-- **Frontend**: React 19 (TypeScript), Vite, Material UI, MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
+- **Frontend**: React 19 (TypeScript), Vite, Material UI (Custom Theme with Glassmorphism), MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
 - **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with MySQL** (fully migrated). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
 - **Tooling**: npm-run-all for concurrent dev servers, nodemon for backend reloads, ESLint.
 
@@ -485,6 +486,7 @@ docs/
 - **Error tracking**: Basic error logging and request monitoring middleware
 - **Performance**: Added React.memo to GrowthKPI component and enhanced memoization
 - **Responsive Typography**: Applied responsive font sizes across all page titles and descriptions. Mobile-first design with proper text truncation and spacing for improved readability on all screen sizes.
+- **Modern UI Overhaul**: Implemented a comprehensive design update with glassmorphism effects, radial gradient backgrounds, and entrance animations (`animate-fade-in`, `animate-slide-up`) across key pages (Login, Dashboard, Layout).
 
 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development workflow, history, and code quality improvements.
 

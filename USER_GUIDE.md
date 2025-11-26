@@ -16,7 +16,7 @@ Complete guide for using the Shopify Admin Dashboard, including login instructio
 
 A **store management system** that helps you manage your online business in one place: orders, products, customers, inventory, and business reports.
 
-**Think of it as:** Your digital command center for running your store efficiently.
+**Think of it as:** Your digital command center for running your store efficiently, featuring a **modern, responsive interface** with glassmorphism effects and smooth animations for a premium user experience.
 
 ---
 
@@ -146,6 +146,7 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 **Purpose:** Quick overview of your business
 
 **What you see:**
+- **Modern UI** - Glassmorphism cards, vibrant gradients, and smooth entrance animations
 - **System Status** - Real-time health monitoring (database status, API latency, server uptime, memory usage)
 - **Total Orders** - All orders ever received
 - **Pending Orders** - Orders waiting to be processed

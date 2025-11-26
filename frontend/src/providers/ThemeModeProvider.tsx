@@ -34,44 +34,50 @@ const getInitialColor = (): ThemeColor => {
 const themeColors = {
   blue: {
     light: {
-      primary: '#1976d2',
-      secondary: '#dc004e',
-      background: '#f5f7fb',
+      primary: '#2563eb', // Vibrant Blue
+      secondary: '#f43f5e', // Rose
+      background: '#f8fafc', // Slate 50
       paper: '#ffffff',
+      text: '#0f172a',
     },
     dark: {
-      primary: '#90caf9',
-      secondary: '#f48fb1',
-      background: '#0f172a',
-      paper: '#111827',
+      primary: '#60a5fa', // Blue 400
+      secondary: '#fb7185', // Rose 400
+      background: '#0f172a', // Slate 900
+      paper: '#1e293b', // Slate 800
+      text: '#f8fafc',
     },
   },
   green: {
     light: {
-      primary: '#2e7d32',
-      secondary: '#ed6c02',
-      background: '#f1f8f4',
+      primary: '#059669', // Emerald 600
+      secondary: '#d97706', // Amber 600
+      background: '#f0fdf4',
       paper: '#ffffff',
+      text: '#064e3b',
     },
     dark: {
-      primary: '#81c784',
-      secondary: '#ffb74d',
-      background: '#0d1f0d',
-      paper: '#1a2e1a',
+      primary: '#34d399', // Emerald 400
+      secondary: '#fbbf24', // Amber 400
+      background: '#022c22', // Emerald 950
+      paper: '#064e3b', // Emerald 900
+      text: '#ecfdf5',
     },
   },
   purple: {
     light: {
-      primary: '#7b1fa2',
-      secondary: '#c2185b',
-      background: '#f8f4fb',
+      primary: '#7c3aed', // Violet 600
+      secondary: '#db2777', // Pink 600
+      background: '#faf5ff',
       paper: '#ffffff',
+      text: '#4c1d95',
     },
     dark: {
-      primary: '#ba68c8',
-      secondary: '#f06292',
-      background: '#1a0d1f',
-      paper: '#2e1a2e',
+      primary: '#a78bfa', // Violet 400
+      secondary: '#f472b6', // Pink 400
+      background: '#2e1065', // Violet 950
+      paper: '#4c1d95', // Violet 900
+      text: '#f5f3ff',
     },
   },
 }
@@ -115,16 +121,70 @@ export const ThemeModeProvider = ({ children }: ThemeModeProviderProps) => {
           default: colors.background,
           paper: colors.paper,
         },
+        text: {
+          primary: colors.text,
+        },
       },
-      shape: { borderRadius: 12 },
+      shape: { borderRadius: 16 },
       typography: {
-        fontFamily: `'Inter', 'Segoe UI', sans-serif`,
-        h1: { fontWeight: 600 },
-        h2: { fontWeight: 600 },
-        h3: { fontWeight: 600 },
+        fontFamily: `'Outfit', 'Inter', sans-serif`,
+        h1: { fontWeight: 700, letterSpacing: '-0.02em' },
+        h2: { fontWeight: 700, letterSpacing: '-0.01em' },
+        h3: { fontWeight: 600, letterSpacing: '-0.01em' },
         h4: { fontWeight: 600 },
         h5: { fontWeight: 600 },
         h6: { fontWeight: 600 },
+        button: { fontWeight: 600, textTransform: 'none' },
+      },
+      components: {
+        MuiButton: {
+          styleOverrides: {
+            root: {
+              borderRadius: '12px',
+              padding: '10px 24px',
+              boxShadow: 'none',
+              '&:hover': {
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                transform: 'translateY(-1px)',
+              },
+              transition: 'all 0.2s ease-in-out',
+            },
+            contained: {
+              background: `linear-gradient(135deg, ${colors.primary}, ${mode === 'dark' ? '#3b82f6' : '#1d4ed8'})`,
+            },
+          },
+        },
+        MuiPaper: {
+          styleOverrides: {
+            root: {
+              backgroundImage: 'none',
+              boxShadow: mode === 'light'
+                ? '0 4px 20px rgba(0,0,0,0.05)'
+                : '0 4px 20px rgba(0,0,0,0.2)',
+              border: `1px solid ${mode === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
+            },
+          },
+        },
+        MuiCard: {
+          styleOverrides: {
+            root: {
+              borderRadius: '20px',
+              overflow: 'hidden',
+            },
+          },
+        },
+        MuiTextField: {
+          styleOverrides: {
+            root: {
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '& fieldset': {
+                  borderColor: mode === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                },
+              },
+            },
+          },
+        },
       },
     })
   }, [mode, color])

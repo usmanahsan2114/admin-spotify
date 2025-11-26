@@ -19,7 +19,7 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material'
-import { styled, useTheme } from '@mui/material/styles'
+import { styled, useTheme, alpha } from '@mui/material/styles'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 import Inventory2Icon from '@mui/icons-material/Inventory2'
@@ -96,13 +96,23 @@ const Main = styled('main', {
 }))
 
 const activeStyles = (theme: Theme) => ({
-  backgroundColor:
-    theme.palette.mode === 'light'
-      ? theme.palette.primary.main
-      : theme.palette.primary.dark,
-  color: theme.palette.getContrastText(theme.palette.primary.main),
+  backgroundColor: alpha(theme.palette.primary.main, 0.08),
+  color: theme.palette.primary.main,
+  fontWeight: 600,
   '& .MuiListItemIcon-root': {
-    color: theme.palette.getContrastText(theme.palette.primary.main),
+    color: theme.palette.primary.main,
+  },
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    height: '60%',
+    width: 4,
+    backgroundColor: theme.palette.primary.main,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
   },
 })
 
@@ -303,7 +313,9 @@ const DashboardLayout = () => {
         width: '100%',
         bgcolor: 'background.default',
         background: (theme) =>
-          theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+          theme.palette.mode === 'light'
+            ? 'radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 50%), #f8fafc'
+            : 'radial-gradient(circle at 50% 0%, rgba(96, 165, 250, 0.05) 0%, transparent 50%), #0f172a',
         pt: `${BANNER_HEIGHT}px`, // Push content down for banner
       }}
     >
@@ -334,11 +346,11 @@ const DashboardLayout = () => {
         sx={{
           top: BANNER_HEIGHT, // Push AppBar down
           borderBottom: `1px solid ${theme.palette.divider}`,
-          backdropFilter: 'blur(8px)',
+          backdropFilter: 'blur(12px)',
           backgroundColor:
             theme.palette.mode === 'light'
-              ? 'rgba(255,255,255,0.85)'
-              : 'rgba(17,24,39,0.85)',
+              ? 'rgba(255,255,255,0.7)'
+              : 'rgba(15, 23, 42, 0.7)',
           zIndex: theme.zIndex.drawer + 1,
         }}
       >
@@ -472,6 +484,8 @@ const DashboardLayout = () => {
               width: drawerWidth,
               boxSizing: 'border-box',
               borderRight: `1px solid ${theme.palette.divider}`,
+              backgroundColor: theme.palette.mode === 'light' ? 'rgba(255,255,255,0.8)' : 'rgba(15, 23, 42, 0.8)',
+              backdropFilter: 'blur(12px)',
               backgroundImage: 'none',
               top: isDesktop ? BANNER_HEIGHT : 0, // Push permanent drawer down
               height: isDesktop ? `calc(100% - ${BANNER_HEIGHT}px)` : '100%',

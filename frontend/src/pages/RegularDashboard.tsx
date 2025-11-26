@@ -396,42 +396,29 @@ const RegularDashboard = () => {
   if (error) {
     return (
       <Box p={3}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
       </Box>
     )
   }
 
   return (
-    <Box sx={{ minWidth: 0, width: '100%' }}>
-      <Box
-        mb={{ xs: 2, sm: 3 }}
-        display="flex"
-        flexDirection={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-        gap={2}
-      >
-        <Typography
-          variant="h4"
-          component="h1"
-          sx={{
-            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' },
-            fontWeight: 600,
-          }}
-        >
-          Dashboard
-        </Typography>
-        <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+    <Box className="animate-fade-in" >
+      <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} gap={2} mb={4}>
+        <Box>
+          <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5, background: (theme) => `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Dashboard Overview
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Welcome back, here's what's happening today.
+          </Typography>
+        </Box>
+        <Box sx={{ minWidth: { xs: '100%', sm: 300 } }}>
+          <DateFilter value={dateRange} onChange={setDateRange} />
         </Box>
       </Box>
 
-      {/* Date Filter */}
-      <Box mb={{ xs: 2, sm: 3 }}>
-        <DateFilter value={dateRange} onChange={setDateRange} label="Filter by Date Range" />
-      </Box>
-
       {/* Summary Cards */}
-      <Box mb={{ xs: 3, sm: 4 }}>
+      <Box mb={{ xs: 3, sm: 4 }} >
         <Box
           sx={{
             display: 'grid',
@@ -449,30 +436,32 @@ const RegularDashboard = () => {
               key={index}
               component={card.to ? RouterLink : Box}
               to={card.to}
+              className="animate-slide-up"
               sx={{
                 textDecoration: 'none',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                transition: 'all 0.2s',
                 cursor: card.to ? 'pointer' : 'default',
                 minHeight: { xs: 110, sm: 130 },
                 position: 'relative',
                 overflow: 'hidden',
+                animationDelay: `${index * 50}ms`,
+                backdropFilter: 'blur(12px)',
+                backgroundColor: (theme) => theme.palette.mode === 'light'
+                  ? 'rgba(255,255,255,0.7)'
+                  : 'rgba(30, 41, 59, 0.6)',
+                border: (theme) => `1px solid ${theme.palette.mode === 'light' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                boxShadow: (theme) => theme.palette.mode === 'light'
+                  ? '0 4px 20px -4px rgba(0,0,0,0.05)'
+                  : '0 4px 20px -4px rgba(0,0,0,0.2)',
                 '&:hover': card.to
                   ? {
-                    transform: { xs: 'none', sm: 'translateY(-4px)' },
-                    boxShadow: { xs: theme.shadows[2], sm: theme.shadows[8] },
+                    transform: 'translateY(-4px)',
+                    boxShadow: (theme) => theme.palette.mode === 'light'
+                      ? '0 12px 30px -8px rgba(0,0,0,0.1)'
+                      : '0 12px 30px -8px rgba(0,0,0,0.3)',
+                    borderColor: (theme) => theme.palette.primary.main,
                   }
                   : {},
-                borderLeft: `4px solid ${card.intent === 'alert'
-                  ? theme.palette.error.main
-                  : card.intent === 'info'
-                    ? theme.palette.info.main
-                    : theme.palette.primary.main
-                  }`,
-                background: card.intent === 'alert'
-                  ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.05)} 0%, transparent 100%)`
-                  : card.intent === 'info'
-                    ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, transparent 100%)`
-                    : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
               }}
             >
               <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
@@ -496,6 +485,13 @@ const RegularDashboard = () => {
                         fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
                         wordBreak: 'break-word',
                         lineHeight: 1.2,
+                        background: (theme) => card.intent === 'alert'
+                          ? `linear-gradient(135deg, ${theme.palette.error.main}, ${theme.palette.error.dark})`
+                          : card.intent === 'info'
+                            ? `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`
+                            : `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
                       }}
                     >
                       {card.value}
@@ -518,23 +514,22 @@ const RegularDashboard = () => {
                     <Box
                       sx={{
                         p: { xs: 0.75, sm: 1 },
-                        borderRadius: 1.5,
-                        backgroundColor: alpha(
+                        borderRadius: 2,
+                        background: (theme) =>
                           card.intent === 'alert'
-                            ? theme.palette.error.main
+                            ? `linear-gradient(135deg, ${alpha(theme.palette.error.main, 0.1)}, ${alpha(theme.palette.error.main, 0.2)})`
                             : card.intent === 'info'
-                              ? theme.palette.info.main
-                              : theme.palette.primary.main,
-                          0.1
-                        ),
+                              ? `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.1)}, ${alpha(theme.palette.info.main, 0.2)})`
+                              : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)}, ${alpha(theme.palette.primary.main, 0.2)})`,
                         color: card.intent === 'alert'
-                          ? theme.palette.error.main
+                          ? 'error.main'
                           : card.intent === 'info'
-                            ? theme.palette.info.main
-                            : theme.palette.primary.main,
+                            ? 'info.main'
+                            : 'primary.main',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.1)',
                         '& svg': {
                           fontSize: { xs: '1.25rem', sm: '1.5rem' },
                         },
@@ -1059,7 +1054,7 @@ const RegularDashboard = () => {
       </Box>
 
       {/* Trend Report - Full Width */}
-      {trendReport && trendReport.data && trendReport.data.length > 0 && trendReport.metric !== 'customers' && (
+      {trendReport && trendReport.data && trendReport.data.length > 0 && (
         <Card sx={{ mb: { xs: 3, sm: 4 } }}>
           <CardContent sx={{ p: { xs: 1.5, sm: 2, md: 3 } }}>
             <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
@@ -1126,4 +1121,3 @@ const RegularDashboard = () => {
 }
 
 export default RegularDashboard
-
