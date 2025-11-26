@@ -62,7 +62,11 @@ type FormValues = yup.InferType<typeof customerSchema>
 
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [filtered, setFiltered] = useState<Customer[]>([])
+  const [rowCount, setRowCount] = useState(0)
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  })
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -106,19 +110,36 @@ const CustomersPage = () => {
       setLoading(true)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
-      const data = await fetchCustomers(startDate, endDate)
-      setCustomers(data)
-      setFiltered(data)
+
+      const response = await fetchCustomers(
+        startDate,
+        endDate,
+        paginationModel.page + 1,
+        paginationModel.pageSize,
+        searchQuery
+      )
+
+      if (Array.isArray(response)) {
+        setCustomers(response)
+        setRowCount(response.length)
+      } else {
+        setCustomers(response.data)
+        setRowCount(response.pagination.total)
+      }
     } catch (err) {
       showNotification(handleApiError(err, 'Failed to load customers.'), 'error')
     } finally {
       setLoading(false)
     }
-  }, [dateRange.startDate, dateRange.endDate, handleApiError, showNotification])
+  }, [dateRange.startDate, dateRange.endDate, paginationModel.page, paginationModel.pageSize, searchQuery, handleApiError, showNotification])
 
+  // Debounce search
   useEffect(() => {
-    loadCustomers()
-  }, [loadCustomers])
+    const timer = setTimeout(() => {
+      loadCustomers()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [loadCustomers, searchQuery])
 
   const handleExport = async () => {
     try {
@@ -134,23 +155,6 @@ const CustomersPage = () => {
       setExporting(false)
     }
   }
-
-  useEffect(() => {
-    const query = searchQuery.trim().toLowerCase()
-    let result = customers
-
-    // Apply search query filter
-    if (query) {
-      result = result.filter(
-        (customer) =>
-          customer.name.toLowerCase().includes(query) ||
-          customer.email.toLowerCase().includes(query) ||
-          customer.phone?.toLowerCase().includes(query),
-      )
-    }
-
-    setFiltered(result)
-  }, [searchQuery, customers])
 
   const handleOpenDialog = () => {
     reset({ name: '', email: '', phone: '', address: '', alternativePhone: '' })
@@ -170,9 +174,8 @@ const CustomersPage = () => {
         address: values.address?.trim() || null,
         alternativePhone: values.alternativePhone?.trim() || null,
       }
-      const created = await createCustomer(payload)
-      setCustomers((prev) => [created, ...prev])
-      setFiltered((prev) => [created, ...prev])
+      await createCustomer(payload)
+      loadCustomers()
       setIsDialogOpen(false)
       showNotification('Customer added successfully.', 'success')
     } catch (err) {
@@ -327,14 +330,14 @@ const CustomersPage = () => {
           <Box sx={{ width: '100%', minWidth: 0, overflowX: 'auto' }}>
             <DataGrid
               autoHeight
-              rows={filtered}
+              rows={customers}
               columns={columns}
               loading={loading}
               disableRowSelectionOnClick
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10 } },
-                sorting: { sortModel: [{ field: 'createdAt', sort: 'desc' }] },
-              }}
+              paginationMode="server"
+              rowCount={rowCount}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
               pageSizeOptions={[10, 25, 50]}
               density={isSmall ? 'compact' : 'standard'}
               getRowId={(row) => row.id}

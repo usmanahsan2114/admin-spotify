@@ -347,7 +347,7 @@ app.use('/api', authRoutes)
 app.use('/api', storeRoutes)
 app.use('/api', orderRoutes)
 app.use('/api', returnRoutes)
-app.use('/api', customerRoutes)
+app.use('/api/customers', customerRoutes)
 
 app.use('/api/products', demoWriteLimiter, restrictDemoStore)
 app.use('/api', productRoutes)

@@ -174,147 +174,43 @@ const mergeCustomerInfo = (existingCustomer, newInfo) => {
     return merged
 }
 
-// Controller Functions
-
 const getCustomers = async (req, res) => {
     try {
-        const { buildStoreWhere } = require('../middleware/auth') // Import here to avoid circular dependency if possible, or move helper
-        // Actually, buildStoreWhere is in auth middleware.
+        const storeId = req.isSuperAdmin && req.query.storeId ? req.query.storeId : req.storeId
+        const storeWhere = { storeId }
 
-        // We need to replicate buildStoreWhere logic or import it. 
-        // Ideally, it should be passed in req or imported.
-        // For now, let's assume we can import it or replicate it.
-        // Replicating simple logic:
-        const storeWhere = {}
-        if (!req.isSuperAdmin) {
-            storeWhere.storeId = req.storeId
-        } else if (req.query.storeId) {
-            storeWhere.storeId = req.query.storeId
+        const limit = parseInt(req.query.limit || '100', 10)
+        const offset = parseInt(req.query.offset || '0', 10)
+        const maxLimit = 1000
+        const safeLimit = Math.min(limit, maxLimit)
+
+        const search = req.query.search
+        if (search) {
+            storeWhere[Op.or] = [
+                { name: { [Op.like]: `%${search}%` } },
+                { email: { [Op.like]: `%${search}%` } },
+                { phone: { [Op.like]: `%${search}%` } },
+            ]
         }
 
-        const startDate = req.query.startDate
-        const endDate = req.query.endDate
-
-        if (startDate || endDate) {
-            storeWhere.createdAt = {}
-            if (startDate) {
-                const start = new Date(startDate)
-                start.setHours(0, 0, 0, 0)
-                storeWhere.createdAt[Op.gte] = start
-            }
-            if (endDate) {
-                const end = new Date(endDate)
-                end.setHours(23, 59, 59, 999)
-                storeWhere.createdAt[Op.lte] = end
-            }
-        }
-
-        let customersList = []
-        try {
-            customersList = await Customer.findAll({
-                where: storeWhere,
-                order: [['createdAt', 'DESC']],
-                attributes: ['id', 'name', 'email', 'phone', 'address', 'alternativePhones', 'alternativeEmails', 'alternativeNames', 'alternativeAddresses', 'createdAt', 'storeId'],
-            })
-        } catch (customerError) {
-            logger.error('[ERROR] Failed to fetch customers list:', customerError)
-            throw customerError
-        }
-
-        const customerIds = customersList.map(c => c.id)
-        const orderStats = []
-
-        if (customerIds.length > 0) {
-            const BATCH_SIZE = 100
-            for (let i = 0; i < customerIds.length; i += BATCH_SIZE) {
-                const batch = customerIds.slice(i, i + BATCH_SIZE)
-                for (const customerId of batch) {
-                    try {
-                        const orders = await Order.findAll({
-                            where: {
-                                ...storeWhere,
-                                customerId,
-                            },
-                            attributes: ['total', 'createdAt'],
-                            raw: true,
-                            limit: 1000,
-                        })
-
-                        orderStats.push({
-                            customerId,
-                            orderCount: orders.length,
-                            totalSpent: orders.reduce((sum, o) => {
-                                const total = o.total != null ? parseFloat(o.total) || 0 : 0
-                                return sum + total
-                            }, 0),
-                            lastOrderDate: orders.length > 0 ? orders.reduce((max, o) => {
-                                const date = o.createdAt ? new Date(o.createdAt) : null
-                                return date && (!max || date > max) ? date : max
-                            }, null) : null,
-                        })
-                    } catch (customerError) {
-                        orderStats.push({
-                            customerId,
-                            orderCount: 0,
-                            totalSpent: 0,
-                            lastOrderDate: null,
-                        })
-                    }
-                }
-            }
-        }
-
-        const statsMap = new Map()
-        orderStats.forEach(stat => {
-            if (stat.customerId) {
-                statsMap.set(stat.customerId, {
-                    orderCount: parseInt(stat.orderCount) || 0,
-                    totalSpent: parseFloat(stat.totalSpent) || 0,
-                    lastOrderDate: stat.lastOrderDate || null,
-                })
-            }
+        const { count, rows: customersList } = await Customer.findAndCountAll({
+            where: storeWhere,
+            order: [['createdAt', 'DESC']],
+            limit: safeLimit,
+            offset: offset,
         })
 
-        const payload = customersList.map(customer => {
-            try {
-                const customerData = customer.toJSON ? customer.toJSON() : customer
-                const stats = statsMap.get(customerData.id) || { orderCount: 0, totalSpent: 0, lastOrderDate: null }
+        const serializedCustomers = await Promise.all(customersList.map(serializeCustomer))
 
-                return {
-                    id: customerData.id,
-                    name: customerData.name || 'Unknown',
-                    email: customerData.email || '',
-                    phone: customerData.phone || 'Not provided',
-                    address: customerData.address || null,
-                    alternativePhones: ensureArray(customerData.alternativePhones),
-                    alternativeEmails: ensureArray(customerData.alternativeEmails),
-                    alternativeNames: ensureArray(customerData.alternativeNames),
-                    alternativeAddresses: ensureArray(customerData.alternativeAddresses),
-                    createdAt: customerData.createdAt || new Date().toISOString(),
-                    orderCount: stats.orderCount,
-                    lastOrderDate: stats.lastOrderDate,
-                    totalSpent: stats.totalSpent,
-                }
-            } catch (serializeError) {
-                return {
-                    id: customer.id || 'unknown',
-                    name: 'Error',
-                    email: '',
-                    phone: 'Not provided',
-                    address: null,
-                    alternativePhones: [],
-                    alternativeEmails: [],
-                    alternativeNames: [],
-                    alternativeAddresses: [],
-                    createdAt: new Date().toISOString(),
-                    orderCount: 0,
-                    lastOrderDate: null,
-                    totalSpent: 0,
-                }
+        return res.json({
+            data: serializedCustomers,
+            pagination: {
+                total: count,
+                limit: safeLimit,
+                offset: offset,
+                hasMore: offset + safeLimit < count
             }
         })
-
-        return res.json(payload)
     } catch (error) {
         logger.error('[ERROR] /api/customers:', error)
         return res.status(500).json({ message: 'Failed to fetch customers', error: error.message })
@@ -548,6 +444,36 @@ const updateCustomer = async (req, res) => {
     }
 }
 
+const searchCustomers = async (req, res) => {
+    try {
+        const { query } = req.query
+        if (!query || query.trim().length < 2) {
+            return res.json([])
+        }
+
+        const storeId = req.isSuperAdmin && req.query.storeId ? req.query.storeId : req.storeId
+        const where = {
+            storeId,
+            [Op.or]: [
+                { name: { [Op.like]: `%${query}%` } },
+                { email: { [Op.like]: `%${query}%` } },
+                { phone: { [Op.like]: `%${query}%` } },
+            ]
+        }
+
+        const customers = await Customer.findAll({
+            where,
+            limit: 20,
+            attributes: ['id', 'name', 'email', 'phone', 'address']
+        })
+
+        return res.json(customers)
+    } catch (error) {
+        logger.error('Failed to search customers:', error)
+        return res.status(500).json({ message: 'Failed to search customers', error: error.message })
+    }
+}
+
 const getCustomerOrders = async (req, res) => {
     try {
         const customerId = req.customer?.customerId
@@ -580,4 +506,5 @@ module.exports = {
     mergeCustomerInfo,
     serializeCustomer,
     getOrdersForCustomer,
+    searchCustomers,
 }

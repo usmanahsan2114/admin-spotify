@@ -24,6 +24,7 @@ import { useTheme } from '@mui/material/styles'
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/UploadFile'
 import AddIcon from '@mui/icons-material/Add'
+import { searchCustomers } from '../services/customersService'
 import { DataGrid, type GridColDef } from '@mui/x-data-grid'
 import { useEffect, useMemo, useState, useCallback, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -36,7 +37,7 @@ import * as yup from 'yup'
 import { downloadOrdersExport, fetchOrders, updateOrder, createOrder, importOrders, type CreateOrderPayload } from '../services/ordersService'
 import { fetchGrowthComparison, type GrowthComparisonResponse } from '../services/metricsService'
 import { fetchProducts } from '../services/productsService'
-import { fetchCustomers } from '../services/customersService'
+
 import type { Order, OrderStatus } from '../types/order'
 import type { Product } from '../types/product'
 import type { Customer } from '../types/customer'
@@ -80,8 +81,13 @@ type FormValues = yup.InferType<typeof orderSchema>
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([])
+  const [rowCount, setRowCount] = useState(0)
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  })
   const [loading, setLoading] = useState(true)
-  // Removed local error/success state
+  const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
@@ -94,8 +100,7 @@ const OrdersPage = () => {
   const [importSummary, setImportSummary] = useState<{ created: number; updated: number; failed: number } | null>(null)
   const [importErrors, setImportErrors] = useState<Array<{ index: number; message: string }>>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [customers, setCustomers] = useState<Customer[]>([])
-  const [saving, setSaving] = useState(false)
+  const [customers, setCustomers] = useState<Customer[]>([]) // For autocomplete options
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showCustomerCreation, setShowCustomerCreation] = useState(false)
   const [newCustomerData, setNewCustomerData] = useState({
@@ -150,6 +155,7 @@ const OrdersPage = () => {
     }
   }, [watchedProductId, products])
 
+  // Watch for customer selection to auto-fill details
   useEffect(() => {
     if (watchedCustomerId && watchedCustomerId !== 'new') {
       const customer = customers.find((c) => c.id === watchedCustomerId)
@@ -165,6 +171,17 @@ const OrdersPage = () => {
     }
   }, [watchedCustomerId, customers, resetOrderForm])
 
+  // Debounced customer search
+  const handleCustomerSearch = useCallback(async (query: string) => {
+    if (!query || query.length < 2) return
+    try {
+      const results = await searchCustomers(query)
+      setCustomers(results)
+    } catch (err) {
+      console.error('Failed to search customers', err)
+    }
+  }, [])
+
   const handleApiError = useCallback((err: unknown, fallback: string) => {
     if (err && typeof err === 'object' && 'status' in err && (err as { status?: number }).status === 401) {
       logout()
@@ -178,25 +195,28 @@ const OrdersPage = () => {
       setLoading(true)
       const startDate = dateRange.startDate || undefined
       const endDate = dateRange.endDate || undefined
-      const [data, growthData, customersData] = await Promise.all([
-        fetchOrders(startDate, endDate),
+
+      const [ordersResponse, growthData] = await Promise.all([
+        fetchOrders(startDate, endDate, paginationModel.page + 1, paginationModel.pageSize),
         fetchGrowthComparison('month', startDate, endDate),
-        fetchCustomers(),
       ])
-      setOrders(
-        data.map((order) => ({
-          ...order,
-          status: order.status ?? 'Pending',
-        })),
-      )
+
+      if (Array.isArray(ordersResponse)) {
+        // Fallback if backend doesn't return pagination object yet (safety)
+        setOrders(ordersResponse.map(o => ({ ...o, status: o.status ?? 'Pending' })))
+        setRowCount(ordersResponse.length)
+      } else {
+        setOrders(ordersResponse.data.map(o => ({ ...o, status: o.status ?? 'Pending' })))
+        setRowCount(ordersResponse.pagination.total)
+      }
+
       setGrowthComparison(growthData)
-      setCustomers(customersData)
     } catch (err) {
       showNotification(handleApiError(err, 'Failed to load orders.'), 'error')
     } finally {
       setLoading(false)
     }
-  }, [dateRange.startDate, dateRange.endDate, handleApiError, showNotification])
+  }, [dateRange.startDate, dateRange.endDate, paginationModel.page, paginationModel.pageSize, handleApiError, showNotification])
 
   useEffect(() => {
     loadOrders()
@@ -745,10 +765,10 @@ const OrdersPage = () => {
               loading={loading}
               disableRowSelectionOnClick
               autoHeight={isSmall}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 10 } },
-                sorting: { sortModel: [{ field: 'createdAt', sort: 'desc' }] },
-              }}
+              paginationMode="server"
+              rowCount={rowCount}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
               pageSizeOptions={[10, 25, 50]}
               onRowClick={(params) => navigate(`/orders/${params.id}`)}
               density={isSmall ? 'compact' : 'standard'}
@@ -834,7 +854,18 @@ const OrdersPage = () => {
                     <Autocomplete
                       options={customers.map((c) => c.name)}
                       value={value || null}
-                      onChange={(_, newValue) => onChange(newValue)}
+                      onInputChange={(_, newInputValue) => {
+                        handleCustomerSearch(newInputValue)
+                      }}
+                      onChange={(_, newValue) => {
+                        onChange(newValue)
+                        // Find customer object to trigger the useEffect that fills details
+                        const selected = customers.find(c => c.name === newValue)
+                        if (selected) {
+                          // We might need to set watchedCustomerId manually if react-hook-form doesn't trigger it fast enough
+                          // But the controller should handle value change -> watchedCustomerId change
+                        }
+                      }}
                       freeSolo
                       renderInput={(params) => (
                         <TextField

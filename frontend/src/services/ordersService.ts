@@ -1,12 +1,15 @@
 import { apiDownload, apiFetch } from './apiClient'
 import type { Order, OrderUpdatePayload } from '../types/order'
 
-export const fetchOrders = (startDate?: string, endDate?: string) => {
+export const fetchOrders = (startDate?: string, endDate?: string, page: number = 1, limit: number = 100) => {
   const params = new URLSearchParams()
   if (startDate) params.append('startDate', startDate)
   if (endDate) params.append('endDate', endDate)
+  params.append('offset', ((page - 1) * limit).toString())
+  params.append('limit', limit.toString())
+
   const query = params.toString()
-  return apiFetch<Order[]>(`/api/orders${query ? `?${query}` : ''}`)
+  return apiFetch<{ data: Order[]; pagination: { total: number; limit: number; offset: number; hasMore: boolean } } | Order[]>(`/api/orders${query ? `?${query}` : ''}`)
 }
 
 export const updateOrder = async (orderId: string, payload: OrderUpdatePayload) => {

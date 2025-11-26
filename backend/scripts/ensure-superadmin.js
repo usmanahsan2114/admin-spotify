@@ -7,7 +7,7 @@ async function ensureSuperAdmin() {
         await initializeDatabase();
 
         const email = 'superadmin@shopifyadmin.pk';
-        const password = 'superadmin123';
+        const password = 'superadmin1234';
 
         console.log(`Checking for user: ${email}`);
 
