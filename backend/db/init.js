@@ -24,6 +24,8 @@ if (db.sequelize.config.dialectOptions) {
   // db.sequelize.config.dialectOptions.prependSearchPath = true; // Not directly settable here usually, handled in config
 }
 
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+
 async function initializeDatabase() {
   try {
     // Get database dialect for logging (without exposing credentials)
@@ -36,6 +38,7 @@ async function initializeDatabase() {
     logger.info(`✅ Database connection established successfully (dialect: ${dialect})`)
 
     // Configure connection pool for production
+    /*
     if (process.env.NODE_ENV === 'production') {
       // Optimized pool configuration for serverless environments
       // Serverless functions don't maintain persistent connections, so use smaller pools
@@ -53,6 +56,7 @@ async function initializeDatabase() {
       db.sequelize.connectionManager.pool.evict = poolConfig.evict
       logger.info(`Database connection pool configured for ${isServerless ? 'serverless' : 'production'}: max=${poolConfig.max}, min=${poolConfig.min}`)
     }
+    */
 
     // Sync database (creates tables if they don't exist)
     // In production, use migrations instead

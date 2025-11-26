@@ -206,6 +206,48 @@ async function resetAndSeedDatabase() {
                 updatedAt: product.updatedAt || product.createdAt || new Date(),
             })))
 
+            console.log(`👤 Seeding ${demoCustomers.length} demo customers...`)
+            // Batch customers
+            const BATCH_SIZE = 50
+            for (let i = 0; i < demoCustomers.length; i += BATCH_SIZE) {
+                try {
+                    const batch = demoCustomers.slice(i, i + BATCH_SIZE).map(c => ({
+                        ...c,
+                        createdAt: c.createdAt || new Date().toISOString(),
+                        updatedAt: c.updatedAt || c.createdAt || new Date().toISOString()
+                    }))
+                    await Customer.bulkCreate(batch)
+                    console.log(`   Processed customers ${i + batch.length}/${demoCustomers.length}`)
+                } catch (err) {
+                    console.error(`❌ Error seeding customers batch ${i}:`, err.message)
+                    throw err
+                }
+            }
+
+            console.log(`📋 Seeding ${demoOrders.length} demo orders...`)
+            // Batch orders
+            for (let i = 0; i < demoOrders.length; i += BATCH_SIZE) {
+                try {
+                    const batch = demoOrders.slice(i, i + BATCH_SIZE).map(o => ({
+                        ...o,
+                        createdAt: o.createdAt || new Date().toISOString(),
+                        updatedAt: o.updatedAt || o.createdAt || new Date().toISOString()
+                    }))
+                    await Order.bulkCreate(batch)
+                    console.log(`   Processed orders ${i + batch.length}/${demoOrders.length}`)
+                } catch (err) {
+                    console.error(`❌ Error seeding orders batch ${i}:`, err.message)
+                    throw err
+                }
+            }
+
+            console.log(`↩️  Seeding ${demoReturns.length} demo returns...`)
+            await Return.bulkCreate(demoReturns.map(r => ({
+                ...r,
+                createdAt: r.createdAt || new Date().toISOString(),
+                updatedAt: r.updatedAt || r.createdAt || new Date().toISOString()
+            })))
+
             // Create demo store settings
             await Setting.create({
                 id: crypto.randomUUID(),
@@ -497,7 +539,7 @@ async function resetAndSeedDatabase() {
         }
 
         console.log('\n📝 See STORE_CREDENTIALS_AND_URLS.md for complete credentials list')
-        console.log('\n✨ You can now login with any of the above credentials!\n')
+        console.log('\n✨ You can now login with the above credentials!\n')
 
         process.exit(0)
     } catch (error) {

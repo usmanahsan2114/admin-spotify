@@ -184,7 +184,7 @@ const generateOrderNumber = (storeIndex, orderIndex, orderDate) => {
 }
 
 // Order statuses
-const orderStatuses = ['Pending', 'Accepted', 'Paid', 'Shipped', 'Refunded', 'Completed', 'Cancelled']
+const orderStatuses = ['Pending', 'Accepted', 'Shipped', 'Refunded', 'Completed', 'Cancelled']
 const returnStatuses = ['Submitted', 'Approved', 'Rejected', 'Refunded']
 
 // Generate timeline for order
@@ -330,7 +330,7 @@ const generateMultiStoreData = () => {
 
     // Generate Admin User
     const adminName = `${template.name} Admin`
-    const adminEmail = template.isDemo ? 'demo@demo.shopifyadmin.pk' : `admin@${template.domain}`
+    const adminEmail = template.isDemo ? 'demo@shopifyadmin.pk' : `admin@${template.domain}`
     const adminUser = {
       id: crypto.randomUUID(),
       storeId: storeId,
