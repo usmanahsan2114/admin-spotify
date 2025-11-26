@@ -43,6 +43,7 @@ import { fetchMetricsOverview } from '../../services/metricsService'
 import { DRAWER_WIDTH, TOUCH_TARGET_MIN_SIZE } from '../../constants'
 
 const drawerWidth = DRAWER_WIDTH
+const BANNER_HEIGHT = 32
 
 type NavItem = {
   label: string
@@ -303,14 +304,35 @@ const DashboardLayout = () => {
         bgcolor: 'background.default',
         background: (theme) =>
           theme.palette.mode === 'light' ? '#f5f7fb' : '#0f172a',
+        pt: `${BANNER_HEIGHT}px`, // Push content down for banner
       }}
     >
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: BANNER_HEIGHT,
+          bgcolor: 'warning.main',
+          color: 'warning.contrastText',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: (theme) => theme.zIndex.drawer + 2,
+          fontSize: '0.875rem',
+          fontWeight: 600,
+        }}
+      >
+        This is a preview version of the software
+      </Box>
       <SkipLink />
       <AppBar
         position="fixed"
         color="inherit"
         elevation={0}
         sx={{
+          top: BANNER_HEIGHT, // Push AppBar down
           borderBottom: `1px solid ${theme.palette.divider}`,
           backdropFilter: 'blur(8px)',
           backgroundColor:
@@ -451,6 +473,8 @@ const DashboardLayout = () => {
               boxSizing: 'border-box',
               borderRight: `1px solid ${theme.palette.divider}`,
               backgroundImage: 'none',
+              top: isDesktop ? BANNER_HEIGHT : 0, // Push permanent drawer down
+              height: isDesktop ? `calc(100% - ${BANNER_HEIGHT}px)` : '100%',
             },
           }}
         >

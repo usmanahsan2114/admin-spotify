@@ -298,42 +298,43 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
           </Box>
         )}
 
-        {isMobile ? (
-          /* Mobile Layout */
-          <Stack spacing={1.5}>
-            {/* Quick Filter Buttons - Mobile */}
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-              }}
-            >
-              {quickFilters.map((filter) => (
-                <Button
-                  key={filter.key}
-                  variant={quickFilter === filter.key ? 'contained' : 'outlined'}
-                  onClick={() => handleQuickFilter(filter.key)}
-                  size="small"
-                  fullWidth
-                  sx={{
-                    fontSize: { xs: '0.75rem', sm: '0.8125rem' },
-                    py: { xs: 0.875, sm: 1 },
-                    minHeight: { xs: 40, sm: 40 },
-                    textTransform: 'none',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    justifyContent: 'flex-start',
-                    textAlign: 'left',
-                  }}
-                >
-                  {filter.label}
-                </Button>
-              ))}
-            </Box>
+        {/* Unified Layout for Mobile and Desktop */}
+        <Stack spacing={1.5}>
+          {/* Quick Filter Buttons */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'repeat(2, 1fr)',
+                sm: 'repeat(4, 1fr)',
+                md: 'repeat(7, 1fr)',
+              },
+              gap: 1,
+            }}
+          >
+            {quickFilters.map((filter) => (
+              <Button
+                key={filter.key}
+                variant={quickFilter === filter.key ? 'contained' : 'outlined'}
+                onClick={() => handleQuickFilter(filter.key)}
+                size="small"
+                sx={{
+                  fontSize: { xs: '0.7rem', sm: '0.8125rem', md: '0.875rem' },
+                  py: { xs: 0.75, sm: 1 },
+                  minHeight: { xs: 36, sm: 40 },
+                  whiteSpace: { xs: 'normal', sm: 'nowrap' },
+                  wordBreak: { xs: 'break-word', sm: 'normal' },
+                  lineHeight: { xs: 1.2, sm: 1.5 },
+                  textTransform: 'none',
+                }}
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </Box>
 
-            {/* Custom Range Toggle - Mobile */}
+          {/* Custom Range Section */}
+          <Box>
             <Button
               variant={showCustomRange ? 'contained' : 'outlined'}
               fullWidth
@@ -348,17 +349,20 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                 }
               }}
               size="small"
-              sx={{ textTransform: 'none' }}
+              sx={{ textTransform: 'none', mb: showCustomRange ? 1.5 : 0 }}
             >
               Custom Range
             </Button>
 
-            {/* Custom Date Inputs - Mobile */}
             <Collapse in={showCustomRange}>
-              <Stack spacing={1.5} sx={{ pt: 1 }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1.5}
+                sx={{ pt: 1.5 }}
+              >
                 <TextField
-                  id="date-filter-start-mobile"
-                  name="date-filter-start-mobile"
+                  id="date-filter-start"
+                  name="date-filter-start"
                   label="Start Date"
                   type="date"
                   size="small"
@@ -370,10 +374,11 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                     max: endDateInput || undefined,
                   }}
                   autoComplete="off"
+                  sx={{ flex: 1 }}
                 />
                 <TextField
-                  id="date-filter-end-mobile"
-                  name="date-filter-end-mobile"
+                  id="date-filter-end"
+                  name="date-filter-end"
                   label="End Date"
                   type="date"
                   size="small"
@@ -385,131 +390,24 @@ const DateFilter = ({ value, onChange, label = 'Date Range' }: DateFilterProps) 
                     min: startDateInput || undefined,
                   }}
                   autoComplete="off"
+                  sx={{ flex: 1 }}
                 />
                 <Button
                   variant="contained"
                   onClick={handleCustomRangeApply}
-                  fullWidth
                   disabled={!startDateInput || !endDateInput}
-                  sx={{ textTransform: 'none' }}
+                  sx={{
+                    minWidth: { xs: '100%', sm: 100 },
+                    textTransform: 'none',
+                    alignSelf: { xs: 'stretch', sm: 'flex-start' },
+                  }}
                 >
-                  Apply Custom Range
+                  Apply
                 </Button>
               </Stack>
             </Collapse>
-          </Stack>
-        ) : (
-          /* Desktop/Tablet Layout */
-          <Stack spacing={1.5}>
-            {/* Quick Filter Buttons - Desktop */}
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: 'repeat(2, 1fr)',
-                  sm: 'repeat(4, 1fr)',
-                  md: 'repeat(7, 1fr)',
-                },
-                gap: 1,
-              }}
-            >
-              {quickFilters.map((filter) => (
-                <Button
-                  key={filter.key}
-                  variant={quickFilter === filter.key ? 'contained' : 'outlined'}
-                  onClick={() => handleQuickFilter(filter.key)}
-                  size="small"
-                  sx={{
-                    fontSize: { xs: '0.7rem', sm: '0.8125rem', md: '0.875rem' },
-                    py: { xs: 0.75, sm: 1 },
-                    minHeight: { xs: 36, sm: 40 },
-                    whiteSpace: { xs: 'normal', sm: 'nowrap' },
-                    wordBreak: { xs: 'break-word', sm: 'normal' },
-                    lineHeight: { xs: 1.2, sm: 1.5 },
-                    textTransform: 'none',
-                  }}
-                >
-                  {filter.label}
-                </Button>
-              ))}
-            </Box>
-
-            {/* Custom Range Section - Desktop */}
-            <Box>
-              <Button
-                variant={showCustomRange ? 'contained' : 'outlined'}
-                fullWidth
-                startIcon={<CalendarTodayIcon />}
-                endIcon={showCustomRange ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                onClick={() => {
-                  setShowCustomRange(!showCustomRange)
-                  if (!showCustomRange) {
-                    setQuickFilter('custom')
-                    if (value.startDate) setStartDateInput(dayjs(value.startDate).format('YYYY-MM-DD'))
-                    if (value.endDate) setEndDateInput(dayjs(value.endDate).format('YYYY-MM-DD'))
-                  }
-                }}
-                size="small"
-                sx={{ textTransform: 'none', mb: showCustomRange ? 1.5 : 0 }}
-              >
-                Custom Range
-              </Button>
-
-              <Collapse in={showCustomRange}>
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1.5}
-                  sx={{ pt: 1.5 }}
-                >
-                  <TextField
-                    id="date-filter-start"
-                    name="date-filter-start"
-                    label="Start Date"
-                    type="date"
-                    size="small"
-                    fullWidth
-                    value={startDateInput}
-                    onChange={(e) => setStartDateInput(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{
-                      max: endDateInput || undefined,
-                    }}
-                    autoComplete="off"
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    id="date-filter-end"
-                    name="date-filter-end"
-                    label="End Date"
-                    type="date"
-                    size="small"
-                    fullWidth
-                    value={endDateInput}
-                    onChange={(e) => setEndDateInput(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    inputProps={{
-                      min: startDateInput || undefined,
-                    }}
-                    autoComplete="off"
-                    sx={{ flex: 1 }}
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleCustomRangeApply}
-                    disabled={!startDateInput || !endDateInput}
-                    sx={{
-                      minWidth: { xs: '100%', sm: 100 },
-                      textTransform: 'none',
-                      alignSelf: { xs: 'stretch', sm: 'flex-start' },
-                    }}
-                  >
-                    Apply
-                  </Button>
-                </Stack>
-              </Collapse>
-            </Box>
-          </Stack>
-        )}
+          </Box>
+        </Stack>
       </Stack>
     </Paper>
   )
