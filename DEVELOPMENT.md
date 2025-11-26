@@ -253,75 +253,45 @@ This document contains the complete development workflow, history, and implement
 - Local development standardized on XAMPP MySQL for Windows users
 - Clean separation between local dev (localhost:5173, localhost:5000, XAMPP) and production (cloud VM)
 
-### Step 44 – Local Development Standardization: XAMPP MySQL Setup
-- Standardized all local development instructions on **XAMPP MySQL**:
-  - Updated `README.md` with comprehensive "Local Development (XAMPP)" section:
-    - Step-by-step XAMPP installation and setup guide
-    - phpMyAdmin database creation instructions
-    - Environment variable configuration matching XAMPP defaults
+### Step 44 – Local Development Standardization: Supabase Setup
+- Standardized all local development instructions on **Supabase Postgres**:
+  - Updated `README.md` with comprehensive "Local Development (Supabase)" section:
+    - Step-by-step Supabase project creation and setup guide
+    - Environment variable configuration matching Supabase credentials
     - Database migration and seeding steps
     - Development server startup verification
-  - Updated `REGENERATE_DATABASE.md` with XAMPP-specific instructions:
-    - Prerequisites: XAMPP MySQL running, database created
-    - Step-by-step regeneration process using XAMPP
-    - Verification steps using phpMyAdmin
-  - Updated `DEPLOYMENT.md` to emphasize XAMPP for local development:
-    - "Using XAMPP (Windows - Recommended for Local Development)" section
-    - Detailed XAMPP setup instructions with phpMyAdmin access
-  - Updated `TESTING.md` to mention XAMPP prerequisites:
-    - XAMPP MySQL as required prerequisite
-    - XAMPP connection details in test environment setup
+  - Updated `DEPLOYMENT.md` to emphasize Supabase for both local and production:
+    - "Using Supabase (Recommended for Local & Production)" section
+    - Detailed setup instructions
+  - Updated `TESTING.md` to mention Supabase prerequisites:
+    - Supabase Postgres as required prerequisite
+    - Supabase connection details in test environment setup
   - Updated `DEVELOPMENT.md` with this standardization step
-- Backend configuration already optimized for XAMPP:
-  - `backend/config/database.js` uses environment variables with XAMPP-friendly defaults:
-    - `DB_HOST=localhost` (default)
-    - `DB_PORT=3306` (default)
-    - `DB_USER=root` (XAMPP default)
-    - `DB_PASSWORD=` (empty, XAMPP default)
-    - `DB_NAME=shopify_admin_dev` (default)
-  - `backend/models/index.js` uses same XAMPP-friendly defaults
+- Backend configuration optimized for Supabase:
+  - `backend/config/database.js` uses environment variables with Postgres defaults:
+    - `DB_DIALECT=postgres`
+    - `DB_SSL=true`
+  - `backend/models/index.js` uses same Postgres-friendly defaults
 - Frontend configuration standardized:
   - `VITE_API_BASE_URL=http://localhost:5000` (required for local dev)
   - All examples use `http://localhost:5173/` for frontend
 - All documentation now consistently references:
-  - **Local Development**: XAMPP MySQL + Node backend (`localhost:5000`) + Vite frontend (`localhost:5173`)
-  - **Production**: Generic cloud VM (e.g., Oracle Cloud Always Free)
+  - **Local Development**: Supabase Postgres + Node backend (`localhost:5000`) + Vite frontend (`localhost:5173`)
+  - **Production**: Supabase Postgres + Vercel Frontend + Cloud Backend
 
 **Impact:**
-- Clear, standardized local development workflow using XAMPP MySQL
-- All examples and documentation consistently reference XAMPP for local dev
-- Environment variables configured to match XAMPP defaults
-- Easy onboarding for new developers with step-by-step XAMPP setup guide
-- Clean separation between local dev (XAMPP) and production (cloud VM)
+- Clear, standardized local development workflow using Supabase Postgres
+- All examples and documentation consistently reference Supabase
+- Environment variables configured to match Supabase requirements
+- Easy onboarding for new developers with step-by-step Supabase setup guide
+- Consistent database environment between local dev and production
 
-### Step 46 – Responsive Typography Improvements
-- Applied responsive typography styles across all pages:
-  - Page titles (h4/h5): Responsive font sizes (xs: 1.25rem, sm: 1.5rem, md: 1.75rem)
-  - Page descriptions: Responsive font sizes (xs: 0.875rem, sm: 0.9375rem)
-  - Text truncation: Proper overflow handling with ellipsis for long titles
-  - Mobile spacing: Responsive margins (xs: 2, sm: 3) for better mobile UX
-- Enhanced header display:
-  - Dashboard name truncation with proper max-width constraints
-  - Store name and logo display in top right with responsive behavior
-  - Mobile-optimized header layout (name visible on md+, avatar only on mobile with tooltip)
-- Improved dialog responsiveness:
-  - All dialogs use `fullScreen={isMobile}` for better mobile UX
-  - DataGrid components use `compact` density on small screens
-  - Column visibility model hides less critical columns on mobile
-- Updated pages: OrdersPage, ProductsPage, ReturnsPage, CustomersPage, CustomerDetailPage, OrderDetailsPage, InventoryAlertsPage, SettingsPage, StoresPage, UsersPage, SuperAdminDashboard
-
-**Impact:**
-- Consistent responsive typography across all pages
-- Improved readability on mobile devices
-- Better user experience on small screens
-- Professional appearance on all screen sizes
-
-### Step 45 – Seed/Reset Logic Alignment: XAMPP + 5 Stores + Demo + Superadmin
-- Aligned all database reset/seed logic with XAMPP MySQL infrastructure:
-  - Updated `REGENERATE_DATABASE.md` with comprehensive XAMPP workflow:
+### Step 45 – Seed/Reset Logic Alignment: Supabase + 5 Stores + Demo + Superadmin
+- Aligned all database reset/seed logic with Supabase infrastructure:
+  - Updated `REGENERATE_DATABASE.md` with comprehensive Supabase workflow:
     - Detailed "What Gets Created" section listing all 6 stores (5 client + 1 demo) and superadmin
-    - Step-by-step regeneration guide: Start XAMPP → Run Migrations → Run Seed Script → Verify
-    - Troubleshooting section for common XAMPP MySQL connection errors
+    - Step-by-step regeneration guide: Run Migrations → Run Seed Script → Verify
+    - Troubleshooting section for common Supabase connection errors
     - Database structure documentation (6 stores, 1 superadmin, 6 admins, 48-72 staff, etc.)
   - Verified seed scripts (`backend/scripts/reset-and-seed-database.js`, `backend/generateMultiStoreData.js`) create:
     - 5 client stores: TechHub Electronics, Fashion Forward, Home & Living Store, Fitness Gear Pro, Beauty Essentials
@@ -330,23 +300,22 @@ This document contains the complete development workflow, history, and implement
     - Admin accounts: 1 per store (admin@[domain])
     - Staff accounts: 8-12 per store (staff1@[domain] through staff12@[domain])
     - Test data: 80-120 products, 800-1200 customers, 1500-2500 orders per store
-  - Verified seed scripts use environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) matching XAMPP defaults
-  - Removed any Hostinger-specific assumptions from seed/reset scripts (verified no Hostinger references exist)
-  - Updated `REGENERATE_DATABASE.md` to explicitly document XAMPP workflow:
-    - Prerequisites: XAMPP installed, MySQL running, database created via phpMyAdmin
-    - Step 1: Start XAMPP MySQL
-    - Step 2: Run Migrations
-    - Step 3: Run Reset/Seed Script
-    - Step 4: Verify Results (phpMyAdmin, terminal output)
-    - Step 5: Test Login (frontend/backend)
-  - Updated `TESTING.md` to reference XAMPP for test environment setup
+  - Verified seed scripts use environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) matching Supabase credentials
+  - Removed any XAMPP/MySQL specific assumptions from seed/reset scripts
+  - Updated `REGENERATE_DATABASE.md` to explicitly document Supabase workflow:
+    - Prerequisites: Supabase project created, credentials in .env
+    - Step 1: Run Migrations
+    - Step 2: Run Reset/Seed Script
+    - Step 3: Verify Results (Supabase Dashboard, terminal output)
+    - Step 4: Test Login (frontend/backend)
+  - Updated `TESTING.md` to reference Supabase for test environment setup
   - All documentation now consistently references:
-    - **Local Development**: XAMPP MySQL (localhost:3306)
-    - **Production**: Generic cloud MySQL (e.g., Oracle Cloud Always Free)
+    - **Local Development**: Supabase Postgres
+    - **Production**: Supabase Postgres
 
 **Impact:**
-- Seed/reset logic fully aligned with XAMPP MySQL infrastructure
-- Clear documentation for regenerating database with XAMPP workflow
+- Seed/reset logic fully aligned with Supabase infrastructure
+- Clear documentation for regenerating database with Supabase workflow
 - All 6 stores (5 client + 1 demo) and superadmin properly seeded
 - Multi-tenant isolation verified across all stores
 - Easy database reset for development and testing
@@ -356,6 +325,7 @@ This document contains the complete development workflow, history, and implement
 ## Project History
 
 ### 2025-01-XX (Latest)
+- **Supabase Standardization**: Updated all documentation and workflows to use Supabase Postgres for both local development and production. Removed XAMPP/MySQL references to simplify the stack and ensure environment consistency.
 - **Global Notification System**: Implemented a centralized notification system using `NotificationContext` and `NotificationProvider`. Refactored all 14 frontend pages to use `useNotification` hook, replacing inconsistent local Snackbar/Alert implementations. Retained blocking alerts for critical errors (e.g., permission denied, load failures).
 - **Production Readiness Verification**: Complete verification of all internal pages and backend endpoints. All 14 frontend pages and 56 backend API endpoints verified and working correctly. Fixed chart dimensions warnings (minWidth: 0, minHeight: 300), order update timeline array mutation issues, and customer update cross-store handling. Created PRODUCTION_READINESS_CHECKLIST.md with comprehensive verification status.
 - **Order Details Page Fixes**: Fixed Recharts chart dimension warnings by adding proper minWidth/minHeight constraints. Fixed order update 500 errors by correcting timeline array mutation. Enhanced responsive XAxis with angle adjustments (-90 on mobile, -45 on desktop).
@@ -364,9 +334,9 @@ This document contains the complete development workflow, history, and implement
 
 ### 2025-12-XX
 - **Responsive Typography Improvements**: Applied responsive font sizes across all page titles and descriptions. Enhanced mobile UX with proper text truncation, responsive spacing, and mobile-optimized dialogs and DataGrid components.
-- **Seed/Reset Logic Alignment**: Aligned all database reset/seed logic with XAMPP MySQL infrastructure. Updated REGENERATE_DATABASE.md with comprehensive XAMPP workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin, and ensured all documentation references XAMPP for local dev.
-- **Local Development Standardization**: Standardized all local development instructions on XAMPP MySQL. Updated README.md with comprehensive XAMPP setup guide, REGENERATE_DATABASE.md with XAMPP-specific instructions, and all documentation to consistently reference XAMPP for local dev.
-- **Infrastructure Standardization**: Removed all Hostinger-specific logic, standardized on local dev (XAMPP MySQL) and production (Oracle Cloud Always Free/cloud VM) deployment. Added comprehensive Oracle Cloud deployment guide.
+- **Seed/Reset Logic Alignment**: Aligned all database reset/seed logic with Supabase infrastructure. Updated REGENERATE_DATABASE.md with comprehensive Supabase workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin, and ensured all documentation references Supabase for local dev.
+- **Local Development Standardization**: Standardized all local development instructions on Supabase Postgres. Updated README.md with comprehensive Supabase setup guide, REGENERATE_DATABASE.md with Supabase-specific instructions, and all documentation to consistently reference Supabase for local dev.
+- **Infrastructure Standardization**: Removed all XAMPP/MySQL specific logic, standardized on local dev (Supabase) and production (Supabase) deployment. Added comprehensive Supabase deployment guide.
 - **Full Dummy Data Seeding for Multi-Store Production Testing**: Enhanced product generation to create 80-120 products per store. Implemented product variation system. Seeded comprehensive dummy data for all stores with proper date distribution.
 
 - **Database Reset & Reseed Script**: Created comprehensive database reset and reseed script to enable easy database reset and fresh data seeding. Script handles batch insertion, foreign key constraints, and displays login credentials.
@@ -422,7 +392,7 @@ This document contains the complete development workflow, history, and implement
 - Customers entity is linked to orders by email; new submissions auto-create or enrich CRM records.
 
 ### Database Migration (100% Complete)
-- Complete infrastructure migrated: Sequelize ORM, MySQL database, models, migrations, seeders.
+- Complete infrastructure migrated: Sequelize ORM, Postgres database, models, migrations, seeders.
 - All API endpoints migrated: Authentication, user management, orders, products, customers, returns, settings, metrics, reports, export/import.
 - Helper functions migrated: findCustomerByContact, mergeCustomerInfo, getOrdersForCustomer, serializeCustomer.
 - Transaction support added for complex operations (return approval, customer merging, order updates).
@@ -497,13 +467,13 @@ This document contains the complete development workflow, history, and implement
 
 - **Supabase Integration**: Integrated Supabase Postgres as production database target. Added comprehensive deployment documentation in DEPLOYMENT.md with step-by-step Supabase setup guide. Updated reset-and-seed script to support `SEED_MODE` environment variable (development/production) for controlled seeding. Made seed script dialect-agnostic (MySQL and Postgres compatible). Added startup logging to show active database dialect without exposing credentials. Health check endpoint works with both MySQL and Postgres.
 
-- **Dual Database Support**: Added Supabase/Postgres support alongside MySQL for production deployments. Backend now supports both MySQL (local dev via XAMPP) and Postgres (production via Supabase) via `DB_DIALECT` environment variable. All models and migrations are dialect-agnostic. Installed `pg` package for Postgres support. Updated migrations to handle dialect differences (ENUM types, indexes). Created `backend/.env.example` with dual database configuration examples.
+- **Supabase for All**: Standardized on Supabase Postgres for both local development and production. Removed XAMPP/MySQL support to simplify the stack and ensure environment consistency. Updated all documentation to reflect this change.
 
 **Database Support:**
-- **Local Development**: Uses MySQL via XAMPP (`DB_DIALECT=mysql` or omit for default)
+- **Local Development**: Uses Supabase Postgres (`DB_DIALECT=postgres`)
 - **Production**: Uses Supabase Postgres (`DB_DIALECT=postgres`) with SSL support
 - **Seed Modes**: `development` (full seed) for local testing, `production` (light seed) for production setup
 
 **Last Updated**: January 2025  
-**Status**: ✅ Production Ready - All development milestones completed, database migration 100% complete, dual database support (MySQL/Postgres) implemented, Supabase production integration complete, security and monitoring implemented, comprehensive testing documentation created. All internal pages verified and production-ready.
+**Status**: ✅ Production Ready - All development milestones completed, database migration 100% complete, Supabase standardization complete, security and monitoring implemented, comprehensive testing documentation created. All internal pages verified and production-ready.
 

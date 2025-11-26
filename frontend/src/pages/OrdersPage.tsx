@@ -201,11 +201,14 @@ const OrdersPage = () => {
         fetchGrowthComparison('month', startDate, endDate),
       ])
 
+      console.log('Orders Response:', ordersResponse)
       if (Array.isArray(ordersResponse)) {
         // Fallback if backend doesn't return pagination object yet (safety)
+        console.log('Orders Response is Array')
         setOrders(ordersResponse.map(o => ({ ...o, status: o.status ?? 'Pending' })))
         setRowCount(ordersResponse.length)
       } else {
+        console.log('Orders Response is Object', ordersResponse.data)
         setOrders(ordersResponse.data.map(o => ({ ...o, status: o.status ?? 'Pending' })))
         setRowCount(ordersResponse.pagination.total)
       }
