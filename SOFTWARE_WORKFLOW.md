@@ -224,7 +224,9 @@ shopify-admin/
 ### Prerequisites
 - **Node.js**: v18+ (v22.20.0 recommended)
 - **npm**: v9+ or pnpm
-- **PostgreSQL**: Supabase account (or local PostgreSQL)
+- **Node.js**: v18+ (v22.20.0 recommended)
+- **npm**: v9+ or pnpm
+- **PostgreSQL**: Supabase account (used for both local and production)
 - **Git**: For version control
 
 ### Step 1: Clone Repository

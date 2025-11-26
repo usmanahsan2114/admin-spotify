@@ -12,7 +12,7 @@ This document outlines the roadmap for bringing the application to a production-
 | **1** | **Backend Refactoring** | ✅ **Completed** | **100%** |
 | **2** | **Security & Stability** | ✅ **Completed** | **100%** |
 | **3** | **Performance & Scalability** | ✅ **Completed** | **100%** |
-| **4** | **Production Readiness** | 📅 **Planned** | **60%** |
+| **4** | **Production Readiness** | ✅ **Completed** | **100%** |
 
 ---
 
@@ -52,7 +52,7 @@ This document outlines the roadmap for bringing the application to a production-
 
 ---
 
-## Tier 4: Production Readiness (📅 Planned)
+## Tier 4: Production Readiness (✅ Completed)
 **Goal:** Prepare for deployment and Day 2 operations.
 
 ### DevOps
@@ -75,5 +75,28 @@ This document outlines the roadmap for bringing the application to a production-
 
 1.  **[COMPLETED] Infrastructure**: Basic Terraform scripts created in `infrastructure/`.
 2.  **[COMPLETED] SSL/TLS**: `.env.production.example` created with secure defaults.
+
+---
+
+## 🚀 Efficiency & Optimization Plan (New)
+
+Based on production verification (November 2025), the following optimizations are recommended to improve performance:
+
+### 1. Reduce API Latency (Current: ~3.3s)
+- **Region Matching**: Ensure Vercel Function Region matches Supabase Database Region (`ap-northeast-2`). Mismatched regions cause significant latency.
+- **Connection Pooling**: Continue using Supabase Transaction Pooler (Port 6543).
+- **Cold Starts**: Vercel Serverless Functions have cold starts. Consider using Edge Middleware for critical paths or upgrading to a plan with "Always On" if needed.
+
+### 2. Frontend Performance
+- **Vercel Analytics**: Enable Vercel Speed Insights to track real-user Core Web Vitals.
+- **Image Optimization**: Ensure assets are compressed (already done).
+- **CDN Caching**: Verify `Cache-Control` headers are set for static assets.
+
+### 3. Database Optimization
+- **Indexing**: Ensure all foreign keys and frequently queried fields (`storeId`, `email`, `createdAt`) are indexed (Tier 3 completed).
+- **Query Optimization**: Monitor `pg_stat_statements` in Supabase to identify slow queries.
+
+### 4. Configuration Check
+- **VITE_API_BASE_URL**: Ensure this is set to `https://inventory.apexitsolutions.co` in Vercel to avoid fallback to localhost.
 
 

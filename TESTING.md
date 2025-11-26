@@ -16,31 +16,23 @@ Comprehensive testing documentation covering functional testing, performance tes
 ### Test Environment Setup
 
 **Prerequisites:**
-- **XAMPP MySQL** installed and running (see [README.md](./README.md) for XAMPP setup) OR **Supabase Postgres** configured
+- **Supabase Postgres** configured and accessible
 - **Frontend** running at `http://localhost:5173/` (Vite dev server)
 - **Backend** running at `http://localhost:5000/` (Express API server)
 - **Database**: 
-  - **Local Development**: `shopify_admin_dev` created in XAMPP MySQL (see [README.md](./README.md) Step 2)
-  - **Staging/Production**: Supabase Postgres configured (see [DEPLOYMENT.md](./DEPLOYMENT.md) section "Using Supabase as Production Database")
+  - **Local Development**: Supabase Postgres (see [DEPLOYMENT.md](./DEPLOYMENT.md))
+  - **Staging/Production**: Supabase Postgres (see [DEPLOYMENT.md](./DEPLOYMENT.md))
 - **Backend `.env`** configured with database connection details:
   ```env
-  # Local Development (MySQL/XAMPP)
-  DB_DIALECT=mysql
-  DB_HOST=localhost
-  DB_PORT=3306
-  DB_NAME=shopify_admin_dev
-  DB_USER=root
-  DB_PASSWORD=
-  
-  # OR Staging/Production (Supabase Postgres)
-  # DB_DIALECT=postgres
-  # DB_HOST=db.your-project-id.supabase.co
-  # DB_PORT=5432
-  # DB_NAME=postgres
-  # DB_USER=postgres
-  # DB_PASSWORD=your-password
-  # DB_SSL=true
-  # DB_SSL_REJECT_UNAUTHORIZED=false
+  # Supabase Postgres Configuration
+  DB_DIALECT=postgres
+  DB_HOST=aws-1-ap-northeast-2.pooler.supabase.com
+  DB_PORT=6543
+  DB_NAME=postgres
+  DB_USER=postgres.yqzwfbufcmxzeqfbdlpf
+  DB_PASSWORD=your-password
+  DB_SSL=true
+  DB_SSL_REJECT_UNAUTHORIZED=false
   ```
 - Clean database state (fresh DB or test DB) - Reset using `node backend/scripts/reset-and-seed-database.js`
 - Test user accounts: Admin, Staff, Demo (for each store) - Created automatically on database seed
