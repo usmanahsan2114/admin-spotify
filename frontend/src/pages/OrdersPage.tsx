@@ -845,6 +845,9 @@ const OrdersPage = () => {
                   <Autocomplete
                     options={products.map((p) => p.name)}
                     value={value || null}
+                    onInputChange={(_, newInputValue) => {
+                      onChange(newInputValue)
+                    }}
                     onChange={(_, newValue) => onChange(newValue)}
                     freeSolo
                     renderInput={(params) => (
@@ -870,6 +873,7 @@ const OrdersPage = () => {
                       value={value || null}
                       onInputChange={(_, newInputValue) => {
                         handleCustomerSearch(newInputValue)
+                        onChange(newInputValue)
                       }}
                       onChange={(_, newValue) => {
                         onChange(newValue)
