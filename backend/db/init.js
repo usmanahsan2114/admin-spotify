@@ -38,12 +38,11 @@ async function initializeDatabase() {
     logger.info(`✅ Database connection established successfully (dialect: ${dialect})`)
 
     // Configure connection pool for production
-    /*
     if (process.env.NODE_ENV === 'production') {
       // Optimized pool configuration for serverless environments
       // Serverless functions don't maintain persistent connections, so use smaller pools
       const poolConfig = {
-        max: parseInt(process.env.DB_POOL_MAX || (isServerless ? '3' : '20'), 10), // Lower max for serverless
+        max: parseInt(process.env.DB_POOL_MAX || (isServerless ? '2' : '20'), 10), // Lower max for serverless (1-2 is recommended)
         min: parseInt(process.env.DB_POOL_MIN || (isServerless ? '0' : '5'), 10), // No minimum for serverless
         idle: parseInt(process.env.DB_POOL_IDLE || '10000', 10), // Idle timeout (default 10s)
         acquire: parseInt(process.env.DB_POOL_ACQUIRE || '30000', 10), // Acquire timeout (default 30s)
@@ -56,7 +55,6 @@ async function initializeDatabase() {
       db.sequelize.connectionManager.pool.evict = poolConfig.evict
       logger.info(`Database connection pool configured for ${isServerless ? 'serverless' : 'production'}: max=${poolConfig.max}, min=${poolConfig.min}`)
     }
-    */
 
     // Sync database (creates tables if they don't exist)
     // In production, use migrations instead
