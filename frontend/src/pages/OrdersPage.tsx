@@ -841,14 +841,17 @@ const OrdersPage = () => {
               <Controller
                 name="productName"
                 control={orderControl}
-                render={({ field: { onChange, value } }) => (
+                render={({ field: { onChange, value, onBlur, name } }) => (
                   <Autocomplete
                     options={products.map((p) => p.name)}
                     value={value || null}
+                    inputValue={value || ''}
                     onInputChange={(_, newInputValue) => {
                       onChange(newInputValue)
                     }}
-                    onChange={(_, newValue) => onChange(newValue)}
+                    onChange={(_, newValue) => {
+                      onChange(newValue || '')
+                    }}
                     freeSolo
                     renderInput={(params) => (
                       <TextField
@@ -858,6 +861,8 @@ const OrdersPage = () => {
                         error={!!orderErrors.productName}
                         helperText={orderErrors.productName?.message}
                         fullWidth
+                        onBlur={onBlur}
+                        name={name}
                       />
                     )}
                   />
@@ -866,17 +871,18 @@ const OrdersPage = () => {
               <Controller
                 name="customerName"
                 control={orderControl}
-                render={({ field: { onChange, value } }) => (
+                render={({ field: { onChange, value, onBlur, name } }) => (
                   <>
                     <Autocomplete
                       options={customers.map((c) => c.name)}
                       value={value || null}
+                      inputValue={value || ''}
                       onInputChange={(_, newInputValue) => {
                         handleCustomerSearch(newInputValue)
                         onChange(newInputValue)
                       }}
                       onChange={(_, newValue) => {
-                        onChange(newValue)
+                        onChange(newValue || '')
                         const selected = customers.find(c => c.name === newValue)
                         if (selected) {
                           setValue('customerId', selected.id)
@@ -903,6 +909,8 @@ const OrdersPage = () => {
                           error={!!orderErrors.customerName}
                           helperText={orderErrors.customerName?.message}
                           fullWidth
+                          onBlur={onBlur}
+                          name={name}
                         />
                       )}
                     />
