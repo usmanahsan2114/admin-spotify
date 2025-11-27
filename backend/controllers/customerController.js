@@ -464,7 +464,7 @@ const searchCustomers = async (req, res) => {
         const customers = await Customer.findAll({
             where,
             limit: 20,
-            attributes: ['id', 'name', 'email', 'phone', 'address']
+            attributes: ['id', 'name', 'email', 'phone', 'address', 'alternativeNames', 'alternativeEmails', 'alternativePhones', 'alternativeAddresses']
         })
 
         return res.json(customers)

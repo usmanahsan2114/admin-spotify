@@ -75,6 +75,8 @@ const orderSchema = yup.object({
   address: yup.string().ensure(),
   quantity: yup.number().typeError('Quantity must be a number').positive('Quantity must be positive').integer('Quantity must be an integer').required('Quantity is required'),
   notes: yup.string().ensure(),
+  alternativeEmails: yup.string().ensure(),
+  alternativePhones: yup.string().ensure(),
 })
 
 type FormValues = yup.InferType<typeof orderSchema>
@@ -110,6 +112,7 @@ const OrdersPage = () => {
     alternativePhones: '',
     alternativeAddresses: ''
   })
+  const [showAlternativeContacts, setShowAlternativeContacts] = useState(false)
 
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -121,7 +124,7 @@ const OrdersPage = () => {
 
 
 
-  const { control: orderControl, handleSubmit: handleOrderSubmit, formState: { errors: orderErrors }, reset: resetOrderForm, watch } = useForm<FormValues>({
+  const { control: orderControl, handleSubmit: handleOrderSubmit, formState: { errors: orderErrors }, reset: resetOrderForm, watch, setValue } = useForm<FormValues>({
     resolver: yupResolver(orderSchema),
     defaultValues: {
       productId: '',
@@ -132,6 +135,8 @@ const OrdersPage = () => {
       address: '',
       quantity: 1,
       notes: '',
+      alternativeEmails: '',
+      alternativePhones: '',
     },
   })
 
@@ -166,6 +171,8 @@ const OrdersPage = () => {
           email: customer.email,
           phone: customer.phone || '',
           address: customer.address || '',
+          alternativeEmails: Array.isArray(customer.alternativeEmails) ? customer.alternativeEmails.join(', ') : '',
+          alternativePhones: Array.isArray(customer.alternativePhones) ? customer.alternativePhones.join(', ') : '',
         }))
       }
     }
@@ -348,9 +355,13 @@ const OrdersPage = () => {
         // Let's merge: if newCustomerData.address is set, use it, otherwise use data.address.
         orderPayload.address = newCustomerData.address || data.address || ''
         orderPayload.alternativeNames = newCustomerData.alternativeNames
-        orderPayload.alternativeEmails = newCustomerData.alternativeEmails
-        orderPayload.alternativePhones = newCustomerData.alternativePhones
+        orderPayload.alternativeEmails = data.alternativeEmails || newCustomerData.alternativeEmails
+        orderPayload.alternativePhones = data.alternativePhones || newCustomerData.alternativePhones
         orderPayload.alternativeAddresses = newCustomerData.alternativeAddresses
+      } else {
+        // Even if not "new customer" mode, we might want to save these if provided
+        orderPayload.alternativeEmails = data.alternativeEmails
+        orderPayload.alternativePhones = data.alternativePhones
       }
 
       await createOrder(orderPayload)
@@ -862,11 +873,21 @@ const OrdersPage = () => {
                       }}
                       onChange={(_, newValue) => {
                         onChange(newValue)
-                        // Find customer object to trigger the useEffect that fills details
                         const selected = customers.find(c => c.name === newValue)
                         if (selected) {
-                          // We might need to set watchedCustomerId manually if react-hook-form doesn't trigger it fast enough
-                          // But the controller should handle value change -> watchedCustomerId change
+                          setValue('customerId', selected.id)
+                          setValue('email', selected.email)
+                          setValue('phone', selected.phone || '')
+                          setValue('address', selected.address || '')
+                          setValue('alternativeEmails', Array.isArray(selected.alternativeEmails) ? selected.alternativeEmails.join(', ') : '')
+                          setValue('alternativePhones', Array.isArray(selected.alternativePhones) ? selected.alternativePhones.join(', ') : '')
+                        } else {
+                          setValue('customerId', '')
+                          setValue('email', '')
+                          setValue('phone', '')
+                          setValue('address', '')
+                          setValue('alternativeEmails', '')
+                          setValue('alternativePhones', '')
                         }
                       }}
                       freeSolo
@@ -881,100 +902,100 @@ const OrdersPage = () => {
                         />
                       )}
                     />
-                    {/* Alert is now handled by showCustomerCreation state which updates via Effect */}
-                    {showCustomerCreation && (
-                      <Alert
-                        severity="info"
-                        sx={{ mt: 1 }}
-                      >
-                        New customer detected. Please add details below.
-                      </Alert>
-                    )}
-                    <Collapse in={showCustomerCreation}>
-                      <Stack spacing={2} sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                        <Typography variant="subtitle2">New Customer Information</Typography>
-                        {/* We use the main form address field now, but keep this for alternatives if needed? 
-                            Actually, user wants "email, number and address" to appear auto.
-                            So we should put the MAIN address field here or in the main stack.
-                            Let's put the MAIN address field in the main stack and remove it from here to avoid confusion,
-                            OR keep it here but bind it to the main form 'address'.
-                        */}
-                        <Controller
-                          name="address"
-                          control={orderControl}
-                          render={({ field }) => (
-                            <TextField
-                              {...field}
-                              label="Address"
-                              fullWidth
-                              size="small"
-                              error={!!orderErrors.address}
-                              helperText={orderErrors.address?.message}
-                            />
-                          )}
-                        />
-
-                        <TextField
-                          label="Alternative Names (comma-separated)"
-                          fullWidth
-                          size="small"
-                          value={newCustomerData.alternativeNames}
-                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativeNames: e.target.value })}
-                        />
-                        <TextField
-                          label="Alternative Emails (comma-separated)"
-                          fullWidth
-                          size="small"
-                          value={newCustomerData.alternativeEmails}
-                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativeEmails: e.target.value })}
-                        />
-                        <TextField
-                          label="Alternative Phones (comma-separated)"
-                          fullWidth
-                          size="small"
-                          value={newCustomerData.alternativePhones}
-                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativePhones: e.target.value })}
-                        />
-                        <TextField
-                          label="Alternative Addresses (comma-separated)"
-                          fullWidth
-                          size="small"
-                          value={newCustomerData.alternativeAddresses}
-                          onChange={(e) => setNewCustomerData({ ...newCustomerData, alternativeAddresses: e.target.value })}
-                        />
-                      </Stack>
-                    </Collapse>
                   </>
                 )}
               />
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <Controller
+                  name="phone"
+                  control={orderControl}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Phone (optional)"
+                      error={!!orderErrors.phone}
+                      helperText={orderErrors.phone?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+                <Controller
+                  name="email"
+                  control={orderControl}
+                  render={({ field }) => (
+                    <TextField
+                      {...field}
+                      label="Email"
+                      type="email"
+                      required
+                      error={!!orderErrors.email}
+                      helperText={orderErrors.email?.message}
+                      fullWidth
+                    />
+                  )}
+                />
+              </Stack>
+
+              <Box>
+                <Button
+                  size="small"
+                  onClick={() => setShowAlternativeContacts(!showAlternativeContacts)}
+                  sx={{ mb: 1 }}
+                >
+                  {showAlternativeContacts ? '- Hide Alternatives' : '+ Add Alternatives'}
+                </Button>
+
+                <Collapse in={showAlternativeContacts}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
+                    <Controller
+                      name="alternativePhones"
+                      control={orderControl}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Alt Phones (comma-separated)"
+                          error={!!orderErrors.alternativePhones}
+                          helperText={orderErrors.alternativePhones?.message}
+                          fullWidth
+                          size="small"
+                        />
+                      )}
+                    />
+                    <Controller
+                      name="alternativeEmails"
+                      control={orderControl}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Alt Emails (comma-separated)"
+                          error={!!orderErrors.alternativeEmails}
+                          helperText={orderErrors.alternativeEmails?.message}
+                          fullWidth
+                          size="small"
+                        />
+                      )}
+                    />
+                  </Stack>
+                </Collapse>
+              </Box>
+
               <Controller
-                name="email"
+                name="address"
                 control={orderControl}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Email"
-                    type="email"
-                    required
-                    error={!!orderErrors.email}
-                    helperText={orderErrors.email?.message}
+                    label="Address"
                     fullWidth
+                    multiline
+                    rows={2}
+                    error={!!orderErrors.address}
+                    helperText={orderErrors.address?.message}
                   />
                 )}
               />
-              <Controller
-                name="phone"
-                control={orderControl}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Phone (optional)"
-                    error={!!orderErrors.phone}
-                    helperText={orderErrors.phone?.message}
-                    fullWidth
-                  />
-                )}
-              />
+
               <Controller
                 name="quantity"
                 control={orderControl}
