@@ -30,6 +30,7 @@ jest.mock('../db/init', () => {
         findAll: jest.fn(),
         findByPk: jest.fn(),
         create: jest.fn(),
+        findOne: jest.fn(),
         update: jest.fn(),
         count: jest.fn(),
         reload: jest.fn(),
@@ -173,7 +174,7 @@ describe('Order Controller', () => {
                 storeId: 'store-id',
                 toJSON: () => ({ id: 'order-1', storeId: 'store-id' })
             };
-            db.Order.findByPk.mockResolvedValue(mockOrder);
+            db.Order.findOne.mockResolvedValue(mockOrder);
             db.Return.findAll.mockResolvedValue([]);
 
             const res = await request(app).get('/api/orders/order-1');
@@ -183,7 +184,7 @@ describe('Order Controller', () => {
         });
 
         it('should return 404 if order not found', async () => {
-            db.Order.findByPk.mockResolvedValue(null);
+            db.Order.findOne.mockResolvedValue(null);
 
             const res = await request(app).get('/api/orders/non-existent');
 
@@ -273,7 +274,7 @@ describe('Order Controller', () => {
                 toJSON: () => ({ id: 'order-1', status: 'Shipped', storeId: 'store-id' })
             };
 
-            db.Order.findByPk.mockResolvedValue(mockOrder);
+            db.Order.findOne.mockResolvedValue(mockOrder);
 
             const res = await request(app)
                 .put('/api/orders/order-1')

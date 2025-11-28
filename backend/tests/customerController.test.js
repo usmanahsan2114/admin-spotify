@@ -12,6 +12,7 @@ const request = require('supertest');
 jest.mock('../db/init', () => {
     const mockCustomer = {
         findAll: jest.fn(),
+        findAndCountAll: jest.fn(),
         findByPk: jest.fn(),
         findOne: jest.fn(),
         create: jest.fn(),
@@ -116,7 +117,7 @@ app.use((req, res, next) => {
     req.isSuperAdmin = false;
     next();
 });
-app.use('/api', customerRoutes);
+app.use('/api/customers', customerRoutes);
 
 describe('Customer Controller', () => {
     beforeEach(() => {
@@ -180,14 +181,14 @@ describe('Customer Controller', () => {
                 }
             ];
 
-            db.Customer.findAll.mockResolvedValue(mockCustomers);
+            db.Customer.findAndCountAll.mockResolvedValue({ count: 2, rows: mockCustomers });
             db.Order.findAll.mockResolvedValue([]); // Mock orders for stats calculation
 
             const res = await request(app).get('/api/customers');
 
             expect(res.statusCode).toBe(200);
-            expect(Array.isArray(res.body)).toBe(true);
-            expect(res.body.length).toBe(2);
+            expect(Array.isArray(res.body.data)).toBe(true);
+            expect(res.body.data.length).toBe(2);
         });
     });
 
