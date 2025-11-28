@@ -1,4 +1,4 @@
-const normalizeEmail = (value = '') => value.trim().toLowerCase()
+const normalizeEmail = (value = '') => String(value || '').trim().toLowerCase()
 const normalizePhone = (value = '') => String(value || '').trim().replace(/\D/g, '')
 const normalizeAddress = (value = '') => String(value || '').trim().toLowerCase()
 

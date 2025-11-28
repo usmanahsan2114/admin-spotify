@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   IconButton,
   Skeleton,
@@ -410,9 +411,13 @@ const CustomerDetailPage = () => {
         fullWidth
         fullScreen={isSmall}
         aria-labelledby="edit-customer-dialog"
+        aria-describedby="edit-customer-description"
       >
         <DialogTitle id="edit-customer-dialog">Edit customer</DialogTitle>
         <DialogContent>
+          <DialogContentText id="edit-customer-description" sx={{ mb: 2 }}>
+            Update the customer's personal information below.
+          </DialogContentText>
           <Stack
             component="form"
             gap={2.5}

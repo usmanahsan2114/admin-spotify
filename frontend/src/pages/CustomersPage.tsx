@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   IconButton,
   Stack,
@@ -385,9 +386,13 @@ const CustomersPage = () => {
         fullWidth
         fullScreen={isSmall}
         aria-labelledby="add-customer-dialog"
+        aria-describedby="add-customer-description"
       >
         <DialogTitle id="add-customer-dialog">Add customer</DialogTitle>
         <DialogContent>
+          <DialogContentText id="add-customer-description" sx={{ mb: 2 }}>
+            Enter the details for the new customer.
+          </DialogContentText>
           <Stack
             component="form"
             gap={2.5}
