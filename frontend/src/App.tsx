@@ -135,125 +135,107 @@ const App = () => (
               </Suspense>
             }
           />
-          <Route element={<DashboardLayout />}>
+          <Route
+            element={
+              <PrivateRoute>
+                <DashboardLayout />
+              </PrivateRoute>
+            }
+          >
             <Route
               index
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <DashboardHome />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <DashboardHome />
+                </Suspense>
               }
             />
             <Route
               path="orders"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <OrdersPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <OrdersPage />
+                </Suspense>
               }
             />
             <Route
               path="orders/:orderId"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <OrderDetailsPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <OrderDetailsPage />
+                </Suspense>
               }
             />
             <Route
               path="products"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <ProductsPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ProductsPage />
+                </Suspense>
               }
             />
             <Route
               path="customers"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <CustomersPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <CustomersPage />
+                </Suspense>
               }
             />
             <Route
               path="customers/:customerId"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <CustomerDetailPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <CustomerDetailPage />
+                </Suspense>
               }
             />
             <Route
               path="inventory-alerts"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <InventoryAlertsPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <InventoryAlertsPage />
+                </Suspense>
               }
             />
             <Route
               path="returns"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <ReturnsPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ReturnsPage />
+                </Suspense>
               }
             />
             <Route
               path="returns/:returnId"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <ReturnDetailPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ReturnDetailPage />
+                </Suspense>
               }
             />
             <Route
               path="users"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <UsersPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <UsersPage />
+                </Suspense>
               }
             />
             <Route
               path="stores"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <StoresPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <StoresPage />
+                </Suspense>
               }
             />
             <Route
               path="settings"
               element={
-                <PrivateRoute>
-                  <Suspense fallback={<LoadingFallback />}>
-                    <SettingsPage />
-                  </Suspense>
-                </PrivateRoute>
+                <Suspense fallback={<LoadingFallback />}>
+                  <SettingsPage />
+                </Suspense>
               }
             />
           </Route>
