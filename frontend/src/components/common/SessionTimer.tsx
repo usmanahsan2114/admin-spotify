@@ -4,6 +4,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useAuth } from '../../context/AuthContext'
 import { jwtDecode } from 'jwt-decode'
+import { setStoredToken } from '../../services/apiClient'
 
 interface DecodedToken {
     exp: number
@@ -51,13 +52,9 @@ export const SessionTimer = () => {
             })
 
             if (response.ok) {
-                await response.json()
-                // We need to update the token in context. 
-                // Since we don't have a setToken exposed, we might need to reload or rely on the fact 
-                // that if we use apiClient, it updates the token in localStorage/memory.
-                // But here we are using `token` from context.
-                // If AuthContext listens to storage changes or we can trigger a reload.
-                window.location.reload() // Simple and effective for now to pick up new token
+                const data = await response.json()
+                setStoredToken(data.token)
+                window.location.reload()
             }
         } catch (error) {
             console.error('Failed to refresh session:', error)

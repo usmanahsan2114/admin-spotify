@@ -33,18 +33,11 @@ const findCustomerByContact = async (email, phone, name = null, storeId = null) 
             orConditions.push({
                 alternativeEmails: { [Op.contains]: [normalizedEmail] } // PostgreSQL array contains
             })
-            // Fallback for SQLite/other if array not supported directly or for string storage
-            orConditions.push({
-                alternativeEmails: { [Op.like]: `%${normalizedEmail}%` }
-            })
         }
         if (phone) {
             const normalizedPhone = normalizePhone(phone)
             orConditions.push({
                 alternativePhones: { [Op.contains]: [normalizedPhone] }
-            })
-            orConditions.push({
-                alternativePhones: { [Op.like]: `%${normalizedPhone}%` }
             })
         }
 

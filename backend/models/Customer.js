@@ -34,19 +34,19 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       alternativeNames: {
-        type: DataTypes.JSON,
+        type: DataTypes.JSONB,
         defaultValue: [],
       },
       alternativeEmails: {
-        type: DataTypes.JSON,
+        type: DataTypes.JSONB,
         defaultValue: [],
       },
       alternativePhones: {
-        type: DataTypes.JSON,
+        type: DataTypes.JSONB,
         defaultValue: [],
       },
       alternativeAddresses: {
-        type: DataTypes.JSON,
+        type: DataTypes.JSONB,
         defaultValue: [],
       },
     },

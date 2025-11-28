@@ -33,17 +33,27 @@ const findCustomerByContact = async (email, phone, address, storeId = null) => {
         whereConditions.push({
             email: { [Op.like]: normalizedEmail },
         })
+        whereConditions.push({
+            alternativeEmails: { [Op.contains]: [normalizedEmail] }
+        })
     }
 
     if (normalizedPhone) {
         whereConditions.push({
             phone: { [Op.like]: `%${normalizedPhone}%` },
         })
+        whereConditions.push({
+            alternativePhones: { [Op.contains]: [normalizedPhone] }
+        })
     }
 
     if (normalizedAddress) {
         whereConditions.push({
             address: { [Op.like]: `%${normalizedAddress}%` },
+        })
+        // alternativeAddresses is JSONB array of strings
+        whereConditions.push({
+            alternativeAddresses: { [Op.contains]: [normalizedAddress] }
         })
     }
 
@@ -55,23 +65,7 @@ const findCustomerByContact = async (email, phone, address, storeId = null) => {
 
     if (storeId) where.storeId = storeId
 
-    const customer = await Customer.findOne({ where })
-
-    // Additional check for alternative emails/phones/addresses in JSON fields
-    if (customer) {
-        const customerData = customer.toJSON ? customer.toJSON() : customer
-        if (normalizedEmail && customerData.alternativeEmails && Array.isArray(customerData.alternativeEmails)) {
-            if (customerData.alternativeEmails.some((altEmail) => normalizeEmail(altEmail) === normalizedEmail)) return customer
-        }
-        if (normalizedPhone && customerData.alternativePhones && Array.isArray(customerData.alternativePhones)) {
-            if (customerData.alternativePhones.some((altPhone) => normalizePhone(altPhone) === normalizedPhone)) return customer
-        }
-        if (normalizedAddress && customerData.alternativeAddresses && Array.isArray(customerData.alternativeAddresses)) {
-            if (customerData.alternativeAddresses.some((altAddress) => normalizeAddress(altAddress) === normalizedAddress)) return customer
-        }
-    }
-
-    return customer
+    return await Customer.findOne({ where })
 }
 
 const findOrderProduct = async (order) => {
