@@ -51,7 +51,7 @@ export const SessionTimer = () => {
             })
 
             if (response.ok) {
-                const data = await response.json()
+                await response.json()
                 // We need to update the token in context. 
                 // Since we don't have a setToken exposed, we might need to reload or rely on the fact 
                 // that if we use apiClient, it updates the token in localStorage/memory.
