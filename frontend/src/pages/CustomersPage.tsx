@@ -78,7 +78,7 @@ const CustomersPage = () => {
   const navigate = useNavigate()
   const { showNotification } = useNotification()
 
-  const canEdit = user?.role === 'superadmin' || user?.role === 'admin' || user?.permissions?.editCustomers !== false
+  const canEdit = user?.role === 'superadmin' || user?.role === 'admin' || !!user?.permissions?.editCustomers
 
 
   const {

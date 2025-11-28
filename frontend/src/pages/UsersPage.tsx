@@ -470,10 +470,11 @@ const UsersPage = () => {
         width: 140,
         renderCell: (params: GridRenderCellParams<User>) => {
           const emailLower = params.row.email.toLowerCase()
-          const disableDangerous = emailLower === currentAdminEmail
+          const isTargetSuperAdmin = params.row.role === 'superadmin'
+          const disableDangerous = emailLower === currentAdminEmail || (!isSuperAdmin && isTargetSuperAdmin)
           return (
             <Stack direction="row" spacing={1}>
-              <Tooltip title={disableDangerous ? 'Primary admin is fixed' : 'Edit user'}>
+              <Tooltip title={disableDangerous ? 'Action not allowed' : 'Edit user'}>
                 <span>
                   <IconButton
                     color="primary"
@@ -485,7 +486,7 @@ const UsersPage = () => {
                   </IconButton>
                 </span>
               </Tooltip>
-              <Tooltip title={disableDangerous ? 'Primary admin cannot be removed' : 'Delete user'}>
+              <Tooltip title={disableDangerous ? 'Action not allowed' : 'Delete user'}>
                 <span>
                   <IconButton
                     color="error"

@@ -60,14 +60,14 @@ const canEditProduct = (user: ReturnType<typeof useAuth>['user']) => {
   if (!user) return false
   if (user.role === 'admin') return true
   if (user.role === 'superadmin') return true
-  return user.permissions?.editProducts !== false
+  return !!user.permissions?.editProducts
 }
 
 const canDeleteProduct = (user: ReturnType<typeof useAuth>['user']) => {
   if (!user) return false
   if (user.role === 'admin') return true
   if (user.role === 'superadmin') return true
-  return user.permissions?.deleteProducts !== false
+  return !!user.permissions?.deleteProducts
 }
 
 type FormValues = {

@@ -41,6 +41,7 @@ import SiteAttribution from '../common/SiteAttribution'
 import { SkipLink } from '../common/SkipLink'
 import { fetchMetricsOverview } from '../../services/metricsService'
 import { DRAWER_WIDTH, TOUCH_TARGET_MIN_SIZE } from '../../constants'
+import { SessionTimer } from '../common/SessionTimer'
 
 const drawerWidth = DRAWER_WIDTH
 const BANNER_HEIGHT = 32
@@ -525,6 +526,7 @@ const DashboardLayout = () => {
           <Outlet />
           <SiteAttribution sx={{ mt: 4, pb: 4 }} />
         </Box>
+        <SessionTimer />
       </Main>
     </Box>
   )
