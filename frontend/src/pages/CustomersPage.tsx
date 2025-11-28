@@ -385,6 +385,7 @@ const CustomersPage = () => {
         maxWidth="sm"
         fullWidth
         fullScreen={isSmall}
+        disableEnforceFocus
         aria-labelledby="add-customer-dialog"
         aria-describedby="add-customer-description"
       >

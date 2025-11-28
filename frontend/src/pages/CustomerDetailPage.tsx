@@ -410,6 +410,7 @@ const CustomerDetailPage = () => {
         maxWidth="sm"
         fullWidth
         fullScreen={isSmall}
+        disableEnforceFocus
         aria-labelledby="edit-customer-dialog"
         aria-describedby="edit-customer-description"
       >
