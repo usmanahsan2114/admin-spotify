@@ -343,6 +343,11 @@ app.get('/api/health', async (_req, res) => {
   }
 })
 
+
+
+// Public Storefront API (Must be before other API routes to avoid auth interception)
+app.use('/api/public/v1', storefrontRoutes)
+
 // Auth routes
 app.use('/api', authRoutes)
 app.use('/api', storeRoutes)
@@ -361,8 +366,7 @@ app.use('/api/settings', settingsRoutes)
 
 app.use('/api', metricsRoutes)
 
-// Public Storefront API
-app.use('/api/public/v1', storefrontRoutes)
+
 
 // API Documentation
 const swaggerUi = require('swagger-ui-express');
