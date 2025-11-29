@@ -52,8 +52,10 @@ This document outlines the strategic roadmap to transform **Admin-Spotify** into
 *Features that drive sales and retention. This brings you to parity with a standard Shopify plan.*
 
 5.  **Abandoned Cart Recovery**
-    *   **Need:** Recover lost sales.
-    *   **Feature:** Track carts that were started but not finished. Auto-send an email after 1 hour with a "Complete your order" link.
+    *   **Status:** ✅ **COMPLETED**
+    *   **Implementation:** Server-side Cart persistence + Cron Job.
+    *   **Feature:** Auto-syncs cart to DB. Sends email if inactive > 1 hour.
+    *   **Tech:** `node-cron`, `AbandonedCartService`, `NotificationService`.
 
 6.  **Advanced Discount Engine**
     *   **Need:** Run marketing campaigns.

@@ -45,6 +45,9 @@ export const Checkout: React.FC = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === 'email') {
+            localStorage.setItem('customer_email', e.target.value);
+        }
     };
 
     return (

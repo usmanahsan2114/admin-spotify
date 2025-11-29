@@ -178,6 +178,22 @@ db.Order.belongsTo(db.User, { foreignKey: 'submittedBy', as: 'submittedByUser' }
 db.User.hasMany(db.RefreshToken, { foreignKey: 'userId', as: 'refreshTokens' })
 db.RefreshToken.belongsTo(db.User, { foreignKey: 'userId', as: 'user' })
 
+// Cart Associations
+db.Cart = require('./Cart')(sequelize, Sequelize.DataTypes)
+db.CartItem = require('./CartItem')(sequelize, Sequelize.DataTypes)
+
+db.Store.hasMany(db.Cart, { foreignKey: 'storeId', as: 'carts' })
+db.Cart.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
+
+db.Cart.hasMany(db.CartItem, { foreignKey: 'cartId', as: 'items', onDelete: 'CASCADE' })
+db.CartItem.belongsTo(db.Cart, { foreignKey: 'cartId', as: 'cart' })
+
+db.Cart.belongsTo(db.Customer, { foreignKey: 'customerId', as: 'customer' })
+db.Customer.hasMany(db.Cart, { foreignKey: 'customerId', as: 'carts' })
+
+db.CartItem.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' })
+
+
 db.sequelize = sequelize
 db.Sequelize = Sequelize
 

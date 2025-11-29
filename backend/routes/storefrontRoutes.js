@@ -27,4 +27,9 @@ router.post('/discounts/validate', discountController.validateDiscount);
 // Shipping
 router.get('/shipping/rates', shippingController.getRates);
 
+// Cart Sync
+const cartController = require('../controllers/cartController');
+router.post('/cart/sync', cartController.syncCart);
+router.get('/cart/:cartId', cartController.getCart);
+
 module.exports = router;
