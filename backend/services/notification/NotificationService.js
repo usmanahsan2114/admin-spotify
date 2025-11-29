@@ -48,17 +48,19 @@ class NotificationService {
                 message: `Order #${order.orderNumber} confirmed. Total: ${order.total}. Thanks for shopping!`
             });
         }
-    async sendAbandonedCartEmail(cart) {
-            const subject = `You left something behind!`;
-            const message = `Hi, you left items in your cart. Complete your purchase now!`;
+    }
 
-            const itemsHtml = cart.items.map(item => `
+    async sendAbandonedCartEmail(cart) {
+        const subject = `You left something behind!`;
+        const message = `Hi, you left items in your cart. Complete your purchase now!`;
+
+        const itemsHtml = cart.items.map(item => `
             <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
                 <p><strong>${item.name}</strong> x ${item.quantity} - PKR ${item.price}</p>
             </div>
         `).join('');
 
-            const html = `
+        const html = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #333;">Did you forget this?</h2>
                 <p>Hi there,</p>
@@ -70,15 +72,15 @@ class NotificationService {
             </div>
         `;
 
-            if (cart.email) {
-                await this.emailProvider.send({
-                    to: cart.email,
-                    subject,
-                    message,
-                    html
-                });
-            }
+        if (cart.email) {
+            await this.emailProvider.send({
+                to: cart.email,
+                subject,
+                message,
+                html
+            });
         }
     }
+}
 
 module.exports = new NotificationService();

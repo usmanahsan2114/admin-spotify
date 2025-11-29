@@ -60,6 +60,9 @@ const getProductsPublic = async (req, res) => {
                     category: productData.category,
                     imageUrl: productData.imageUrl,
                     status: productData.status,
+                    slug: productData.slug,
+                    metaTitle: productData.metaTitle,
+                    metaDescription: productData.metaDescription,
                 }
             })
 
@@ -227,6 +230,9 @@ const createProduct = async (req, res) => {
             status: status || 'active',
             category: category ? String(category).trim() : undefined,
             imageUrl: imageUrl ? String(imageUrl).trim() : undefined,
+            slug: req.body.slug ? String(req.body.slug).trim() : undefined,
+            metaTitle: req.body.metaTitle,
+            metaDescription: req.body.metaDescription,
         })
 
         // Invalidate cache
@@ -259,7 +265,7 @@ const updateProduct = async (req, res) => {
             return res.status(403).json({ message: 'Product does not belong to your store.' })
         }
 
-        const allowedFields = ['name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'category', 'imageUrl', 'status']
+        const allowedFields = ['name', 'description', 'price', 'stockQuantity', 'reorderThreshold', 'category', 'imageUrl', 'status', 'slug', 'metaTitle', 'metaDescription']
         const updateData = {}
         Object.entries(req.body).forEach(([key, value]) => {
             if (allowedFields.includes(key) && value !== undefined) {

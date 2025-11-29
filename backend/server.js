@@ -1,3 +1,4 @@
+console.log('Starting server.js...');
 require('dotenv').config({ path: require('path').join(__dirname, '.env') })
 const express = require('express')
 const cors = require('cors')
@@ -40,7 +41,7 @@ const {
   buildStoreWhere,
   authenticateCustomer
 } = require('./middleware/auth')
-}
+const NODE_ENV = process.env.NODE_ENV || 'development'
 const JWT_SECRET = process.env.JWT_SECRET || 'development-secret-please-change'
 if (NODE_ENV === 'production' && JWT_SECRET.length < 32) {
   throw new Error('JWT_SECRET must be at least 32 characters long in production.')
@@ -691,6 +692,9 @@ async function startServer() {
     }
 
     // Start server
+    // Start server
+    const PORT = process.env.PORT || 5000;
+    console.log('[DEBUG] Attempting to start server on port:', PORT);
     const server = app.listen(PORT, () => {
       logger.info(`Server started on port ${PORT}`)
       logger.info(`Environment: ${NODE_ENV}`)

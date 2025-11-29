@@ -63,19 +63,6 @@ This document outlines the strategic roadmap to transform **Admin-Spotify** into
     *   **Features:** Percentage, Fixed Amount, BOGO, Usage Limits, Expiry.
     *   **Tech:** Sequelize, Custom Validation Logic.
 
-7.  **Headless CMS (Content Management)**
-    *   **Need:** Manage non-product content without code.
-    *   **Feature:** Create "Pages" (About, FAQ, Policy) and "Blogs" in the Admin. Expose them via API so your React site can render them dynamically.
-
-8.  **SEO Control Center**
-    *   **Need:** Rank on Google.
-    *   **Feature:** Editable `Meta Title`, `Meta Description`, and `URL Slug` for every Product, Category, and Page.
-
----
-
-## 🛠️ Tier 3: Operations & Intelligence (The "Professional" Layer)
-*Features for scaling operations and understanding your business.*
-
 9.  **Inventory Management 2.0**
     *   **Need:** Prevent overselling and track stock sources.
     *   **Feature:**

@@ -50,6 +50,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('active', 'inactive'),
         defaultValue: 'active',
       },
+      slug: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      metaTitle: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      metaDescription: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       tableName: 'products',

@@ -140,6 +140,7 @@ db.Organization = require('./Organization')(sequelize, Sequelize.DataTypes)
 db.Store = require('./Store')(sequelize, Sequelize.DataTypes)
 db.User = require('./User')(sequelize, Sequelize.DataTypes)
 db.Product = require('./Product')(sequelize, Sequelize.DataTypes)
+db.Category = require('./Category')(sequelize, Sequelize.DataTypes)
 db.Customer = require('./Customer')(sequelize, Sequelize.DataTypes)
 db.Order = require('./Order')(sequelize, Sequelize.DataTypes)
 db.Return = require('./Return')(sequelize, Sequelize.DataTypes)
@@ -152,6 +153,7 @@ db.Store.belongsTo(db.Organization, { foreignKey: 'organizationId', as: 'organiz
 
 db.Store.hasMany(db.User, { foreignKey: 'storeId', as: 'users' })
 db.Store.hasMany(db.Product, { foreignKey: 'storeId', as: 'products' })
+db.Store.hasMany(db.Category, { foreignKey: 'storeId', as: 'categories' })
 db.Store.hasMany(db.Customer, { foreignKey: 'storeId', as: 'customers' })
 db.Store.hasMany(db.Order, { foreignKey: 'storeId', as: 'orders' })
 db.Store.hasMany(db.Return, { foreignKey: 'storeId', as: 'returns' })
@@ -159,6 +161,7 @@ db.Store.hasOne(db.Setting, { foreignKey: 'storeId', as: 'settings' })
 
 db.User.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
 db.Product.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
+db.Category.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
 db.Customer.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
 db.Order.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
 db.Return.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
@@ -197,6 +200,16 @@ db.CartItem.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' })
 db.Discount = require('./Discount')(sequelize, Sequelize.DataTypes)
 db.Store.hasMany(db.Discount, { foreignKey: 'storeId', as: 'discounts' })
 db.Discount.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
+
+// CMS Associations
+db.Page = require('./Page')(sequelize, Sequelize.DataTypes)
+db.BlogPost = require('./BlogPost')(sequelize, Sequelize.DataTypes)
+
+db.Store.hasMany(db.Page, { foreignKey: 'storeId', as: 'pages' })
+db.Page.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
+
+db.Store.hasMany(db.BlogPost, { foreignKey: 'storeId', as: 'blogPosts' })
+db.BlogPost.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
 
 db.sequelize = sequelize
 db.Sequelize = Sequelize

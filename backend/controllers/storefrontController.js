@@ -81,7 +81,8 @@ exports.getPublicProductById = async (req, res) => {
             where: { id, status: 'active' },
             attributes: [
                 'id', 'name', 'description', 'price', 'category',
-                'imageUrl', 'stockQuantity', 'storeId', 'createdAt'
+                'imageUrl', 'stockQuantity', 'storeId', 'createdAt',
+                'slug', 'metaTitle', 'metaDescription'
             ]
         });
 
