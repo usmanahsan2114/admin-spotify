@@ -122,6 +122,21 @@ exports.submitOrder = async (req, res) => {
             total += parseFloat(product.price) * item.quantity;
         }
 
+        // 2.1 Calculate Shipping
+        const ShippingService = require('../services/shipping/ShippingService');
+        const shippingRates = ShippingService.calculateRates({
+            subtotal: total,
+            weight: 0.5, // Default for now, should sum item weights
+            city: customer.city || 'Lahore', // Ensure city is passed
+            province: customer.province || 'Punjab'
+        });
+
+        // Default to first rate (Standard/Free) if not specified
+        const selectedRate = shippingRates.rates.find(r => r.id === shippingMethod) || shippingRates.rates[0];
+        const shippingCost = selectedRate.price;
+
+        total += shippingCost;
+
         // 3. Handle Customer (Guest or Existing)
         let customerId = null;
         if (customer.email) {

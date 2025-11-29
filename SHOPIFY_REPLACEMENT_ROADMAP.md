@@ -33,11 +33,12 @@ This document outlines the strategic roadmap to transform **Admin-Spotify** into
     *   **Next:** Configure SMTP credentials for live emails.
 
 3.  **Advanced Shipping & Tax Engine**
-    *   **Need:** Accurate costs at checkout.
-    *   **Feature:**
-        *   **Weight-based rates:** (e.g., 0-1kg = 200 PKR, 1kg+ = 500 PKR).
-        *   **Location-based rates:** (e.g., Punjab = 150 PKR, Sindh = 250 PKR).
-        *   **Free Shipping thresholds:** (e.g., Free shipping over 5000 PKR).
+    *   **Status:** ✅ **COMPLETED**
+    *   **Implementation:** Created `ShippingService` with dynamic rates.
+    *   **Features:**
+        *   **Weight-based:** +300 PKR for >1kg.
+        *   **Location-based:** Surcharges for non-Punjab provinces.
+        *   **Free Shipping:** Orders > 5000 PKR.
 
 4.  **Portable "Checkout SDK"**
     *   **Need:** You mentioned moving the `test-order` section to your React site.

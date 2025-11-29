@@ -1,34 +1,18 @@
+const ShippingService = require('../services/shipping/ShippingService');
+
 // Get Shipping Rates
 exports.getRates = async (req, res) => {
     try {
-        const { country, city, storeId } = req.query;
+        const { country, city, province, subtotal, weight } = req.query;
 
-        // Mock Implementation
-        const rates = [
-            {
-                id: 'standard',
-                name: 'Standard Shipping',
-                price: 200, // PKR
-                estimatedDays: '3-5 days'
-            },
-            {
-                id: 'express',
-                name: 'Express Shipping',
-                price: 500, // PKR
-                estimatedDays: '1-2 days'
-            }
-        ];
+        const result = ShippingService.calculateRates({
+            subtotal: parseFloat(subtotal) || 0,
+            weight: parseFloat(weight) || 0.5,
+            city,
+            province
+        });
 
-        if (city && city.toLowerCase() === 'karachi') {
-            rates.push({
-                id: 'same_day',
-                name: 'Same Day Delivery',
-                price: 800,
-                estimatedDays: 'Today'
-            });
-        }
-
-        res.json(rates);
+        res.json(result.rates);
 
     } catch (error) {
         console.error('Shipping rates error:', error);
