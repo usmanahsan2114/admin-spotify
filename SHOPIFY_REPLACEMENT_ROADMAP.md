@@ -41,8 +41,10 @@ This document outlines the strategic roadmap to transform **Admin-Spotify** into
         *   **Free Shipping:** Orders > 5000 PKR.
 
 4.  **Portable "Checkout SDK"**
-    *   **Need:** You mentioned moving the `test-order` section to your React site.
-    *   **Feature:** Package the checkout logic (Cart validation + Order Submission) into a clean React Hook or Component Library that you can drop into *any* website.
+    *   **Status:** ✅ **COMPLETED**
+    *   **Implementation:** Created `storefront/src/sdk` with `useCart`, `useCheckout`, and `CheckoutProvider`.
+    *   **Feature:** Encapsulated logic ready for copy-paste into any React app.
+    *   **Refactor:** Storefront now uses this SDK internally.
 
 ---
 

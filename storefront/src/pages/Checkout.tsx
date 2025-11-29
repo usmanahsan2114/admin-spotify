@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useShop } from '../context/ShopContext';
-import api from '../api';
+import { useShop } from '../context/ShopContext'; // This now uses useSDK internally
 
 export const Checkout: React.FC = () => {
-    const { cart, cartTotal, clearCart } = useShop();
+    const { cart, cartTotal, clearCart, checkout } = useShop(); // checkout comes from SDK
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
@@ -12,43 +11,35 @@ export const Checkout: React.FC = () => {
         phone: '',
         address: '',
         city: '',
+        province: 'Punjab',
         paymentMethod: 'COD'
     });
-    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
 
         try {
-            // 1. Validate Cart (Optional but good practice)
-            await api.post('/checkout/validate', {
-                items: cart,
-                storeId: cart[0]?.storeId // Assuming all items from same store or handled by backend
-            });
-
-            // 2. Submit Order
-            const res = await api.post('/orders', {
-                storeId: 'your-store-id-here', // Ideally dynamic or from env
+            await checkout.submitOrder({
+                storeId: cart[0]?.storeId || 'default-store', // Handle storeId better in real app
                 items: cart,
                 customer: {
                     name: formData.name,
                     email: formData.email,
                     phone: formData.phone,
-                    address: `${formData.address}, ${formData.city}`
+                    address: formData.address,
+                    city: formData.city,
+                    province: formData.province
                 },
                 paymentMethod: formData.paymentMethod,
                 shippingMethod: 'standard'
             });
 
-            alert(`Order placed! ID: ${res.data.orderNumber}`);
+            alert(`Order placed!`);
             clearCart();
             navigate('/');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || 'Error placing order');
-        } finally {
-            setLoading(false);
+            alert(error.message || 'Error placing order');
         }
     };
 
@@ -100,6 +91,16 @@ export const Checkout: React.FC = () => {
                                     <label className="block text-sm font-medium text-gray-700">City</label>
                                     <input type="text" name="city" required onChange={handleChange} className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
                                 </div>
+                                <div className="col-span-6 sm:col-span-3">
+                                    <label className="block text-sm font-medium text-gray-700">Province</label>
+                                    <select name="province" onChange={handleChange} className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                        <option value="Punjab">Punjab</option>
+                                        <option value="Sindh">Sindh</option>
+                                        <option value="KPK">KPK</option>
+                                        <option value="Balochistan">Balochistan</option>
+                                        <option value="Islamabad">Islamabad</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -112,11 +113,14 @@ export const Checkout: React.FC = () => {
                     </div>
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={checkout.loading}
                         className="mt-6 w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                     >
-                        {loading ? 'Processing...' : 'Place Order'}
+                        {checkout.loading ? 'Processing...' : 'Place Order'}
                     </button>
+                    {checkout.error && (
+                        <p className="mt-2 text-sm text-red-600">{checkout.error}</p>
+                    )}
                 </div>
             </form>
         </div>
