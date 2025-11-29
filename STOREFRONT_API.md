@@ -92,3 +92,63 @@ GET /api/public/v1/categories?storeId=123
   "Home & Living"
 ]
 ```
+
+### 4. Validate Cart
+Validate items in the cart before checkout. Checks stock availability and calculates totals.
+
+- **Endpoint:** `POST /checkout/validate`
+- **Body:**
+```json
+{
+  "storeId": "uuid",
+  "items": [
+    {
+      "productId": "uuid",
+      "quantity": 2
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "valid": true,
+  "items": [...],
+  "subtotal": 2000,
+  "total": 2000
+}
+```
+
+### 5. Submit Order
+Submit a new order from the storefront.
+
+- **Endpoint:** `POST /orders`
+- **Body:**
+```json
+{
+  "storeId": "uuid",
+  "items": [
+    {
+      "productId": "uuid",
+      "quantity": 1,
+      "price": 1000
+    }
+  ],
+  "customer": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phone": "1234567890",
+    "address": "123 Main St"
+  },
+  "paymentMethod": "cod"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Order created successfully",
+  "orderId": "uuid"
+}
+```

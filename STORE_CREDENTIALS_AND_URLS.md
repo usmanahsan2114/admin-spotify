@@ -27,6 +27,7 @@
 | `http://localhost:5173/test-order` | **Test Order** - Store selection page for placing orders. After selecting a store, navigates to store-specific test order form. |
 | `http://localhost:5173/store/:storeId/track-order` | **Order Tracking Page (Store-specific)** - Search orders by Order ID, Email, or Phone for a specific store. No login required. |
 | `http://localhost:5173/store/:storeId/test-order` | **Test Order Form (Store-specific)** - Submit test orders for a specific store. No login required. |
+| `http://localhost:5174` | **Public Storefront** - Customer-facing e-commerce store. Browse products, add to cart, and checkout. |
 
 **Note:** 
 - Each store has its own URLs (`/store/:storeId/track-order` and `/store/:storeId/test-order`) to differentiate orders and make it easier to manage all customer orders without requiring login.
@@ -67,7 +68,9 @@
 - Track Order (`/track-order`) - Shows store selection for order tracking
 - Test Order (`/test-order`) - Shows store selection for placing orders
 - Order Tracking (`/store/:storeId/track-order`) - Track orders for specific store
+- Order Tracking (`/store/:storeId/track-order`) - Track orders for specific store
 - Test Order Form (`/store/:storeId/test-order`) - Place orders for specific store
+- Public Storefront (`http://localhost:5174`) - Browse and shop
 
 **All Authenticated Users:**
 - Dashboard Home (`/`)

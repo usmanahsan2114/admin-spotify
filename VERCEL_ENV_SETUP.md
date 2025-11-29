@@ -87,6 +87,13 @@ VITE_API_BASE_URL=https://your-backend-domain.vercel.app
 ```
 > This must match the URL where your backend is deployed.
 
+### 🛍️ Storefront Configuration
+Ensure your Storefront Vercel project has:
+```bash
+VITE_API_BASE_URL=https://your-backend-domain.vercel.app
+```
+> The storefront also connects to the same backend API.
+
 ---
 
 ### 📊 Optional: Error Tracking (Sentry)

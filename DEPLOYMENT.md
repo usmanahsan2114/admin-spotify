@@ -39,12 +39,18 @@ This will:
 
 ### Using Supabase as Production Database (Postgres)
 
-Since we are using Supabase for both local development and production, the setup is identical.
+**CRITICAL: Supabase is the SINGLE SOURCE OF TRUTH for all environments.**
+
+We use Supabase Postgres for **Localhost**, **Preview**, and **Production**. There is no local MySQL or SQLite database.
 
 1. **Production Environment Variables**:
    - Ensure `NODE_ENV=production`
-   - Use the same Supabase credentials (or a separate production project)
-   - Set `CORS_ORIGIN` to your production frontend domain
+   - Use the **SAME** Supabase project credentials for consistency (or a dedicated production project if preferred, but ensure schema matches).
+   - Set `CORS_ORIGIN` to your production frontend and storefront domains.
+
+2. **Database Sync**:
+   - The database schema is managed via Sequelize migrations.
+   - Always run `npx sequelize-cli db:migrate` when deploying to a new environment to ensure the schema is up to date.
 
 2. **Run Migrations**:
    ```bash
@@ -233,6 +239,26 @@ npm run build
 ```
 
 Output: `frontend/dist/`
+
+### Storefront Production Build
+
+#### 1. Environment Variables
+
+**Create `storefront/.env.production`:**
+
+```env
+VITE_API_BASE_URL=https://admin.yourdomain.com/api
+```
+
+#### 2. Build
+
+```bash
+cd storefront
+npm install
+npm run build
+```
+
+Output: `storefront/dist/`
 
 #### 3. Serve with Nginx
 

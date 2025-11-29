@@ -27,6 +27,10 @@ A **store management system** that helps you manage your online business in one 
 2. Enter your email and password
 3. You'll see the Dashboard with your business overview
 
+### Storefront
+1. Go to `http://localhost:5174` (or your production storefront URL)
+2. Browse products and place orders as a customer
+
 ### Navigation
 - **Sidebar menu** (left side) shows all pages
 - **Top bar** shows store logo, name, and your profile
@@ -125,6 +129,27 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 **Outputs:**
 - Success message with Order ID
 - Submitted order details
+
+### Public Storefront (No Login Required)
+
+**URL:** `http://localhost:5174` (or your production storefront URL)
+
+**Purpose:** A customer-facing e-commerce store to browse products and place orders.
+
+**Features:**
+- **Home Page:** Hero section, featured products.
+- **Product Listing:** Browse all products with filtering (Category, Price, Search).
+- **Product Details:** View product images, description, price, and stock status.
+- **Cart:** Add items to cart, update quantities, remove items.
+- **Checkout:** Validate cart and submit order with customer details.
+- **Order Success:** Confirmation page with order summary.
+
+**How to Use:**
+1. **Browse:** Visit the homepage to see featured products.
+2. **Search:** Use the search bar to find specific items.
+3. **Add to Cart:** Click "Add to Cart" on any product.
+4. **Checkout:** Click the cart icon, review items, and click "Checkout".
+5. **Place Order:** Fill in your details (Name, Email, Address) and submit.
 
 ### Dashboard Pages (Login Required)
 
