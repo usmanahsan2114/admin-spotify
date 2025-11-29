@@ -16,8 +16,13 @@ exports.validateCart = async (req, res) => {
         const errors = [];
 
         for (const item of items) {
+            const where = { id: item.productId, status: 'active' };
+            if (storeId) {
+                where.storeId = storeId;
+            }
+
             const product = await Product.findOne({
-                where: { id: item.productId, storeId, status: 'active' }
+                where
             });
 
             if (!product) {
