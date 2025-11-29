@@ -30,6 +30,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.3",
+    "nodemailer": "^7.0.11",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "redis": "^5.10.0",

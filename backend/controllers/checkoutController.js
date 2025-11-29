@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 exports.validateCart = async (req, res) => {
     try {
         const { items, storeId } = req.body; // items: [{ productId, quantity }]
+        console.log('Validating cart:', { itemsCount: items?.length, storeId });
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'Cart is empty' });
@@ -16,6 +17,12 @@ exports.validateCart = async (req, res) => {
         const errors = [];
 
         for (const item of items) {
+            if (!item.productId) {
+                isValid = false;
+                errors.push('Item missing productId');
+                continue;
+            }
+
             const where = { id: item.productId, status: 'active' };
             if (storeId) {
                 where.storeId = storeId;
@@ -65,6 +72,7 @@ exports.validateCart = async (req, res) => {
 };
 
 const PaymentService = require('../services/payment/PaymentService');
+const NotificationService = require('../services/notification/NotificationService');
 
 // Submit Public Order
 exports.submitOrder = async (req, res) => {
@@ -175,6 +183,11 @@ exports.submitOrder = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
+
+        // 6. Send Notifications (Async - don't block response)
+        NotificationService.sendOrderConfirmation(order).catch(err =>
+            console.error('Failed to send notifications:', err)
+        );
 
         res.status(201).json({
             message: 'Order placed successfully',

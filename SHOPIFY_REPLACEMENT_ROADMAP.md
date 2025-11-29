@@ -27,9 +27,10 @@ This document outlines the strategic roadmap to transform **Admin-Spotify** into
     *   **Next:** Add Stripe API keys to activate.
 
 2.  **Transactional Email & SMS Engine**
-    *   **Need:** Customers expect instant confirmation.
-    *   **Feature:** Auto-send emails/SMS for: `Order Placed`, `Order Shipped`, `Order Delivered`, `Password Reset`.
-    *   **Tech:** Integrate SendGrid, AWS SES, or Twilio.
+    *   **Status:** ✅ **COMPLETED**
+    *   **Implementation:** Created `NotificationService` with `EmailProvider` (Nodemailer) and `SmsProvider`.
+    *   **Supported:** Email (Console/Ethereal), SMS (Mock).
+    *   **Next:** Configure SMTP credentials for live emails.
 
 3.  **Advanced Shipping & Tax Engine**
     *   **Need:** Accurate costs at checkout.
