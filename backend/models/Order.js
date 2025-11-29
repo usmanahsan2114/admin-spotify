@@ -97,6 +97,11 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: 'Card',
         allowNull: true,
       },
+      paymentMetadata: {
+        type: DataTypes.JSONB,
+        defaultValue: {},
+        allowNull: true,
+      },
     },
     {
       tableName: 'orders',

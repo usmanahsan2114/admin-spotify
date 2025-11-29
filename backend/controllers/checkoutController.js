@@ -64,6 +64,8 @@ exports.validateCart = async (req, res) => {
     }
 };
 
+const PaymentService = require('../services/payment/PaymentService');
+
 // Submit Public Order
 exports.submitOrder = async (req, res) => {
     const t = await sequelize.transaction();
@@ -74,6 +76,7 @@ exports.submitOrder = async (req, res) => {
             customer, // { name, email, phone, address }
             shippingMethod,
             paymentMethod,
+            paymentSource, // Token or source for payment
             notes
         } = req.body;
 
@@ -136,7 +139,20 @@ exports.submitOrder = async (req, res) => {
             }
         }
 
-        // 4. Create Order
+        // 4. Process Payment
+        let paymentResult;
+        try {
+            paymentResult = await PaymentService.processPayment(paymentMethod || 'COD', {
+                amount: total,
+                currency: 'PKR', // Default for now, should come from store settings
+                source: paymentSource
+            });
+        } catch (paymentError) {
+            await t.rollback();
+            return res.status(400).json({ message: 'Payment failed', error: paymentError.message });
+        }
+
+        // 5. Create Order
         const order = await Order.create({
             id: uuidv4(),
             storeId,
@@ -148,12 +164,14 @@ exports.submitOrder = async (req, res) => {
             phone: customer.phone,
             quantity: items.reduce((sum, i) => sum + i.quantity, 0),
             status: 'Pending',
-            isPaid: false,
+            isPaid: paymentResult.status === 'succeeded',
             total: total, // Add shipping cost here if needed
             notes,
             items: orderItems,
             shippingAddress: customer.address, // Simplified
-            paymentMethod: paymentMethod || 'COD'
+            paymentMethod: paymentMethod || 'COD',
+            paymentStatus: paymentResult.status,
+            paymentMetadata: paymentResult.data
         }, { transaction: t });
 
         await t.commit();
@@ -161,11 +179,12 @@ exports.submitOrder = async (req, res) => {
         res.status(201).json({
             message: 'Order placed successfully',
             orderId: order.id,
-            orderNumber: order.orderNumber
+            orderNumber: order.orderNumber,
+            paymentStatus: paymentResult.status
         });
 
     } catch (error) {
-        await t.rollback();
+        if (!t.finished) await t.rollback();
         console.error('Order submission error:', error);
         res.status(500).json({ message: 'Error placing order', error: error.message });
     }
