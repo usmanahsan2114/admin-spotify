@@ -21,21 +21,6 @@
 - **Admin Password:** `demo1234`
 - **Staff Emails:** `staff1@demo.shopifyadmin.pk`, `staff2@demo.shopifyadmin.pk`, `staff3@demo.shopifyadmin.pk`
 - **Staff Password:** `staff123`
-
-### 🛍️ Public Storefront (Headless React App)
-
-| URL | Purpose |
-|-----|---------|
-| `http://localhost:5174/` | **Storefront Home** - Public e-commerce site for customers to browse and buy. |
-| `http://localhost:5174/products/:id` | **Product Detail** - View product and add to cart. |
-| `http://localhost:5174/cart` | **Shopping Cart** - Review items. |
-| `http://localhost:5174/checkout` | **Checkout** - Place order (Guest checkout supported). |
-
-### Admin Dashboard (Login Required)
-
-**Only 3 public pages are available:**
-
-| URL | Purpose |
 |-----|---------|
 | `http://localhost:5173/login` | **Login Page** - Admin/Staff/Superadmin authentication to access dashboard. Simple email/password login. System auto-detects user type and store. |
 | `http://localhost:5173/track-order` | **Track Order** - Store selection page for customers to track their orders without login. After selecting a store, navigates to store-specific tracking page. |

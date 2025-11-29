@@ -15,10 +15,12 @@ These features are strictly necessary to move from a "demo" or "management tool"
 1.  **Headless Storefront API (Public API)**
     *   **Status:** ✅ Live at `/api/public/v1`
     *   **Features:** Product listing, details, cart validation, order submission.
+    *   **Verification:** Verified via Postman/Curl and Storefront UI.
 
 2.  **Payment Gateway Integration**
-    *   **Status:** 🚧 In Progress (Basic "Cash on Delivery" implemented)
-    *   **Next:** Stripe/JazzCash integration.
+    *   **Status:** ✅ Basic Implementation (COD)
+    *   **Features:** Cash on Delivery supported.
+    *   **Next:** Stripe/JazzCash integration (Tier 2).
 
 3.  **Discounts & Promotions Engine**
     *   **Status:** ✅ Basic Implementation

@@ -1,5 +1,5 @@
 const { Product, Store, Category } = require('../models');
-const { Op } = require('sequelize');
+const { Op, fn, col } = require('sequelize');
 
 // Get all products (public)
 // Supports pagination, filtering by category, price range, and sorting
@@ -72,47 +72,48 @@ exports.getPublicProducts = async (req, res) => {
         console.error('Error fetching public products:', error);
         res.status(500).json({ message: 'Error fetching products', error: error.message });
     }
-    // Get single product by ID (public)
-    exports.getPublicProductById = async (req, res) => {
-        try {
-            const { id } = req.params;
-            const product = await Product.findOne({
-                where: { id, status: 'active' },
-                attributes: [
-                    'id', 'name', 'description', 'price', 'category',
-                    'imageUrl', 'stockQuantity', 'storeId', 'createdAt'
-                ]
-            });
+};
+// Get single product by ID (public)
+exports.getPublicProductById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product.findOne({
+            where: { id, status: 'active' },
+            attributes: [
+                'id', 'name', 'description', 'price', 'category',
+                'imageUrl', 'stockQuantity', 'storeId', 'createdAt'
+            ]
+        });
 
-            if (!product) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
-
-            res.json(product);
-        } catch (error) {
-            console.error('Error fetching public product:', error);
-            res.status(500).json({ message: 'Error fetching product', error: error.message });
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
         }
-    };
 
-    // Get all categories (public)
-    exports.getPublicCategories = async (req, res) => {
-        try {
-            const { storeId } = req.query;
-            const where = { status: 'active' };
-            if (storeId) where.storeId = storeId;
+        res.json(product);
+    } catch (error) {
+        console.error('Error fetching public product:', error);
+        res.status(500).json({ message: 'Error fetching product', error: error.message });
+    }
+};
 
-            // Get unique categories
-            const categories = await Product.findAll({
-                where,
-                attributes: [[sequelize.fn('DISTINCT', sequelize.col('category')), 'category']],
-                order: [['category', 'ASC']]
-            });
+// Get all categories (public)
+exports.getPublicCategories = async (req, res) => {
+    try {
+        const { storeId } = req.query;
+        const where = { status: 'active' };
+        if (storeId) where.storeId = storeId;
 
-            res.json(categories.map(c => c.category));
-        } catch (error) {
-            // Fallback if DISTINCT fails or complex query needed
-            console.error('Error fetching categories:', error);
-            res.status(500).json({ message: 'Error fetching categories', error: error.message });
-        }
-    };
+        // Get unique categories
+        const categories = await Product.findAll({
+            where,
+            attributes: [[fn('DISTINCT', col('category')), 'category']],
+            order: [['category', 'ASC']]
+        });
+
+        res.json(categories.map(c => c.category));
+    } catch (error) {
+        // Fallback if DISTINCT fails or complex query needed
+        console.error('Error fetching categories:', error);
+        res.status(500).json({ message: 'Error fetching categories', error: error.message });
+    }
+};
