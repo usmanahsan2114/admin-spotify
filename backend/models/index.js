@@ -193,6 +193,10 @@ db.Customer.hasMany(db.Cart, { foreignKey: 'customerId', as: 'carts' })
 
 db.CartItem.belongsTo(db.Product, { foreignKey: 'productId', as: 'product' })
 
+// Discount Associations
+db.Discount = require('./Discount')(sequelize, Sequelize.DataTypes)
+db.Store.hasMany(db.Discount, { foreignKey: 'storeId', as: 'discounts' })
+db.Discount.belongsTo(db.Store, { foreignKey: 'storeId', as: 'store' })
 
 db.sequelize = sequelize
 db.Sequelize = Sequelize

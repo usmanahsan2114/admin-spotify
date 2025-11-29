@@ -58,11 +58,10 @@ This document outlines the strategic roadmap to transform **Admin-Spotify** into
     *   **Tech:** `node-cron`, `AbandonedCartService`, `NotificationService`.
 
 6.  **Advanced Discount Engine**
-    *   **Need:** Run marketing campaigns.
-    *   **Feature:**
-        *   **BOGO:** Buy One Get One Free.
-        *   **Tiered:** Buy 5000 get 10% off, Buy 10000 get 20% off.
-        *   **Product-specific:** 20% off on "Shoes" collection only.
+    *   **Status:** ✅ **COMPLETED**
+    *   **Implementation:** `Discount` model, `DiscountService`, Checkout integration.
+    *   **Features:** Percentage, Fixed Amount, BOGO, Usage Limits, Expiry.
+    *   **Tech:** Sequelize, Custom Validation Logic.
 
 7.  **Headless CMS (Content Management)**
     *   **Need:** Manage non-product content without code.

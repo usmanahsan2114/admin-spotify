@@ -12,8 +12,30 @@ export const Checkout: React.FC = () => {
         address: '',
         city: '',
         province: 'Punjab',
-        paymentMethod: 'COD'
+        paymentMethod: 'COD',
+        discountCode: ''
     });
+    const [discountApplied, setDiscountApplied] = useState(false);
+    const [discountAmount, setDiscountAmount] = useState(0);
+    const [finalTotal, setFinalTotal] = useState(cartTotal);
+
+    const applyDiscount = async () => {
+        try {
+            const res = await checkout.validateCart(cart, cart[0]?.storeId, formData.discountCode);
+            if (res.discountAmount > 0) {
+                setDiscountApplied(true);
+                setDiscountAmount(res.discountAmount);
+                setFinalTotal(res.total);
+            } else {
+                alert('Invalid discount code');
+                setDiscountApplied(false);
+                setFinalTotal(cartTotal);
+            }
+        } catch (e: any) {
+            alert(e.message);
+            setDiscountApplied(false);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,7 +53,8 @@ export const Checkout: React.FC = () => {
                     province: formData.province
                 },
                 paymentMethod: formData.paymentMethod,
-                shippingMethod: 'standard'
+                shippingMethod: 'standard',
+                discountCode: discountApplied ? formData.discountCode : undefined
             });
 
             alert(`Order placed!`);
@@ -110,9 +133,39 @@ export const Checkout: React.FC = () => {
                 </div>
 
                 <div className="bg-white shadow px-4 py-5 sm:rounded-lg sm:p-6">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-lg font-medium">Subtotal</span>
+                        <span className="text-lg">PKR {cartTotal}</span>
+                    </div>
+
+                    {/* Discount Input */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700">Discount Code</label>
+                        <div className="mt-1 flex rounded-md shadow-sm">
+                            <input
+                                type="text"
+                                name="discountCode"
+                                value={formData.discountCode}
+                                onChange={handleChange}
+                                className="focus:ring-indigo-500 focus:border-indigo-500 flex-1 block w-full rounded-none rounded-l-md sm:text-sm border-gray-300"
+                                placeholder="SUMMER20"
+                            />
+                            <button
+                                type="button"
+                                onClick={applyDiscount}
+                                className="-ml-px relative inline-flex items-center space-x-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                        {discountApplied && (
+                            <p className="mt-2 text-sm text-green-600">Discount applied: -PKR {discountAmount}</p>
+                        )}
+                    </div>
+
+                    <div className="flex justify-between items-center border-t pt-4">
                         <span className="text-lg font-medium">Total to Pay</span>
-                        <span className="text-2xl font-bold">PKR {cartTotal}</span>
+                        <span className="text-2xl font-bold">PKR {finalTotal}</span>
                     </div>
                     <button
                         type="submit"

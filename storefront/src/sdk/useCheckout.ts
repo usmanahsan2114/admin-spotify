@@ -12,11 +12,12 @@ export const useCheckout = () => {
         success: false
     });
 
-    const validateCart = async (items: CartItem[], storeId?: string) => {
+    const validateCart = async (items: CartItem[], storeId?: string, discountCode?: string) => {
         try {
             const res = await axios.post(`${API_BASE_URL}/checkout/validate`, {
                 items,
-                storeId
+                storeId,
+                discountCode
             });
             return res.data;
         } catch (error: any) {
@@ -24,11 +25,11 @@ export const useCheckout = () => {
         }
     };
 
-    const submitOrder = async (order: Order) => {
+    const submitOrder = async (order: Order & { discountCode?: string }) => {
         setState({ loading: true, error: null, success: false });
         try {
             // 1. Validate first
-            await validateCart(order.items, order.storeId);
+            await validateCart(order.items, order.storeId, order.discountCode);
 
             // 2. Submit
             const res = await axios.post(`${API_BASE_URL}/orders`, order);
