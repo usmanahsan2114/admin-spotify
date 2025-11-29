@@ -7,7 +7,7 @@ This document outlines the feature roadmap to transform **Admin-Spotify** into a
 
 ---
 
-## 🚀 Tier 1: Core Commerce Engine (The "Must-Haves")
+## 🚀 Tier 1: Core Commerce Engine (The "Must-Haves") - ✅ COMPLETED
 *Focus: Enabling real transactions and connecting your React storefront.*
 
 These features are strictly necessary to move from a "demo" or "management tool" to a functioning e-commerce backend.
