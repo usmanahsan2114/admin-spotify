@@ -4,9 +4,10 @@
   "private": true,
   "description": "Monorepo configuration for Shopify-like admin dashboard",
   "scripts": {
-    "dev": "npm-run-all --parallel dev:backend dev:frontend",
+    "dev": "npm-run-all --parallel dev:backend dev:frontend dev:storefront",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
+    "dev:storefront": "npm --prefix storefront run dev",
     "build": "npm --prefix frontend run build"
   },
   "keywords": [],

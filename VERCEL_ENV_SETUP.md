@@ -193,3 +193,20 @@ vercel env ls
 ✅ **Use Vercel dashboard for production secrets**
 ✅ **Rotate JWT_SECRET periodically**
 ✅ **Use different secrets for production vs preview**
+
+---
+
+## 🛍️ Deploying the Storefront
+
+The Storefront is a separate React application located in the `storefront` directory. It must be deployed as a **separate Vercel project**.
+
+### Steps:
+1.  **Add New Project** in Vercel.
+2.  Import the same repository.
+3.  **Framework Preset:** Vite
+4.  **Root Directory:** Edit and select `storefront`.
+5.  **Environment Variables:**
+    -   `VITE_API_BASE_URL`: `https://your-backend-domain.vercel.app` (Same as Dashboard)
+6.  **Deploy.**
+
+**Note:** You will get a unique URL for the storefront (e.g., `https://your-project-storefront.vercel.app`). Use this URL in your `STORE_CREDENTIALS_AND_URLS.md` and for public access.
