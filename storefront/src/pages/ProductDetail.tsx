@@ -31,7 +31,7 @@ export const ProductDetail: React.FC = () => {
             <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
                 {/* Image gallery */}
                 <div className="flex flex-col">
-                    <div className="w-full aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden sm:aspect-w-2 sm:aspect-h-3">
+                    <div className="w-full aspect-square bg-gray-200 rounded-lg overflow-hidden">
                         <img
                             src={product.imageUrl || 'https://via.placeholder.com/600'}
                             alt={product.name}

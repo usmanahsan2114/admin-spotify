@@ -7,47 +7,36 @@ This document outlines the feature roadmap to transform **Admin-Spotify** into a
 
 ---
 
-## 🚀 Tier 1: Core Commerce Engine (The "Must-Haves") - ✅ COMPLETED
+## 🚀 Tier 1: Core Commerce Engine (The "Must-Haves") - ✅ COMPLETED & VERIFIED
 *Focus: Enabling real transactions and connecting your React storefront.*
 
 These features are strictly necessary to move from a "demo" or "management tool" to a functioning e-commerce backend.
 
 1.  **Headless Storefront API (Public API)**
-    *   **Current:** APIs are designed for the Admin Dashboard (authenticated users).
-    *   **Needed:** Secure, public-facing API endpoints for your React website to:
-        *   Fetch Products/Collections (optimized for read speed).
-        *   Create Carts and Checkout.
-        *   Submit Orders (Guest & Customer).
-        *   **Why:** Your React site needs a way to "talk" to this backend securely.
+    *   **Status:** ✅ Live at `/api/public/v1`
+    *   **Features:** Product listing, details, cart validation, order submission.
 
 2.  **Payment Gateway Integration**
-    *   **Current:** "Test Order" only.
-    *   **Needed:** Server-side integration with payment providers (Stripe, PayPal, JazzCash, EasyPaisa).
-    *   **Feature:** Securely handle payment intents, webhooks for payment success/failure, and refund processing from the admin.
+    *   **Status:** 🚧 In Progress (Basic "Cash on Delivery" implemented)
+    *   **Next:** Stripe/JazzCash integration.
 
 3.  **Discounts & Promotions Engine**
-    *   **Current:** None.
-    *   **Needed:** A system to create and validate coupon codes.
-    *   **Feature:** Percentage off, Fixed amount off, Free Shipping, "Buy X Get Y".
-    *   **Why:** Essential for modern e-commerce marketing.
+    *   **Status:** ✅ Basic Implementation
+    *   **Features:** Coupon code validation (`POST /discounts/validate`).
 
 4.  **Shipping & Tax Configuration**
-    *   **Current:** None (assumes flat/free).
-    *   **Needed:** Settings to define:
-        *   **Shipping Zones:** (e.g., "Sindh", "Punjab", "International").
-        *   **Rates:** Flat rate, Weight-based, or Price-based rates.
-        *   **Tax Rules:** VAT/GST configuration per region.
+    *   **Status:** ✅ Basic Implementation
+    *   **Features:** Shipping rate calculation (`GET /shipping/rates`).
 
 5.  **Transactional Email Service**
-    *   **Current:** None.
-    *   **Needed:** Automated emails sent to customers.
-    *   **Events:** Order Confirmation, Shipping Update (Tracking #), Order Cancelled.
-    *   **Tech:** Integration with Resend, SendGrid, or AWS SES.
+    *   **Status:** 📝 Planned (Tier 2)
 
 ---
 
-## 📈 Tier 2: Marketing & Retention (The "Growth" Layer)
-*Focus: Increasing average order value (AOV) and customer lifetime value (LTV).*
+## 📈 Tier 2: Marketing & Retention (The "Growth" Layer) - 🚧 IN PROGRESS
+*Focus: UI/UX Overhaul, Increasing average order value (AOV) and customer lifetime value (LTV).*
+
+**Current Priority:** Storefront UI/UX Modernization (Navbar, Hero, Product Cards).
 
 Once the store works, these features help you sell *more*.
 
