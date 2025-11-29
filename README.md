@@ -4,12 +4,13 @@
 
 ## Features
 
-- **Multi-Store System**: Support for 6 stores (5 client stores + 1 demo store) with complete data isolation. Each store has its own admin, staff, products, customers, orders, and settings.
+- **Multi-Store System**: Support for 2 stores (1 client store + 1 demo store) with complete data isolation. Each store has its own admin, staff, products, customers, orders, and settings.
 - **Authentication & Roles**: JWT-based login with protected routes, admin/staff/superadmin roles, persistent sessions, and logout from header/sidebar. Store-specific authentication with `storeId` in JWT tokens. Superadmin role provides global access to all stores and users.
 - **Orders**: Search, filter, paginate, update statuses inline, and deep-dive into order timelines with editable fulfillment/payment controls. Includes time-based filtering with date range picker, mini area chart showing orders by day, and growth comparison summaries. Store-specific data filtering.
 - **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions. Features stock trend charts and time-based filtering. Store-specific product catalogs.
 - **Returns & Refunds**: Track return requests, update statuses, and monitor stock impact. Includes returns-by-status pie chart and time-based filtering. Store-specific returns management.
 - **Users**: Admin/Superadmin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion. Granular permission management with 13 permission types (view/edit/delete orders, products, customers, returns, reports, user management, settings) allowing fine-grained access control per user. Store-specific user management. Superadmin can manage users across all stores.
+- **Headless Storefront API**: Public read-only API (`/api/public/v1`) for connecting external React storefronts. Supports product listing, filtering, searching, and details. See [STOREFRONT_API.md](./STOREFRONT_API.md).
 - **Settings/Profile**: Comprehensive settings page with three sections: My Profile (upload profile picture, update full name/phone, set default date filter, configure notification preferences), Preferences (theme toggle, default settings), and Business Settings (admin only: upload logo, set brand color, default currency PKR, country Pakistan PK, manage order statuses). Fully responsive with mobile-first design using tabs on desktop and accordions on mobile. Store-specific business settings.
 - **Dashboard Analytics**: Summary tiles, sales over time line chart, period comparison bar chart, 7-day order trend line, status distribution pie chart, and low stock trends using Recharts. All charts support time-based filtering with date range selection. Store-specific metrics and reports.
 - **Growth & Progress Reporting**: Comprehensive growth metrics with KPI cards showing sales, orders, average order value, and return rate with period-over-period growth percentages. Trend charts for sales, orders, and customers over time. Period selector (Last 7 days, This month, This quarter). Downloadable CSV reports. Fully responsive with mobile-optimized charts (area charts on mobile, line charts on desktop). **Store-specific growth metrics** - each store has independent reports.
@@ -101,7 +102,7 @@ node scripts/reset-and-seed-database.js
 
 This will:
 - Clear all existing data
-- Create 6 stores (5 client stores + 1 demo store)
+- Create 2 stores (1 client store + 1 demo store)
 - Seed comprehensive test data (products, customers, orders, returns, users)
 - Display login credentials for all accounts
 
@@ -140,7 +141,7 @@ Expected response:
 
 **Check Database in phpMyAdmin:**
 - ✅ **Backend must run on `http://localhost:5000/`** - This is configured in `PORT` environment variable
-- ✅ **Database will auto-seed** with 6 stores and comprehensive test data on first run
+- ✅ **Database will auto-seed** with 2 stores and comprehensive test data on first run
 - ✅ **All examples assume Supabase Postgres** for local development
 
 **See [STORE_CREDENTIALS_AND_URLS.md](./STORE_CREDENTIALS_AND_URLS.md) for complete login credentials after seeding.**
@@ -155,10 +156,6 @@ After database seeding, you can login with:
 
 **Store Admins (for each store):**
 - TechHub Electronics: `admin@techhub.pk` / `admin123`
-- Fashion Forward: `admin@fashionforward.pk` / `admin123`
-- Home & Living Store: `admin@homeliving.pk` / `admin123`
-- Fitness Gear Pro: `admin@fitnessgear.pk` / `admin123`
-- Beauty Essentials: `admin@beautyessentials.pk` / `admin123`
 
 **Staff Accounts:**
 - Staff emails follow pattern: `staff1@[store-domain]`, `staff2@[store-domain]`, etc.
@@ -228,7 +225,7 @@ SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id  # Optional: for error t
 
 ## Multi-Store System
 
-This application supports **6 stores** (5 client stores + 1 demo store), each with its own:
+This application supports **2 stores** (1 client store + 1 demo store), each with its own:
 - Admin and staff accounts
 - Products, customers, orders, and returns
 - Business settings (logo, currency, country)
@@ -241,7 +238,6 @@ This application supports **6 stores** (5 client stores + 1 demo store), each wi
 **Client Store Accounts:**
 **Important:** All emails use `.pk` domain (Pakistan), NOT `.com`
 - **TechHub Electronics**: `admin@techhub.pk` / `admin123`
-- **Fashion Forward**: `admin@fashionforward.pk` / `admin123`
 2. Each store gets a default admin user with strong password (change on first login)
 3. Store settings (logo, brand color, currency) can be configured via Settings page
 
@@ -343,7 +339,7 @@ See **[TESTING.md](./TESTING.md)** for comprehensive testing guide covering func
 - ✅ CORS configuration (restricted to allowed origins)
 - ✅ Caching headers (static assets cached, API responses not cached)
 - ✅ Rollback procedures (quick rollback, full rollback)
-- ✅ Client onboarding (6 stores configured, credentials prepared)
+- ✅ Client onboarding (2 stores configured, credentials prepared)
 
 **See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment instructions, client onboarding, and rollback procedures.**
 

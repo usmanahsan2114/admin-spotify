@@ -13,10 +13,15 @@
 ### Store 1: TechHub Electronics
 - **Admin Email:** `admin@techhub.pk`
 - **Admin Password:** `admin123`
-- **Staff Emails:** `iqra.hussain119@techhub.pk`, `waseem.hashmi713@techhub.pk`
+- **Staff Emails:** `staff1@techhub.pk`, `staff2@techhub.pk`, `staff3@techhub.pk`
 - **Staff Password:** `staff123`
 
-### Store 2: Pak Gusu Pvt Ltd
+### Store 2: Demo Store
+- **Admin Email:** `demo@shopifyadmin.pk`
+- **Admin Password:** `demo1234`
+- **Staff Emails:** `staff1@demo.shopifyadmin.pk`, `staff2@demo.shopifyadmin.pk`, `staff3@demo.shopifyadmin.pk`
+- **Staff Password:** `staff123`
+
 ### Public Pages (No Login Required)
 
 **Only 3 public pages are available:**
@@ -96,9 +101,6 @@
 
 **Store Admin Accounts:**
 - TechHub Electronics: `admin@techhub.pk` / `admin123`
-- Pak Gusu Pvt Ltd: `admin@pakgusu.pk` / `admin123`
-
-**Demo Account:**
 - Demo Store: `demo@shopifyadmin.pk` / `demo1234`
 
 **Public Pages Test:**
@@ -112,14 +114,11 @@
 ## 📊 Data Per Store (Updated November 15, 2025)
 
 Each store contains:
-- **1000-1600 customers** (increased from 800-1200) with comprehensive Pakistan-based data
-- **2000-3500 orders** (increased from 1500-2500) distributed from January 1, 2025 to November 15, 2025:
-  - **30% of orders** in October-November 2025 (most recent for graph visibility)
-  - **20% of orders** in August-September 2025
-  - **50% of orders** in January-July 2025
-- **100-160 products** (increased from 80-120) specific to the store's category with detailed descriptions
-- **Returns** (~8% of orders, automatically scaled)
-- **1 admin account** + **8-12 staff accounts**
+- **50 customers** with comprehensive Pakistan-based data
+- **150 orders** distributed from January 1, 2025 to December 31, 2025
+- **50 products** specific to the store's category with detailed descriptions
+- **Returns** (~10% of orders, automatically scaled)
+- **1 admin account** + **3 staff accounts**
 - **Current date reference:** November 15, 2025 (all data generation uses this as "today")
 
 ---
@@ -144,4 +143,3 @@ Each store contains:
 When deployed to production on a cloud VM (e.g., Oracle Cloud), URLs will be:
 - **Main Dashboard:** `https://admin.yourdomain.com`
 - **Store-specific:** `https://[store-subdomain].yourdomain.com` (if configured)
-

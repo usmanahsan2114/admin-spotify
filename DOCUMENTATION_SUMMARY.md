@@ -188,7 +188,7 @@ Documentation/
 - **Responsive Typography Improvements**: Applied responsive font sizes across all page titles and descriptions. Enhanced mobile UX with proper text truncation, responsive spacing, mobile-optimized dialogs, and DataGrid components. Improved header display with responsive store name and logo positioning.
 - **Modern UI Implementation**: Complete UI overhaul with "art-driven" aesthetic. Implemented glassmorphism, gradient backgrounds, and smooth animations (`animate-fade-in`, `animate-slide-up`). Updated color palette and typography (Outfit font). Refactored `RegularDashboard`, `SuperAdminDashboard`, `LoginPage`, and `DashboardLayout` to align with new design principles.
 - **Documentation Consolidation**: Reduced from 40+ markdown files to 10 essential files
-- **Seed/Reset Logic Alignment**: Aligned database reset/seed logic with Supabase infrastructure. Updated REGENERATE_DATABASE.md with Supabase workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin.
+- **Seed/Reset Logic Alignment**: Aligned database reset/seed logic with Supabase infrastructure. Updated REGENERATE_DATABASE.md with Supabase workflow, verified seed scripts create 2 stores (1 client + 1 demo) + superadmin.
 - **Infrastructure Standardization**: Removed all Hostinger-specific logic, standardized on local dev (Supabase) and production (Vercel + Supabase) deployment
 - **Production Readiness**: Merged PRODUCTION_READINESS_CHECKLIST.md into DEPLOYMENT.md (January 2025)
 - **Database Regeneration**: Merged REGENERATE_DATABASE.md into DEPLOYMENT.md (January 2025)

@@ -185,7 +185,7 @@ This document contains the complete development workflow, history, and implement
 - Encrypted backup scripts created.
 
 ### Step 34 – Client Onboarding, Demo Account Setup & Multi-Tenant Preparation (Part 3)
-- Seeded 6 stores (5 client stores + 1 demo store) with default admin users.
+- Seeded 2 stores (1 client store + 1 demo store) with default admin users.
 - Created demo reset endpoint (`POST /api/demo/reset-data`).
 - Enhanced store endpoints: `GET /api/stores` and `GET /api/stores/admin`.
 - Added store selection dropdown to login page.
@@ -219,7 +219,7 @@ This document contains the complete development workflow, history, and implement
 
 ### Step 40 – Login Page Simplification & Comprehensive Test Data
 - Simplified login page to use email/password only.
-- Increased test data volumes for all 5 stores.
+- Increased test data volumes for all stores.
 - Verified store admin permissions.
 
 ### Step 41 – Database Reset & Reseed Script
@@ -231,7 +231,7 @@ This document contains the complete development workflow, history, and implement
 ### Step 42 – Full Dummy Data Seeding for Multi-Store Production Testing
 - Enhanced product generation in `generateMultiStoreData.js` to create 80-120 products per store.
 - Implemented product variation system using prefixes, colors, and sizes.
-- Seeded comprehensive dummy data for all 5 stores + demo account: 80-120 products, 800-1200 customers, 1500-2500 orders per store.
+- Seeded comprehensive dummy data for all stores + demo account: 50 products, 50 customers, 150 orders per store.
 
 ### Step 43 – Infrastructure Standardization: Remove Hostinger Logic & Standardize on Cloud VM
 - Removed all Hostinger-specific logic and references from the codebase:
@@ -289,17 +289,17 @@ This document contains the complete development workflow, history, and implement
 ### Step 45 – Seed/Reset Logic Alignment: Supabase + 5 Stores + Demo + Superadmin
 - Aligned all database reset/seed logic with Supabase infrastructure:
   - Updated `REGENERATE_DATABASE.md` with comprehensive Supabase workflow:
-    - Detailed "What Gets Created" section listing all 6 stores (5 client + 1 demo) and superadmin
+    - Detailed "What Gets Created" section listing all 2 stores (1 client + 1 demo) and superadmin
     - Step-by-step regeneration guide: Run Migrations → Run Seed Script → Verify
     - Troubleshooting section for common Supabase connection errors
     - Database structure documentation (6 stores, 1 superadmin, 6 admins, 48-72 staff, etc.)
   - Verified seed scripts (`backend/scripts/reset-and-seed-database.js`, `backend/generateMultiStoreData.js`) create:
-    - 5 client stores: TechHub Electronics, Fashion Forward, Home & Living Store, Fitness Gear Pro, Beauty Essentials
+    - 1 client store: TechHub Electronics
     - 1 demo store: Demo Store (demo.shopifyadmin.pk)
     - 1 superadmin account: superadmin@shopifyadmin.pk (storeId: null)
     - Admin accounts: 1 per store (admin@[domain])
-    - Staff accounts: 8-12 per store (staff1@[domain] through staff12@[domain])
-    - Test data: 80-120 products, 800-1200 customers, 1500-2500 orders per store
+    - Staff accounts: 3 per store
+    - Test data: 50 products, 50 customers, 150 orders per store
   - Verified seed scripts use environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) matching Supabase credentials
   - Removed any XAMPP/MySQL specific assumptions from seed/reset scripts
   - Updated `REGENERATE_DATABASE.md` to explicitly document Supabase workflow:
@@ -316,7 +316,7 @@ This document contains the complete development workflow, history, and implement
 **Impact:**
 - Seed/reset logic fully aligned with Supabase infrastructure
 - Clear documentation for regenerating database with Supabase workflow
-- All 6 stores (5 client + 1 demo) and superadmin properly seeded
+- All 2 stores (1 client + 1 demo) and superadmin properly seeded
 - Multi-tenant isolation verified across all stores
 - Easy database reset for development and testing
 
@@ -340,7 +340,7 @@ This document contains the complete development workflow, history, and implement
 
 ### 2025-12-XX
 - **Responsive Typography Improvements**: Applied responsive font sizes across all page titles and descriptions. Enhanced mobile UX with proper text truncation, responsive spacing, and mobile-optimized dialogs and DataGrid components.
-- **Seed/Reset Logic Alignment**: Aligned all database reset/seed logic with Supabase infrastructure. Updated REGENERATE_DATABASE.md with comprehensive Supabase workflow, verified seed scripts create 6 stores (5 client + 1 demo) + superadmin, and ensured all documentation references Supabase for local dev.
+- **Seed/Reset Logic Alignment**: Aligned all database reset/seed logic with Supabase infrastructure. Updated REGENERATE_DATABASE.md with comprehensive Supabase workflow, verified seed scripts create 2 stores (1 client + 1 demo) + superadmin, and ensured all documentation references Supabase for local dev.
 - **Local Development Standardization**: Standardized all local development instructions on Supabase Postgres. Updated README.md with comprehensive Supabase setup guide, REGENERATE_DATABASE.md with Supabase-specific instructions, and all documentation to consistently reference Supabase for local dev.
 - **Infrastructure Standardization**: Removed all XAMPP/MySQL specific logic, standardized on local dev (Supabase) and production (Supabase) deployment. Added comprehensive Supabase deployment guide.
 - **Full Dummy Data Seeding for Multi-Store Production Testing**: Enhanced product generation to create 80-120 products per store. Implemented product variation system. Seeded comprehensive dummy data for all stores with proper date distribution.
@@ -417,12 +417,12 @@ This document contains the complete development workflow, history, and implement
 - Encrypted backups: AES-256-CBC encryption, compression, off-site storage support, 30-day retention.
 
 ### Client Onboarding & Multi-Tenant Preparation (100% Complete)
-- 6 stores seeded: 5 client stores + 1 demo store with default admin users.
+- 2 stores seeded: 1 client store + 1 demo store with default admin users.
 - Tenant isolation: All queries scoped by `storeId` (`where: { storeId: req.user.storeId }`).
 - Role/permission logic: Admin (full access), Staff (limited), Demo (view only).
 - Demo reset endpoint: `POST /api/demo/reset-data` (admin only) resets demo store data.
 - Simplified login page: Email/password only, auto-detects user type and store from credentials.
-- Comprehensive test data: 80-120 products, 800-1200 customers, 1500-2500 orders, 8-12 staff per store.
+- Comprehensive test data: 50 products, 50 customers, 150 orders, 3 staff per store.
 
 ---
 

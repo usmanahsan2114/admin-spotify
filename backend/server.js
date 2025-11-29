@@ -30,6 +30,7 @@ const productRoutes = require('./routes/productRoutes')
 const userRoutes = require('./routes/userRoutes')
 const settingsRoutes = require('./routes/settingsRoutes')
 const metricsRoutes = require('./routes/metricsRoutes')
+const storefrontRoutes = require('./routes/storefrontRoutes')
 const {
   authenticateToken,
   authorizeRole,
@@ -359,6 +360,9 @@ app.use('/api/settings', demoWriteLimiter, restrictDemoStore)
 app.use('/api/settings', settingsRoutes)
 
 app.use('/api', metricsRoutes)
+
+// Public Storefront API
+app.use('/api/public/v1', storefrontRoutes)
 
 // API Documentation
 const swaggerUi = require('swagger-ui-express');
