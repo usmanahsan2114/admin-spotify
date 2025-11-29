@@ -55,7 +55,11 @@ This document provides an overview of the consolidated documentation structure.
    - Implemented improvements summary (consolidated from IMPROVEMENTS_IMPLEMENTED.md and QUICK_IMPROVEMENTS_SUMMARY.md)
    - Cloud VM deployment checklist (Oracle Cloud, AWS, DigitalOcean)
 
-8. **DOCUMENTATION_SUMMARY.md** (This file)
+8. **CHANGELOG.md** (New)
+   - Project history and version tracking
+   - Detailed list of added, fixed, and changed features
+
+9. **DOCUMENTATION_SUMMARY.md** (This file)
    - Documentation structure overview
    - File consolidation summary
 
@@ -176,6 +180,12 @@ Documentation/
 
 **Last Updated**: January 2025  
 **Status**: ✅ Documentation consolidated to 8 essential files
+
+## Recent Updates (November 2025)
+
+- **Storefront UI/UX Overhaul**: Complete redesign of the public storefront with Tailwind CSS. Implemented responsive Navbar, Hero section, and premium Product Cards.
+- **Backend Fixes**: Resolved critical bugs in `storefrontController` (UUID handling) and `checkoutController` (500 error on validation).
+- **Documentation**: Created `CHANGELOG.md` and updated all key documentation files to reflect the new Storefront features and Tier 1 completion.
 
 ## Recent Updates (January 2025)
 

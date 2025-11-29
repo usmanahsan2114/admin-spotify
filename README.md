@@ -10,7 +10,7 @@
 - **Products**: Manage catalog entries (add/edit/delete), validate input with `react-hook-form` + Yup, and confirm destructive actions. Features stock trend charts and time-based filtering. Store-specific product catalogs.
 - **Returns & Refunds**: Track return requests, update statuses, and monitor stock impact. Includes returns-by-status pie chart and time-based filtering. Store-specific returns management.
 - **Users**: Admin/Superadmin-only table for inviting teammates, editing roles, toggling activation, resetting passwords, and preventing self-demotion/deletion. Granular permission management with 13 permission types (view/edit/delete orders, products, customers, returns, reports, user management, settings) allowing fine-grained access control per user. Store-specific user management. Superadmin can manage users across all stores.
-- **Headless Storefront API**: Public read-only API (`/api/public/v1`) for connecting external React storefronts. Supports product listing, filtering, searching, and details. See [STOREFRONT_API.md](./STOREFRONT_API.md).
+- **Modern Storefront**: A fully functional, responsive React storefront built with Tailwind CSS. Features a premium UI, product listing, details, cart management, and checkout. Connected to the backend via the public API. See [STOREFRONT_API.md](./STOREFRONT_API.md).
 - **Settings/Profile**: Comprehensive settings page with three sections: My Profile (upload profile picture, update full name/phone, set default date filter, configure notification preferences), Preferences (theme toggle, default settings), and Business Settings (admin only: upload logo, set brand color, default currency PKR, country Pakistan PK, manage order statuses). Fully responsive with mobile-first design using tabs on desktop and accordions on mobile. Store-specific business settings.
 - **Dashboard Analytics**: Summary tiles, sales over time line chart, period comparison bar chart, 7-day order trend line, status distribution pie chart, and low stock trends using Recharts. All charts support time-based filtering with date range selection. Store-specific metrics and reports.
 - **Growth & Progress Reporting**: Comprehensive growth metrics with KPI cards showing sales, orders, average order value, and return rate with period-over-period growth percentages. Trend charts for sales, orders, and customers over time. Period selector (Last 7 days, This month, This quarter). Downloadable CSV reports. Fully responsive with mobile-optimized charts (area charts on mobile, line charts on desktop). **Store-specific growth metrics** - each store has independent reports.
@@ -23,7 +23,7 @@
 
 ## Tech Stack
 
-- **Frontend**: React 19 (TypeScript), Vite, Material UI (Custom Theme with Glassmorphism), MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
+- **Frontend**: React 19 (TypeScript), Vite, Material UI (Admin), Tailwind CSS (Storefront), MUI DataGrid, Recharts, React Router, React Hook Form, Yup.
 - **Backend**: Express 5, JWT auth, bcrypt for password hashing, **Sequelize ORM with Supabase Postgres** (fully migrated). Production-ready features: Sentry error tracking, Winston logging, encrypted backups, health monitoring, security headers (Helmet).
 - **Tooling**: npm-run-all for concurrent dev servers, nodemon for backend reloads, ESLint.
 

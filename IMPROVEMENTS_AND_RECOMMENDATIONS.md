@@ -75,6 +75,11 @@ This document outlines the roadmap for bringing the application to a production-
 - [x] **Animations**: Added `animate-fade-in` and `animate-slide-up` for smooth page transitions and element reveals.
 - [x] **Responsive Layouts**: Optimized `DashboardLayout`, `RegularDashboard`, and `SuperAdminDashboard` for all screen sizes.
 
+### Storefront (New)
+- [x] **UI/UX Overhaul**: Complete redesign with Tailwind CSS, featuring a responsive Navbar, Hero section, and premium Product Cards.
+- [x] **Backend Integration**: Connected to `/api/public/v1` for dynamic product fetching and order submission.
+- [x] **Checkout Flow**: Implemented cart validation and order placement with error handling.
+
 ---
 
 ## 📝 Immediate Action Items (Next Steps)
