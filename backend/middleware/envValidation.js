@@ -20,14 +20,21 @@ const validateEnvironmentVariables = () => {
   // Production-specific validations
   if (NODE_ENV === 'production') {
     // Required in production
+    // Required in production
     const requiredVars = [
       'JWT_SECRET',
-      'DB_DIALECT',
-      'DB_USER',
-      'DB_PASSWORD',
-      'DB_NAME',
-      'DB_HOST',
     ]
+
+    // If DATABASE_URL is provided, we don't need individual DB variables
+    if (!process.env.DATABASE_URL) {
+      requiredVars.push(
+        'DB_DIALECT',
+        'DB_USER',
+        'DB_PASSWORD',
+        'DB_NAME',
+        'DB_HOST'
+      )
+    }
 
     requiredVars.forEach((varName) => {
       if (!process.env[varName]) {
