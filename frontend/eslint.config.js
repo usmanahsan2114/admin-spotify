@@ -1,29 +1,45 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { defineConfig } from "eslint/config";
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  { ignores: ["dist/**", "node_modules/**", "coverage/**"] },
+
+  js.configs.recommended,
+
+  // TypeScript (type-aware rules)
+  ...tseslint.configs.recommendedTypeChecked,
+
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
+    files: ["**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+      },
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: __dirname,
+      },
     },
-  },
-  {
-    files: ['src/context/*.tsx'],
+    plugins: {
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
+    },
     rules: {
-      'react-refresh/only-export-components': 'off',
+      // React hooks best practices
+      ...reactHooks.configs.recommended.rules,
+
+      // Vite React refresh safety
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
   },
-])
+]);
