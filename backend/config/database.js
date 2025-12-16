@@ -8,6 +8,7 @@ function getDatabaseConfig(environment) {
   if (process.env.DATABASE_URL) {
     const config = {
       use_env_variable: 'DATABASE_URL',
+      dialect: 'postgres',
       logging: environment === 'development' ? console.log : false,
       dialectOptions: {
         ssl: {
