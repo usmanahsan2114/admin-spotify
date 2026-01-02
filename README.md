@@ -110,10 +110,9 @@ npm --prefix storefront run dev
 
 After seeding, the following test accounts are available:
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | `superadmin@shopifyadmin.pk` | `superadmin123` |
-| Store Admin | Check `docs/STORE_CREDENTIALS_AND_URLS.md` | — |
+- **Super Admin**: `superadmin@apexit.co` / `admin1234`
+- **Demo Store**: `demo@demo.shopifyadmin.pk` / `demo1234`
+- **Pakistan Electronics**: `store@gmail.com` / `store1234`
 
 ## Features
 

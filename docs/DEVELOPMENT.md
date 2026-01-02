@@ -296,8 +296,8 @@ This document contains the complete development workflow, history, and implement
   - Verified seed scripts (`backend/scripts/reset-and-seed-database.js`, `backend/generateMultiStoreData.js`) create:
     - 1 client store: TechHub Electronics
     - 1 demo store: Demo Store (demo.shopifyadmin.pk)
-    - 1 superadmin account: superadmin@shopifyadmin.pk (storeId: null)
-    - Admin accounts: 1 per store (admin@[domain])
+    - 1 superadmin account: superadmin@apexit.co (storeId: null)
+    - Admin accounts: 1 per store (e.g., demo@demo.shopifyadmin.pk)
     - Staff accounts: 3 per store
     - Test data: 50 products, 50 customers, 150 orders per store
   - Verified seed scripts use environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) matching Supabase credentials

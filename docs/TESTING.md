@@ -50,10 +50,9 @@ Comprehensive testing documentation covering functional testing, performance tes
 - Staff: `staff1@fashionforward.pk` / `staff123`
 
 **Demo Store:**
-- Demo: `demo@demo.shopifyadmin.pk` / `demo123`
-
-**Superadmin Account:**
-- Super Admin: `superadmin@shopifyadmin.pk` / `superadmin123`
+- Admin: `demo@demo.shopifyadmin.pk` / `demo1234`
+- Admin: `store@gmail.com` / `store1234`
+- Super Admin: `superadmin@apexit.co` / `admin1234`
 
 ### Test Categories
 

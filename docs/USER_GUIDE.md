@@ -68,10 +68,8 @@ Click the **"Try Demo Account"** button for instant demo access (no typing neede
 - Access: Can access ALL stores and manage ALL users
 
 **Store Admin Accounts:**
-- TechHub Electronics: `admin@techhub.pk` / `admin123`
-- Fashion Forward: `admin@fashionforward.pk` / `admin123`
-- Home & Living Store: `admin@homeliving.pk` / `admin123`
-- Fitness Gear Pro: `admin@fitnessgear.pk` / `admin123`
+- Demo Store: `demo@demo.shopifyadmin.pk` / `demo1234`
+- Pakistan Electronics: `store@gmail.com` / `store1234`
 ### Public Pages (No Login Required)
 
 **Only 3 public pages are available:**
@@ -416,7 +414,7 @@ node reset_db.js
 
 **Dashboard Access:**
 - **URL:** `https://admin.yourdomain.com` (production) or `http://localhost:5173` (development)
-- **Email:** `superadmin@shopifyadmin.pk`
+- **Email:** `superadmin@apexit.co`
 - **Password:** `superadmin123` ⚠️ **MUST CHANGE ON FIRST LOGIN**
 
 **Capabilities:**
