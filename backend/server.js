@@ -148,16 +148,21 @@ if (NODE_ENV === 'production') {
 }
 
 // CORS configuration - restrict to allowed origins
-const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [
+const allowedOrigins = (process.env.CORS_ORIGIN?.split(',') || [
   'http://localhost:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5174'
-]
+]).map(o => o.trim())
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true)
+
+    if (allowedOrigins.includes(origin)) {
       callback(null, true)
     } else {
+      console.warn(`[CORS] Blocked request from origin: ${origin}`)
       callback(new Error('Not allowed by CORS'))
     }
   },
